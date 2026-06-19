@@ -282,8 +282,8 @@
 </div>
 
 <script type="module">
-import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -296,7 +296,7 @@ const firebaseConfig = {
   measurementId: "G-3VXLEW9B2M"
 };
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -315,7 +315,9 @@ window.doLogin = async function() {
   try {
     const userCred = await signInWithEmailAndPassword(auth, email, pass);
     const user = userCred.user;
+    console.log('Auth OK, UID:', user.uid);
     const userDoc = await getDoc(doc(db, 'users', user.uid));
+    console.log('Doc exists:', userDoc.exists());
     if (userDoc.exists() && userDoc.data().role === 'superadmin') {
       currentUser = { uid: user.uid, ...userDoc.data() };
       document.getElementById('admin-name').textContent = currentUser.displayName || 'Super Admin';
