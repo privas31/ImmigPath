@@ -313,9 +313,26 @@ window.doLogin = async function() {
   btn.textContent = 'Iniciando sesión...';
   btn.disabled = true;
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    const userCred = await signInWithEmailAndPassword(auth, email, pass);
+    const user = userCred.user;
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (userDoc.exists() && userDoc.data().role === 'superadmin') {
+      currentUser = { uid: user.uid, ...userDoc.data() };
+      document.getElementById('admin-name').textContent = currentUser.displayName || 'Super Admin';
+      const initials = (currentUser.displayName || 'SA').substring(0,2).toUpperCase();
+      document.getElementById('avatar-initials').textContent = initials;
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      loadDashboard();
+    } else {
+      errEl.textContent = 'Acceso denegado. Solo Super Admins.';
+      errEl.style.display = 'block';
+      await signOut(auth);
+      btn.textContent = 'Iniciar Sesión';
+      btn.disabled = false;
+    }
   } catch(err) {
-    errEl.textContent = 'Email o contraseña incorrectos';
+    errEl.textContent = 'Error: ' + err.message;
     errEl.style.display = 'block';
     btn.textContent = 'Iniciar Sesión';
     btn.disabled = false;
@@ -324,32 +341,6 @@ window.doLogin = async function() {
 
 document.getElementById('login-pass').addEventListener('keydown', e => {
   if(e.key === 'Enter') doLogin();
-});
-
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    try {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists() && userDoc.data().role === 'superadmin') {
-        currentUser = { uid: user.uid, ...userDoc.data() };
-        document.getElementById('admin-name').textContent = currentUser.displayName || 'Super Admin';
-        const initials = (currentUser.displayName || 'SA').substring(0,2).toUpperCase();
-        document.getElementById('avatar-initials').textContent = initials;
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        loadDashboard();
-      } else {
-        showToast('Acceso denegado. Solo Super Admins.', 'error');
-        signOut(auth);
-      }
-    } catch(err) {
-      showToast('Error: ' + err.message, 'error');
-      signOut(auth);
-    }
-  } else {
-    document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('main-app').classList.add('hidden');
-  }
 });
 
 window.doSignOut = async function() {
