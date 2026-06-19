@@ -885,7 +885,22 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
     {caso.sistema==="uscis"&&!(caso.tipoCaso||"").includes("I-589")&&!(caso.tipoCaso||"").includes("I-765")&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de cita</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
 
     {/* FOIA */}
-    {caso.sistema==="foia"&&<><div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tracking FOIA</label><input value={caso.foiaTracking||""} onChange={e=>onChange({...caso,foiaTracking:e.target.value})} placeholder="NRC2024123456" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div><div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de envío</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div></>}
+    {caso.sistema==="foia"&&<>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+        <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tracking FOIA</label><input value={caso.foiaTracking||""} onChange={e=>onChange({...caso,foiaTracking:e.target.value})} placeholder="NRC2024123456" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>
+        <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Estado FOIA</label>
+          <select value={caso.foiaEstado||""} onChange={e=>onChange({...caso,foiaEstado:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,background:"#fff",cursor:"pointer"}}>
+            <option value="">Seleccionar...</option>
+            <option value="Enviado">📤 Enviado</option>
+            <option value="En proceso">⏳ En proceso</option>
+            <option value="Respuesta recibida">✅ Respuesta recibida</option>
+            <option value="Cerrado">🔒 Cerrado</option>
+          </select>
+        </div>
+      </div>
+      <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de envío</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
+      <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Respuesta / Notas FOIA</label><textarea value={caso.foiaRespuesta||""} onChange={e=>onChange({...caso,foiaRespuesta:e.target.value})} placeholder="Notas de la respuesta..." rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
+    </>}
     <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Notas del caso</label><textarea value={caso.nota||""} onChange={e=>onChange({...caso,nota:e.target.value})} placeholder="Observaciones..." rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
     <ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>
   </div>);
