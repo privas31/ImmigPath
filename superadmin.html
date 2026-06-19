@@ -323,8 +323,8 @@ window.doLogin = async function() {
       document.getElementById('admin-name').textContent = currentUser.displayName || 'Super Admin';
       const initials = (currentUser.displayName || 'SA').substring(0,2).toUpperCase();
       document.getElementById('avatar-initials').textContent = initials;
-      document.getElementById('login-screen').classList.add('hidden');
-      document.getElementById('main-app').classList.remove('hidden');
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'flex';
       loadDashboard();
     } else {
       errEl.textContent = 'Acceso denegado. Solo Super Admins.';
