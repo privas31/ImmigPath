@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Oficina — ImmigPath</title>
+<style>
+  :root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--border:rgba(148,163,184,0.15);--text:#f1f5f9;--text2:#94a3b8;--accent:#6366f1;--accent2:#818cf8;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;--radius:10px;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;}
+  .app{display:flex;height:100vh;overflow:hidden;}
+  .sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+  .main{flex:1;overflow-y:auto;}
+  .logo{padding:16px;border-bottom:1px solid var(--border);}
+  .logo h1{font-size:14px;font-weight:600;}
+  .logo span{font-size:11px;color:var(--accent2);}
+  .nav{padding:10px 8px;flex:1;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--text2);margin-bottom:2px;border:none;background:none;width:100%;text-align:left;font-size:13px;transition:all .15s;}
+  .nav-item:hover{background:var(--bg3);color:var(--text);}
+  .nav-item.active{background:rgba(99,102,241,.15);color:var(--accent2);}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0;}
+  .nav-label{font-size:11px;color:var(--text2);padding:10px 12px 4px;letter-spacing:.5px;text-transform:uppercase;}
+  .sidebar-footer{padding:12px;border-top:1px solid var(--border);}
+  .user-chip{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
+  .user-name{font-size:12px;font-weight:500;}
+  .user-role{font-size:11px;color:var(--accent2);}
+  .header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:10;}
+  .header h2{font-size:17px;font-weight:600;}
+  .btn{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:#5558e8;}
+  .btn-ghost{background:var(--bg3);color:var(--text);}
+  .btn-sm{padding:5px 10px;font-size:12px;}
+  .content{padding:20px 24px;}
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+  .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .stat-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .stat-value{font-size:26px;font-weight:700;}
+  .table-container{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;}
+  .table-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .table-header h3{font-size:14px;font-weight:600;}
+  .search-input{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:13px;width:200px;outline:none;}
+  .search-input:focus{border-color:var(--accent);}
+  table{width:100%;border-collapse:collapse;}
+  th{padding:10px 18px;text-align:left;font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+  td{padding:12px 18px;border-bottom:1px solid rgba(148,163,184,.07);font-size:13px;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(99,102,241,.03);}
+  .badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+  .badge-green{background:rgba(16,185,129,.15);color:#34d399;}
+  .badge-blue{background:rgba(59,130,246,.15);color:#60a5fa;}
+  .badge-yellow{background:rgba(245,158,11,.15);color:#fcd34d;}
+  .badge-red{background:rgba(239,68,68,.15);color:#f87171;}
+  .badge-purple{background:rgba(99,102,241,.15);color:var(--accent2);}
+  .badge-gray{background:var(--bg3);color:var(--text2);}
+  .actions{display:flex;gap:6px;}
+  .action-btn{padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all .15s;}
+  .action-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;}
+  .modal-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-title{font-size:15px;font-weight:600;}
+  .modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:4px;}
+  .modal-body{padding:22px;}
+  .modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+  .form-group{margin-bottom:14px;}
+  .form-label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500;}
+  .form-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s;}
+  .form-input:focus{border-color:var(--accent);}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .hidden{display:none;}
+  .empty{text-align:center;padding:40px 20px;color:var(--text2);}
+  .empty-icon{font-size:28px;margin-bottom:10px;}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;z-index:999;animation:slideIn .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.3);}
+  .toast.success{border-color:var(--green);color:var(--green);}
+  .toast.error{border-color:var(--red);color:var(--red);}
+  @keyframes slideIn{from{transform:translateX(20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  .portal-link-box{background:var(--bg);border:1px solid var(--accent);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--accent2);word-break:break-all;margin:10px 0;}
+  .copy-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;margin-top:6px;width:100%;}
+  .login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;}
+  .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:36px;width:100%;max-width:360px;}
+  .login-logo{text-align:center;margin-bottom:24px;}
+  .login-logo h1{font-size:22px;font-weight:700;margin-bottom:4px;}
+  .login-logo p{font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:1px;}
+  .login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;margin-bottom:14px;display:none;}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-screen" style="display:flex">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>🏛️ ImmigPath</h1>
+      <p>Panel de Oficina</p>
+    </div>
+    <div id="login-err" class="login-err"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="login-email" type="email" placeholder="tu@email.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary" id="login-btn" style="width:100%;padding:10px;font-size:14px;margin-top:4px" onclick="doLogin()">Iniciar Sesión</button>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none">
+  <aside class="sidebar">
+    <div class="logo">
+      <h1 id="office-name-sidebar">Mi Oficina</h1>
+      <span>Panel de Oficina</span>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Principal</div>
+      <button class="nav-item active" onclick="showSection('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="showSection('clients',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Clientes
+      </button>
+      <button class="nav-item" onclick="showSection('cases',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+        Casos
+      </button>
+      <div class="nav-label">Sistema</div>
+      <button class="nav-item" onclick="doSignOut()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Cerrar Sesión
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar">?</div>
+        <div>
+          <div class="user-name" id="user-name-display">Usuario</div>
+          <div class="user-role" id="user-role-display">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div id="section-dashboard">
+      <div class="header">
+        <h2>Dashboard</h2>
+        <button class="btn btn-primary" onclick="openModal('modal-new-client')">+ Nuevo Cliente</button>
+      </div>
+      <div class="content">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Total Clientes</div><div class="stat-value" id="stat-clients">—</div></div>
+          <div class="stat-card"><div class="stat-label">Casos Activos</div><div class="stat-value" id="stat-cases">—</div></div>
+          <div class="stat-card"><div class="stat-label">Casos Resueltos</div><div class="stat-value" id="stat-resolved">—</div></div>
+        </div>
+        <div class="table-container">
+          <div class="table-header"><h3>Clientes Recientes</h3><button class="btn btn-primary btn-sm" onclick="openModal('modal-new-client')">+ Nuevo</button></div>
+          <table>
+            <thead><tr><th>Cliente</th><th>Teléfono</th><th>Casos</th><th>Último Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="recent-clients-table"><tr><td colspan="5"><div class="empty"><div class="empty-icon">👤</div>No hay clientes aún</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="section-clients" class="hidden">
+      <div class="header"><h2>Clientes</h2><button class="btn btn-primary" onclick="openModal('modal-new-client')">+ Nuevo Cliente</button></div>
+      <div class="content">
+        <div class="table-container">
+          <div class="table-header"><h3>Todos los Clientes</h3><input class="search-input" type="search" placeholder="Buscar cliente..." oninput="filterClients(this.value)"></div>
+          <table>
+            <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Casos</th><th>Portal</th><th>Acciones</th></tr></thead>
+            <tbody id="clients-table"><tr><td colspan="6"><div class="empty">Cargando...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="section-cases" class="hidden">
+      <div class="header"><h2>Casos</h2><button class="btn btn-primary" onclick="openModal('modal-new-case')">+ Nuevo Caso</button></div>
+      <div class="content">
+        <div class="table-container">
+          <div class="table-header"><h3>Todos los Casos</h3></div>
+          <table>
+            <thead><tr><th>Caso</th><th>Cliente</th><th>Módulo</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+            <tbody id="cases-table"><tr><td colspan="6"><div class="empty">Cargando...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo Cliente -->
+<div id="modal-new-client" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Nuevo Cliente</span><button class="modal-close" onclick="closeModal('modal-new-client')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="c-firstname" placeholder="María"></div>
+        <div class="form-group"><label class="form-label">Apellido *</label><input class="form-input" id="c-lastname" placeholder="García"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Teléfono *</label><input class="form-input" id="c-phone" placeholder="(555) 000-0000"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="c-email" type="email" placeholder="opcional"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nacionalidad</label><input class="form-input" id="c-nationality" placeholder="Ej: México"></div>
+        <div class="form-group"><label class="form-label">Idioma</label><select class="form-input" id="c-language"><option value="es">Español</option><option value="en">English</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notas internas</label><input class="form-input" id="c-notes" placeholder="Opcional"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-client')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createClient()">Crear Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo Caso -->
+<div id="modal-new-case" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Nuevo Caso</span><button class="modal-close" onclick="closeModal('modal-new-case')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Cliente *</label><select class="form-input" id="case-client-id"><option value="">Seleccionar...</option></select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Módulo *</label><select class="form-input" id="case-module" onchange="updateCaseTypes()"><option value="immigration">🏛️ Inmigración</option><option value="taxes">🧾 Taxes</option><option value="insurance">🛡️ Seguros</option><option value="notary">📋 Notaría</option></select></div>
+        <div class="form-group"><label class="form-label">Tipo de Caso *</label><select class="form-input" id="case-type"></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Título *</label><input class="form-input" id="case-title" placeholder="Ej: Petición familiar para María García"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Estado</label><select class="form-input" id="case-status"><option value="new">Nuevo</option><option value="in_progress">En proceso</option><option value="pending_docs">Esperando documentos</option></select></div>
+        <div class="form-group"><label class="form-label">Prioridad</label><select class="form-input" id="case-priority"><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option><option value="low">Baja</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Nota para el cliente</label><input class="form-input" id="case-client-note" placeholder="Este mensaje lo verá el cliente en su portal"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-case')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createCase()">Crear Caso</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Portal Link -->
+<div id="modal-portal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">🔗 Portal del Cliente</span><button class="modal-close" onclick="closeModal('modal-portal')">✕</button></div>
+    <div class="modal-body">
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px">Comparte este link con tu cliente. No necesita contraseña — solo abre el link y ve sus casos.</p>
+      <div class="portal-link-box" id="portal-link-display">—</div>
+      <button class="copy-btn" onclick="copyPortalLink()">📋 Copiar Link</button>
+      <p style="font-size:11px;color:var(--text2);margin-top:10px">⚠️ Este link es privado — solo compártelo directamente con el cliente.</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, query, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
+  authDomain: "immigration-platform-11380.firebaseapp.com",
+  projectId: "immigration-platform-11380",
+  storageBucket: "immigration-platform-11380.firebasestorage.app",
+  messagingSenderId: "682062748742",
+  appId: "1:682062748742:web:5b2466ddf7d8ae05a67e47",
+  measurementId: "G-3VXLEW9B2M"
+};
+
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser = null, officeData = null, clientsCache = [], casesCache = [];
+
+const CASE_TYPES = {
+  immigration:['I-130 Petición Familiar','I-485 Residencia','I-765 Permiso de Trabajo','I-131 Travel Document','Naturalización N-400','DACA','Asilo','Visa de Turista','Visa de Trabajo','Consultar'],
+  taxes:['Return Individual 1040','Return Negocio','ITIN Application','Enmienda de Taxes','Representación IRS','Consultar'],
+  insurance:['Seguro de Auto','Seguro de Salud','Seguro de Vida','Seguro de Hogar','Reclamación','Consultar'],
+  notary:['Poder Notarial','Affidavit','Apostilla','Traducción Certificada','Consultar']
+};
+
+const STATUS_CONFIG = {
+  new:{label:'Nuevo',cls:'badge-gray'},
+  in_progress:{label:'En proceso',cls:'badge-blue'},
+  pending_docs:{label:'Esperando docs',cls:'badge-yellow'},
+  submitted:{label:'Sometido',cls:'badge-purple'},
+  approved:{label:'Aprobado',cls:'badge-green'},
+  denied:{label:'Negado',cls:'badge-red'},
+  closed:{label:'Cerrado',cls:'badge-gray'},
+  gathering_docs:{label:'Recopilando docs',cls:'badge-yellow'},
+  in_review:{label:'En revisión',cls:'badge-blue'},
+  filed:{label:'Sometido IRS',cls:'badge-green'},
+};
+
+function generateToken() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
+}
+
+window.doLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-err');
+  const btn = document.getElementById('login-btn');
+  errEl.style.display='none'; btn.textContent='Iniciando sesión...'; btn.disabled=true;
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const userDoc = await getDoc(doc(db,'users',cred.user.uid));
+    if (!userDoc.exists()) throw new Error('Usuario no encontrado en el sistema');
+    const userData = userDoc.data();
+    if (!['office_admin','employee'].includes(userData.role)) throw new Error('Solo staff de oficina puede entrar aquí');
+    currentUser = {uid:cred.user.uid,...userData};
+    const officeDoc = await getDoc(doc(db,'offices',userData.officeId));
+    if (!officeDoc.exists()) throw new Error('Oficina no encontrada');
+    officeData = {id:officeDoc.id,...officeDoc.data()};
+    document.getElementById('office-name-sidebar').textContent = officeData.name;
+    document.getElementById('user-name-display').textContent = currentUser.displayName||email;
+    document.getElementById('user-role-display').textContent = currentUser.role==='office_admin'?'Admin':'Empleada';
+    document.getElementById('user-avatar').textContent = (currentUser.displayName||'U').substring(0,2).toUpperCase();
+    document.title = officeData.name+' — ImmigPath';
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='flex';
+    loadData();
+  } catch(err) {
+    errEl.textContent=err.message; errEl.style.display='block';
+    btn.textContent='Iniciar Sesión'; btn.disabled=false;
+  }
+};
+
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+window.doSignOut = async function() {
+  await signOut(auth);
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('main-app').style.display='none';
+};
+
+async function loadData() {
+  try {
+    const [cs, cas] = await Promise.all([
+      getDocs(query(collection(db,'clients'),where('officeId','==',officeData.id))),
+      getDocs(query(collection(db,'cases'),where('officeId','==',officeData.id)))
+    ]);
+    clientsCache = cs.docs.map(d=>({id:d.id,...d.data()}));
+    casesCache = cas.docs.map(d=>({id:d.id,...d.data()}));
+    const active = casesCache.filter(c=>!['approved','closed','denied'].includes(c.status));
+    const resolved = casesCache.filter(c=>['approved','closed'].includes(c.status));
+    document.getElementById('stat-clients').textContent = clientsCache.length;
+    document.getElementById('stat-cases').textContent = active.length;
+    document.getElementById('stat-resolved').textContent = resolved.length;
+    renderRecentClients(); renderClientsTable(clientsCache); renderCasesTable();
+    populateClientSelect();
+  } catch(err) { showToast('Error: '+err.message,'error'); }
+}
+
+function renderRecentClients() {
+  const tbody = document.getElementById('recent-clients-table');
+  if (!clientsCache.length) { tbody.innerHTML='<tr><td colspan="5"><div class="empty"><div class="empty-icon">👤</div>No hay clientes. ¡Crea el primero!</div></td></tr>'; return; }
+  tbody.innerHTML = clientsCache.slice(0,5).map(c=>{
+    const cc = casesCache.filter(ca=>ca.clientId===c.id);
+    const last = cc[cc.length-1];
+    return `<tr><td><div style="font-weight:500">${c.firstName} ${c.lastName}</div></td><td style="color:var(--text2)">${c.phone||'—'}</td><td>${cc.length}</td><td>${last?`<span class="badge ${STATUS_CONFIG[last.status]?.cls||'badge-gray'}">${STATUS_CONFIG[last.status]?.label||last.status}</span>`:'—'}</td><td><div class="actions"><button class="action-btn" onclick="openNewCaseForClient('${c.id}')">+ Caso</button><button class="action-btn" onclick="showPortalLink('${c.clientToken}')">🔗 Portal</button></div></td></tr>`;
+  }).join('');
+}
+
+function renderClientsTable(clients) {
+  const tbody = document.getElementById('clients-table');
+  if (!clients.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-icon">👤</div>No hay clientes aún</div></td></tr>'; return; }
+  tbody.innerHTML = clients.map(c=>{
+    const cc = casesCache.filter(ca=>ca.clientId===c.id);
+    return `<tr><td><div style="font-weight:500">${c.firstName} ${c.lastName}</div><div style="font-size:11px;color:var(--text2)">${c.nationality||''}</div></td><td style="color:var(--text2)">${c.email||'—'}</td><td style="color:var(--text2)">${c.phone||'—'}</td><td>${cc.length}</td><td><button class="action-btn" onclick="showPortalLink('${c.clientToken}')">🔗 Link</button></td><td><div class="actions"><button class="action-btn" onclick="openNewCaseForClient('${c.id}')">+ Caso</button><button class="action-btn" onclick="showPortalLink('${c.clientToken}')">Portal</button></div></td></tr>`;
+  }).join('');
+}
+
+function renderCasesTable() {
+  const tbody = document.getElementById('cases-table');
+  if (!casesCache.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-icon">📁</div>No hay casos aún</div></td></tr>'; return; }
+  const modLabels={immigration:'🏛️ Inmigración',taxes:'🧾 Taxes',insurance:'🛡️ Seguros',notary:'📋 Notaría'};
+  tbody.innerHTML = casesCache.map(c=>{
+    const client = clientsCache.find(cl=>cl.id===c.clientId);
+    const st = STATUS_CONFIG[c.status]||{label:c.status,cls:'badge-gray'};
+    const date = c.openedAt?.seconds?new Date(c.openedAt.seconds*1000).toLocaleDateString('es-US'):'—';
+    return `<tr><td><div style="font-weight:500">${c.title||c.caseType}</div><div style="font-size:11px;color:var(--text2)">${c.caseType}</div></td><td>${client?client.firstName+' '+client.lastName:'—'}</td><td>${modLabels[c.module]||c.module}</td><td><span class="badge ${st.cls}">${st.label}</span></td><td style="color:var(--text2)">${date}</td><td><button class="action-btn" onclick="updateCaseStatus('${c.id}','${c.status}')">Actualizar</button></td></tr>`;
+  }).join('');
+}
+
+function populateClientSelect() {
+  document.getElementById('case-client-id').innerHTML = '<option value="">Seleccionar cliente...</option>'+clientsCache.map(c=>`<option value="${c.id}">${c.firstName} ${c.lastName}</option>`).join('');
+}
+
+window.createClient = async function() {
+  const first=document.getElementById('c-firstname').value.trim();
+  const last=document.getElementById('c-lastname').value.trim();
+  const phone=document.getElementById('c-phone').value.trim();
+  if (!first||!last||!phone){showToast('Nombre, apellido y teléfono son requeridos','error');return;}
+  const token=generateToken();
+  const portalUrl=`https://privas31.github.io/ImmigPath/portal.html?token=${token}`;
+  try {
+    const ref = await addDoc(collection(db,'clients'),{
+      officeId:officeData.id,firstName:first,lastName:last,phone,
+      email:document.getElementById('c-email').value.trim(),
+      nationality:document.getElementById('c-nationality').value.trim(),
+      preferredLanguage:document.getElementById('c-language').value,
+      notes:document.getElementById('c-notes').value.trim(),
+      clientToken:token,portalUrl,totalCases:0,activeCases:0,isActive:true,
+      createdAt:serverTimestamp(),createdBy:currentUser.uid
+    });
+    await setDoc(doc(db,'clientPortal',token),{
+      token,clientId:ref.id,officeId:officeData.id,
+      clientName:first+' '+last,officeName:officeData.name,
+      officePhone:officeData.phone||'',officeLogo:officeData.branding?.logoUrl||null,
+      cases:[],lastRefreshedAt:serverTimestamp()
+    });
+    closeModal('modal-new-client');
+    ['c-firstname','c-lastname','c-phone','c-email','c-nationality','c-notes'].forEach(id=>document.getElementById(id).value='');
+    showToast(`✓ Cliente ${first} ${last} creado con portal único`,'success');
+    loadData();
+  } catch(err){showToast('Error: '+err.message,'error');}
+};
+
+window.createCase = async function() {
+  const clientId=document.getElementById('case-client-id').value;
+  const title=document.getElementById('case-title').value.trim();
+  if (!clientId||!title){showToast('Cliente y título son requeridos','error');return;}
+  const module=document.getElementById('case-module').value;
+  const caseType=document.getElementById('case-type').value;
+  const status=document.getElementById('case-status').value;
+  const priority=document.getElementById('case-priority').value;
+  const clientNote=document.getElementById('case-client-note').value.trim();
+  try {
+    await addDoc(collection(db,'cases'),{
+      officeId:officeData.id,clientId,module,caseType,title,status,priority,
+      clientPortalNote:clientNote,showInClientPortal:true,
+      openedAt:serverTimestamp(),createdBy:currentUser.uid,updatedAt:serverTimestamp()
+    });
+    const client=clientsCache.find(c=>c.id===clientId);
+    if (client?.clientToken) {
+      const portalRef=doc(db,'clientPortal',client.clientToken);
+      const snap=await getDoc(portalRef);
+      if (snap.exists()) {
+        const cases=[...(snap.data().cases||[]),{
+          caseType,module,title,status,
+          statusLabel:STATUS_CONFIG[status]?.label||status,
+          lastUpdate:clientNote||'Caso abierto',
+          lastUpdateAt:{seconds:Math.floor(Date.now()/1000)},clientNote
+        }];
+        await updateDoc(portalRef,{cases,lastRefreshedAt:serverTimestamp()});
+      }
+    }
+    closeModal('modal-new-case');
+    showToast('✓ Caso creado y portal del cliente actualizado','success');
+    loadData();
+  } catch(err){showToast('Error: '+err.message,'error');}
+};
+
+window.updateCaseStatus = function(caseId, current) {
+  const newStatus=prompt(`Estado actual: ${STATUS_CONFIG[current]?.label||current}\n\nNuevo estado:\nnew, in_progress, pending_docs, submitted, approved, denied, closed`);
+  if (!newStatus) return;
+  updateDoc(doc(db,'cases',caseId),{status:newStatus,updatedAt:serverTimestamp()})
+    .then(()=>{showToast('✓ Estado actualizado','success');loadData();})
+    .catch(err=>showToast('Error: '+err.message,'error'));
+};
+
+window.openNewCaseForClient = function(clientId) {
+  document.getElementById('case-client-id').value=clientId;
+  updateCaseTypes();
+  openModal('modal-new-case');
+};
+
+window.updateCaseTypes = function() {
+  const types=CASE_TYPES[document.getElementById('case-module').value]||[];
+  document.getElementById('case-type').innerHTML=types.map(t=>`<option value="${t}">${t}</option>`).join('');
+};
+
+window.showPortalLink = function(token) {
+  const url=`https://privas31.github.io/ImmigPath/portal.html?token=${token}`;
+  document.getElementById('portal-link-display').textContent=url;
+  window._portalLink=url;
+  openModal('modal-portal');
+};
+
+window.copyPortalLink = function() {
+  navigator.clipboard.writeText(window._portalLink||'');
+  showToast('✓ Link copiado','success');
+};
+
+window.filterClients = function(q) {
+  renderClientsTable(clientsCache.filter(c=>`${c.firstName} ${c.lastName}`.toLowerCase().includes(q.toLowerCase())||(c.phone||'').includes(q)));
+};
+
+window.showSection = function(s,btn) {
+  document.querySelectorAll('[id^="section-"]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('section-'+s)?.classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  btn?.classList.add('active');
+};
+window.openModal = function(id){document.getElementById(id)?.classList.remove('hidden');};
+window.closeModal = function(id){document.getElementById(id)?.classList.add('hidden');};
+function showToast(msg,type='success'){const t=document.createElement('div');t.className='toast '+type;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3500);}
+document.querySelectorAll('.modal-backdrop').forEach(bd=>{bd.addEventListener('click',e=>{if(e.target===bd)bd.classList.add('hidden');});});
+updateCaseTypes();
+</script>
+</body>
+</html>
