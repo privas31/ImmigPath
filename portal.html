@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Portal — Estado de mis Casos</title>
+<style>
+  :root {
+    --accent: #6366f1;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --purple: #8b5cf6;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#f8fafc; color:#1e293b; font-size:14px; min-height:100vh; }
+
+  .header { background:#fff; border-bottom:1px solid #e2e8f0; padding:0 20px; }
+  .header-inner { max-width:680px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:60px; }
+  .office-brand { display:flex; align-items:center; gap:10px; }
+  .office-logo { width:36px; height:36px; border-radius:8px; background:var(--accent); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:14px; }
+  .office-name { font-weight:600; font-size:15px; }
+  .office-phone { font-size:12px; color:#64748b; }
+  .help-link { font-size:13px; color:var(--accent); text-decoration:none; }
+
+  .container { max-width:680px; margin:0 auto; padding:24px 20px; }
+
+  /* Welcome */
+  .welcome { margin-bottom:24px; }
+  .welcome h1 { font-size:22px; font-weight:700; margin-bottom:4px; }
+  .welcome p { font-size:14px; color:#64748b; }
+
+  /* Status summary */
+  .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+  .summary-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; text-align:center; }
+  .summary-number { font-size:24px; font-weight:700; color:#1e293b; }
+  .summary-label { font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }
+
+  /* Case cards */
+  .section-title { font-size:12px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-bottom:12px; }
+  .case-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:18px; margin-bottom:12px; }
+  .case-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+  .case-module-icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .case-title { flex:1; }
+  .case-name { font-weight:600; font-size:15px; color:#0f172a; }
+  .case-type { font-size:12px; color:#64748b; margin-top:2px; }
+  .case-status { flex-shrink:0; }
+
+  /* Status badge */
+  .status-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+  .status-dot { width:6px; height:6px; border-radius:50%; display:inline-block; }
+
+  /* Progress bar */
+  .progress-section { margin:12px 0; }
+  .progress-label { display:flex; justify-content:space-between; font-size:11px; color:#94a3b8; margin-bottom:6px; }
+  .progress-bar { height:4px; background:#f1f5f9; border-radius:2px; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:2px; transition:width .6s ease; }
+
+  /* Timeline */
+  .timeline { border-top:1px solid #f1f5f9; padding-top:12px; margin-top:12px; }
+  .timeline-title { font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; }
+  .timeline-item { display:flex; gap:10px; margin-bottom:10px; }
+  .timeline-dot { width:8px; height:8px; border-radius:50%; margin-top:4px; flex-shrink:0; }
+  .timeline-content { flex:1; }
+  .timeline-text { font-size:13px; color:#334155; }
+  .timeline-date { font-size:11px; color:#94a3b8; margin-top:2px; }
+
+  /* Office note */
+  .office-note { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px; margin-top:12px; font-size:13px; color:#92400e; }
+  .office-note-label { font-weight:600; font-size:11px; margin-bottom:4px; }
+
+  /* Footer */
+  .footer { max-width:680px; margin:0 auto; padding:20px 20px 32px; text-align:center; color:#94a3b8; font-size:12px; }
+  .footer a { color:var(--accent); text-decoration:none; }
+
+  /* Loading / Error states */
+  .loading-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; }
+  .spinner { width:32px; height:32px; border:3px solid #e2e8f0; border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; margin-bottom:12px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .error-screen { text-align:center; padding:60px 20px; }
+  .error-icon { font-size:48px; margin-bottom:16px; }
+  .error-title { font-size:18px; font-weight:600; color:#1e293b; margin-bottom:8px; }
+  .error-msg { font-size:14px; color:#64748b; }
+  .hidden { display:none; }
+
+  /* Responsive */
+  @media(max-width:480px) {
+    .summary { grid-template-columns:1fr 1fr; }
+    .summary .summary-card:last-child { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-screen" class="loading-screen">
+  <div class="spinner"></div>
+  <p style="color:#64748b;font-size:14px">Cargando tu información...</p>
+</div>
+
+<div id="error-screen" class="error-screen hidden">
+  <div class="error-icon">🔒</div>
+  <div class="error-title">Portal no encontrado</div>
+  <div class="error-msg">Este enlace no es válido o ha expirado.<br>Contacta a tu oficina para obtener un nuevo enlace.</div>
+</div>
+
+<div id="portal-content" class="hidden">
+  <header class="header">
+    <div class="header-inner">
+      <div class="office-brand">
+        <div class="office-logo" id="office-logo-initials">OF</div>
+        <div>
+          <div class="office-name" id="office-name-display">Oficina</div>
+          <div class="office-phone" id="office-phone-display"></div>
+        </div>
+      </div>
+      <a href="#" class="help-link" id="office-contact-link">Contactar oficina</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="welcome">
+      <h1>Hola, <span id="client-name">Cliente</span> 👋</h1>
+      <p>Aquí puedes ver el estado actualizado de tus casos</p>
+    </div>
+
+    <div class="summary">
+      <div class="summary-card">
+        <div class="summary-number" id="total-cases-count">0</div>
+        <div class="summary-label">Casos totales</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-number" id="active-cases-count" style="color:var(--blue)">0</div>
+        <div class="summary-label">En proceso</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-number" id="resolved-cases-count" style="color:var(--green)">0</div>
+        <div class="summary-label">Resueltos</div>
+      </div>
+    </div>
+
+    <div class="section-title">Mis Casos</div>
+    <div id="cases-container"></div>
+  </div>
+
+  <div class="footer">
+    Información actualizada por <strong id="footer-office-name">tu oficina</strong><br>
+    Si tienes preguntas, <a href="#" id="footer-contact">contáctanos</a> · 
+    <span id="last-updated">—</span>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ═══════════════════════════════════════════════
+//  🔧 MISMO Firebase config que el Super Admin
+// ═══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
+  authDomain: "immigration-platform-11380.firebaseapp.com",
+  projectId: "immigration-platform-11380",
+  storageBucket: "immigration-platform-11380.firebasestorage.app",
+  messagingSenderId: "682062748742",
+  appId: "1:682062748742:web:5b2466ddf7d8ae05a67e47",
+  measurementId: "G-3VXLEW9B2M"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ── Get token from URL ──────────────────────────
+// URL format: /portal/{token}  OR  /portal?token={token}
+const pathParts = window.location.pathname.split('/');
+const token = pathParts[pathParts.length - 1] ||
+              new URLSearchParams(window.location.search).get('token');
+
+async function loadPortal() {
+  if (!token) { showError(); return; }
+
+  try {
+    // Read from /clientPortal/{token} — public read, no auth needed
+    const portalDoc = await getDoc(doc(db, 'clientPortal', token));
+
+    if (!portalDoc.exists()) { showError(); return; }
+
+    const data = portalDoc.data();
+
+    // ── Render office branding ──
+    document.getElementById('office-name-display').textContent = data.officeName || 'Tu Oficina';
+    document.getElementById('office-phone-display').textContent = data.officePhone || '';
+    document.getElementById('office-logo-initials').textContent =
+      (data.officeName || 'OF').substring(0, 2).toUpperCase();
+    document.getElementById('footer-office-name').textContent = data.officeName || 'tu oficina';
+
+    if (data.officePhone) {
+      const tel = `tel:${data.officePhone.replace(/\D/g,'')}`;
+      document.getElementById('office-contact-link').href = tel;
+      document.getElementById('footer-contact').href = tel;
+    }
+
+    // ── Render client name ──
+    document.getElementById('client-name').textContent = data.clientName?.split(' ')[0] || 'Cliente';
+    document.title = `Portal de ${data.clientName || 'Cliente'} — ${data.officeName || ''}`;
+
+    // ── Render cases ──
+    const cases = data.cases || [];
+    const activeCases = cases.filter(c => !['approved','closed','resolved','delivered'].includes(c.status));
+    const resolvedCases = cases.filter(c => ['approved','closed','resolved','delivered'].includes(c.status));
+
+    document.getElementById('total-cases-count').textContent = cases.length;
+    document.getElementById('active-cases-count').textContent = activeCases.length;
+    document.getElementById('resolved-cases-count').textContent = resolvedCases.length;
+
+    const container = document.getElementById('cases-container');
+    if (!cases.length) {
+      container.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8">No hay casos registrados aún</div>`;
+    } else {
+      container.innerHTML = cases.map(c => renderCaseCard(c)).join('');
+    }
+
+    // Last updated
+    if (data.lastRefreshedAt?.seconds) {
+      const d = new Date(data.lastRefreshedAt.seconds * 1000);
+      document.getElementById('last-updated').textContent =
+        'Actualizado: ' + d.toLocaleDateString('es-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+
+    showPortal();
+  } catch (err) {
+    console.error(err);
+    showError();
+  }
+}
+
+const MODULE_CONFIG = {
+  immigration: { icon:'🏛️', bg:'#ede9fe', label:'Inmigración' },
+  taxes:       { icon:'🧾', bg:'#d1fae5', label:'Taxes' },
+  insurance:   { icon:'🛡️', bg:'#fef3c7', label:'Seguros' },
+  notary:      { icon:'📋', bg:'#e0f2fe', label:'Notaría' },
+};
+
+const STATUS_CONFIG = {
+  new:             { label:'Nuevo', color:'#6b7280', bg:'#f3f4f6', progress:5 },
+  in_progress:     { label:'En proceso', color:'#3b82f6', bg:'#eff6ff', progress:35 },
+  pending_docs:    { label:'Esperando documentos', color:'#f59e0b', bg:'#fffbeb', progress:50 },
+  submitted:       { label:'Sometido', color:'#8b5cf6', bg:'#ede9fe', progress:70 },
+  approved:        { label:'Aprobado ✓', color:'#10b981', bg:'#ecfdf5', progress:100 },
+  denied:          { label:'Negado', color:'#ef4444', bg:'#fef2f2', progress:100 },
+  closed:          { label:'Cerrado', color:'#374151', bg:'#f9fafb', progress:100 },
+  gathering_docs:  { label:'Recopilando documentos', color:'#f59e0b', bg:'#fffbeb', progress:20 },
+  in_review:       { label:'En revisión', color:'#3b82f6', bg:'#eff6ff', progress:50 },
+  client_review:   { label:'Revisión del cliente', color:'#8b5cf6', bg:'#ede9fe', progress:65 },
+  filed:           { label:'Sometido al IRS', color:'#10b981', bg:'#ecfdf5', progress:85 },
+  refund_issued:   { label:'Reembolso emitido ✓', color:'#059669', bg:'#ecfdf5', progress:100 },
+  active:          { label:'Activa', color:'#10b981', bg:'#ecfdf5', progress:100 },
+  appointment:     { label:'Cita programada', color:'#3b82f6', bg:'#eff6ff', progress:30 },
+  completed:       { label:'Completado ✓', color:'#10b981', bg:'#ecfdf5', progress:100 },
+  delivered:       { label:'Entregado ✓', color:'#059669', bg:'#ecfdf5', progress:100 },
+};
+
+function renderCaseCard(c) {
+  const mod = MODULE_CONFIG[c.module] || { icon:'📁', bg:'#f1f5f9', label: c.module };
+  const st = STATUS_CONFIG[c.status] || { label: c.status, color:'#6b7280', bg:'#f3f4f6', progress:0 };
+
+  let deadlineHtml = '';
+  if (c.deadline?.seconds) {
+    const dl = new Date(c.deadline.seconds * 1000);
+    const daysLeft = Math.ceil((dl - Date.now()) / 86400000);
+    const urgency = daysLeft < 7 ? 'color:#ef4444' : daysLeft < 30 ? 'color:#f59e0b' : 'color:#64748b';
+    deadlineHtml = `<div style="font-size:12px;${urgency};margin-top:4px">
+      📅 ${daysLeft > 0 ? `Fecha límite: ${dl.toLocaleDateString('es-US')} (${daysLeft} días)` : 'Fecha límite vencida'}
+    </div>`;
+  }
+
+  const officeNote = c.clientNote ? `
+    <div class="office-note">
+      <div class="office-note-label">Nota de tu oficina:</div>
+      ${c.clientNote}
+    </div>` : '';
+
+  const lastUpdate = c.lastUpdate ? `
+    <div class="timeline">
+      <div class="timeline-title">Última actualización</div>
+      <div class="timeline-item">
+        <div class="timeline-dot" style="background:${st.color}"></div>
+        <div class="timeline-content">
+          <div class="timeline-text">${c.lastUpdate}</div>
+          <div class="timeline-date">${c.lastUpdateAt?.seconds ? 
+            new Date(c.lastUpdateAt.seconds * 1000).toLocaleDateString('es-US', { year:'numeric', month:'long', day:'numeric' }) : ''}</div>
+        </div>
+      </div>
+    </div>` : '';
+
+  return `
+    <div class="case-card">
+      <div class="case-header">
+        <div class="case-module-icon" style="background:${mod.bg}">${mod.icon}</div>
+        <div class="case-title">
+          <div class="case-name">${c.title || c.caseType || 'Caso'}</div>
+          <div class="case-type">${mod.label} · ${c.caseType || ''}</div>
+          ${deadlineHtml}
+        </div>
+        <div class="case-status">
+          <span class="status-badge" style="background:${st.bg};color:${st.color}">
+            <span class="status-dot" style="background:${st.color}"></span>
+            ${st.label}
+          </span>
+        </div>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-label">
+          <span>Progreso del caso</span>
+          <span>${st.progress}%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${st.progress}%;background:${st.color}"></div>
+        </div>
+      </div>
+
+      ${officeNote}
+      ${lastUpdate}
+    </div>`;
+}
+
+function showPortal() {
+  document.getElementById('loading-screen').classList.add('hidden');
+  document.getElementById('portal-content').classList.remove('hidden');
+}
+
+function showError() {
+  document.getElementById('loading-screen').classList.add('hidden');
+  document.getElementById('error-screen').classList.remove('hidden');
+}
+
+loadPortal();
+</script>
+</body>
+</html>
