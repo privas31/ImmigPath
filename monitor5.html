@@ -309,7 +309,8 @@ function App(){
         showToastFn("Cliente actualizado ✓");
       }else{
         // ═══ MULTI-OFFICE: always save officeId ═══
-        const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,createdAt:new Date().toISOString(),createdBy:user.email});
+        const encargadaAuto = formCliente.encargada || userData?.displayName || user.email;
+      const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString(),createdBy:user.email});
         setClientes(prev=>[{id:ref.id,...formCliente,officeId,createdAt:new Date().toISOString()},...prev]);
         showToastFn("Cliente agregado ✓");
       }
