@@ -374,6 +374,8 @@ function App(){
   if(!user||!officeData)return<LoginScreen onLogin={handleLogin}/>;
 
   const officeName=officeData?.name||"Mi Oficina";
+  // ═══ PERMISOS POR ROL ═══
+  const isAdmin = userData?.role==="office_admin" || userData?.role==="superadmin";
 
   return(<div style={{fontFamily:"'Segoe UI',Inter,sans-serif",minHeight:"100vh",background:"#F1F5F9"}}>
 
@@ -383,7 +385,7 @@ function App(){
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10,marginBottom:16}}>
           <div>
             <h1 style={{margin:0,fontSize:19,fontWeight:700}}>🗂 Monitor de Casos de Inmigración</h1>
-            <p style={{margin:"3px 0 0",fontSize:12,opacity:0.65}}>🏢 {officeName} &nbsp;·&nbsp; 👤 {user.email}</p>
+            <p style={{margin:"3px 0 0",fontSize:12,opacity:0.65}}>🏢 {officeName} &nbsp;·&nbsp; 👤 {user.email} &nbsp;·&nbsp; <span style={{background:isAdmin?"rgba(255,255,255,0.2)":"rgba(255,200,0,0.2)",borderRadius:20,padding:"1px 8px",fontSize:11}}>{isAdmin?"👑 Admin":"👩 Empleada"}</span></p>
           </div>
           <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
             <button onClick={()=>{setShowBorradores(true);loadBorradores();}} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600,position:"relative"}}>
@@ -394,9 +396,9 @@ function App(){
               📊 Dashboard
               {(stats.alertas.length>0||stats.vencidos.length>0)&&<span style={{position:"absolute",top:-6,right:-6,background:"#EF4444",color:"#fff",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{stats.alertas.length+stats.vencidos.length}</span>}
             </button>
-            <button onClick={()=>setShowTeam(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>👥 Equipo</button>
-            <button onClick={()=>setShowAddUser(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔐 Usuarios</button>
-            <button onClick={()=>setShowPDF(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 PDF</button>
+            {isAdmin&&<button onClick={()=>setShowTeam(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>👥 Equipo</button>}
+            {isAdmin&&<button onClick={()=>setShowAddUser(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔐 Usuarios</button>}
+            {isAdmin&&<button onClick={()=>setShowPDF(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 PDF</button>}
             <button onClick={openAdd} style={{background:"#fff",color:"#1E40AF",border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>+ Nuevo cliente</button>
             <button onClick={handleLogout} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer"}}>Salir</button>
           </div>
@@ -461,7 +463,7 @@ function App(){
                       {c.email&&<span style={{fontSize:12,color:"#64748B"}}>📧 {c.email}</span>}
                       {c.encargada&&<span style={{fontSize:12,color:"#7C3AED",fontWeight:600,background:"#F5F3FF",borderRadius:20,padding:"1px 8px"}}>👩 {c.encargada}</span>}
                     </div>
-                    {totalP>0&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8}}>
+                    {isAdmin&&totalP>0&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8}}>
                       <div style={{flex:1,background:"#F1F5F9",borderRadius:20,height:6,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`}}/></div>
                       <span style={{fontSize:11,fontWeight:700,color:pc,whiteSpace:"nowrap"}}>{pct!==null?`${pct}%`:"—"}</span>
                       <span style={{fontSize:11,color:"#94A3B8",whiteSpace:"nowrap"}}>{fmtMoney(pagadoP)} / {fmtMoney(totalP)}</span>
@@ -474,7 +476,7 @@ function App(){
                   </div>
                   <div style={{display:"flex",gap:6}}>
                     <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>✏️</button>
-                    <button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);}} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>🗑</button>
+                    {isAdmin&&<button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);}} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>🗑</button>}
                   </div>
                   <span style={{color:"#CBD5E1",fontSize:12}}>{exp?"▲":"▼"}</span>
                 </div>
@@ -519,7 +521,7 @@ function App(){
                             {ca.sistema==="eoir"&&ca.alienNum&&<a href={eoirUrl(ca.alienNum)} target="_blank" rel="noreferrer" style={{background:"#7C3AED",color:"#fff",borderRadius:7,padding:"6px 12px",fontSize:12,textDecoration:"none",fontWeight:600}}>⚖️ Ver en EOIR →</a>}
                             {ca.sistema==="uscis"&&ca.receiptNum&&<a href={uscisUrl(ca.receiptNum)} target="_blank" rel="noreferrer" style={{background:"#0369A1",color:"#fff",borderRadius:7,padding:"6px 12px",fontSize:12,textDecoration:"none",fontWeight:600}}>🏛 Ver en USCIS →</a>}
                           </div>
-                          {(ca.procesos||[]).length>0&&(()=>{
+                          {isAdmin&&(ca.procesos||[]).length>0&&(()=>{
                             const totalC=getTotalProcesos(ca.procesos||[]);const pagadoC=getTotalPagado(ca.procesos||[]);const pctC=getPct(totalC,pagadoC);const pcC=pagoColor(pctC);
                             return(
                               <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"10px 12px"}}>
@@ -589,7 +591,7 @@ function App(){
             <button onClick={addCaso} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>+ Agregar caso</button>
           </div>
           {formCliente.casos.length===0&&<div style={{textAlign:"center",padding:"20px",color:"#94A3B8",fontSize:13,background:"#F8FAFC",borderRadius:10,border:"1px dashed #E2E8F0",marginBottom:14}}>Sin casos. Haz clic en "+ Agregar caso".</div>}
-          {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo}/>))}
+          {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo} isAdmin={isAdmin}/>))}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
             <button onClick={()=>setShowModal(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
             <button onClick={handleSubmit} disabled={!formCliente.nombre||saving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(!formCliente.nombre||saving)?"#E5E7EB":"#1E40AF",color:(!formCliente.nombre||saving)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(!formCliente.nombre||saving)?"not-allowed":"pointer"}}>{saving?"Guardando...":editId?"Guardar cambios":"Agregar cliente"}</button>
@@ -652,14 +654,14 @@ function App(){
               </div>
             ))}
           </div>
-          <div style={{background:"#fff",borderRadius:12,padding:"16px",border:"1px solid #E2E8F0"}}>
+          {isAdmin&&<div style={{background:"#fff",borderRadius:12,padding:"16px",border:"1px solid #E2E8F0"}}>
             <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:14}}>💰 Reporte de cobros</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
               <div style={{background:"#F0FDF4",borderRadius:9,padding:"12px",textAlign:"center",border:"1px solid #BBF7D0"}}><div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Total cobrado</div><div style={{fontSize:18,fontWeight:800,color:"#16A34A"}}>{fmtMoney(stats.totalCobrado)}</div></div>
               <div style={{background:"#FEF2F2",borderRadius:9,padding:"12px",textAlign:"center",border:"1px solid #FECACA"}}><div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Pendiente</div><div style={{fontSize:18,fontWeight:800,color:"#DC2626"}}>{fmtMoney(stats.pendiente)}</div></div>
               <div style={{background:"#EFF6FF",borderRadius:9,padding:"12px",textAlign:"center",border:"1px solid #BFDBFE"}}><div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Total facturado</div><div style={{fontSize:18,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(stats.totalCobrar)}</div></div>
             </div>
-          </div>
+          </div>}
         </div>
       </div>
     )}
@@ -728,7 +730,7 @@ function App(){
 }
 
 // ── Editor de Caso simplificado ──────────────────────────────────────────────
-function CasoEditorSimple({caso,onChange,onDelete}){
+function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,...props}){
   const sys=SISTEMAS[caso.sistema]||SISTEMAS.uscis;
   return(<div style={{background:"#F8FAFC",border:`2px solid ${sys.border}`,borderRadius:10,padding:"14px",marginBottom:12}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
@@ -753,7 +755,7 @@ function CasoEditorSimple({caso,onChange,onDelete}){
     <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de {caso.sistema==="eoir"?"corte":caso.sistema==="foia"?"envío":"cita"}</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
     {caso.sistema==="foia"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tracking FOIA</label><input value={caso.foiaTracking||""} onChange={e=>onChange({...caso,foiaTracking:e.target.value})} placeholder="NRC2024123456" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>}
     <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Notas del caso</label><textarea value={caso.nota||""} onChange={e=>onChange({...caso,nota:e.target.value})} placeholder="Observaciones..." rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
-    <ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>
+    {props.isAdmin&&<ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>}
   </div>);
 }
 
