@@ -776,6 +776,24 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,...props}){
       </div>
     )}
 
+    {/* ESTATUS DEL CASO USCIS — para todos los casos USCIS */}
+    {caso.sistema==="uscis"&&<div style={{marginBottom:10}}>
+      <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.04em"}}>📋 Estatus del caso USCIS</label>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+        {[
+          ["activo","✅ Activo","#16A34A","#F0FDF4","#BBF7D0"],
+          ["referido_eoir","🔒 Cerrado — Referido a EOIR","#7C3AED","#F5F3FF","#DDD6FE"],
+          ["aprobado","🔒 Cerrado — Aprobado","#0369A1","#F0F9FF","#BAE6FD"],
+          ["denegado","🔒 Cerrado — Denegado","#DC2626","#FEF2F2","#FECACA"],
+        ].map(([k,l,color,bg,border])=>(
+          <button key={k} onClick={()=>onChange({...caso,estatusCaso:k})}
+            style={{padding:"8px 8px",borderRadius:8,border:caso.estatusCaso===k?`2px solid ${color}`:`1px solid ${border}`,background:caso.estatusCaso===k?bg:"#fff",color:caso.estatusCaso===k?color:"#374151",fontWeight:caso.estatusCaso===k?700:400,fontSize:11,cursor:"pointer",textAlign:"center"}}>
+            {l}
+          </button>
+        ))}
+      </div>
+    </div>}
+
     {/* EOIR fecha de corte */}
     {caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de corte</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
 
