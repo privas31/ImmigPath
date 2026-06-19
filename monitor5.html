@@ -631,12 +631,12 @@ function App(){
               <Field label="📱 Teléfono" value={formCliente.telefono||""} onChange={v=>setFormCliente(p=>({...p,telefono:v}))} placeholder="(407) 555-1234" type="tel"/>
               <Field label="📧 Email" value={formCliente.email||""} onChange={v=>setFormCliente(p=>({...p,email:v}))} placeholder="cliente@email.com" type="email"/>
             </div>
-            <div style={{marginBottom:11}}>
+            {isAdmin&&<div style={{marginBottom:11}}>
               <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>👩 Encargada</label>
               <select value={formCliente.encargada} onChange={e=>setFormCliente(p=>({...p,encargada:e.target.value}))} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,background:"#fff",cursor:"pointer"}}>
                 <option value="">Sin asignar</option>{equipo.map(m=><option key={m} value={m}>{m}</option>)}
               </select>
-            </div>
+            </div>}
             <div>
               <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>Notas generales</label>
               <textarea value={formCliente.nota} onChange={e=>setFormCliente(p=>({...p,nota:e.target.value}))} placeholder="Observaciones del cliente..." rows={2} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,resize:"vertical",outline:"none"}}/>
