@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super Admin — ImmigPath</title>
+<style>
+  :root {
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--border:rgba(148,163,184,0.15);
+    --text:#f1f5f9;--text2:#94a3b8;--accent:#6366f1;--accent2:#818cf8;
+    --green:#10b981;--yellow:#f59e0b;--red:#ef4444;--radius:10px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;}
+  .app{display:flex;height:100vh;overflow:hidden;}
+  .sidebar{width:240px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+  .main{flex:1;overflow-y:auto;}
+  .logo{padding:20px 16px;border-bottom:1px solid var(--border);}
+  .logo h1{font-size:15px;font-weight:600;}
+  .logo span{font-size:11px;color:var(--accent2);letter-spacing:.5px;text-transform:uppercase;}
+  .nav{padding:12px 8px;flex:1;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--text2);margin-bottom:2px;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-size:13px;}
+  .nav-item:hover{background:var(--bg3);color:var(--text);}
+  .nav-item.active{background:rgba(99,102,241,.15);color:var(--accent2);}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0;}
+  .nav-label{font-size:11px;color:var(--text2);padding:12px 12px 4px;letter-spacing:.5px;text-transform:uppercase;}
+  .sidebar-footer{padding:12px;border-top:1px solid var(--border);}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+  .user-chip{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;}
+  .user-info{flex:1;min-width:0;}
+  .user-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .user-role{font-size:11px;color:var(--accent2);}
+  .header{padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:10;}
+  .header h2{font-size:18px;font-weight:600;}
+  .header-actions{display:flex;gap:8px;}
+  .btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:#5558e8;}
+  .btn-ghost{background:var(--bg3);color:var(--text);}
+  .content{padding:24px 28px;}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .stat-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+  .stat-value{font-size:28px;font-weight:700;}
+  .stat-sub{font-size:12px;color:var(--green);margin-top:4px;}
+  .table-container{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .table-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .table-header h3{font-size:14px;font-weight:600;}
+  .search-input{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:13px;width:220px;outline:none;}
+  .search-input:focus{border-color:var(--accent);}
+  table{width:100%;border-collapse:collapse;}
+  th{padding:10px 18px;text-align:left;font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+  td{padding:13px 18px;border-bottom:1px solid rgba(148,163,184,.07);font-size:13px;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(99,102,241,.03);}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+  .badge-green{background:rgba(16,185,129,.15);color:#34d399;}
+  .badge-red{background:rgba(239,68,68,.15);color:#f87171;}
+  .badge-purple{background:rgba(99,102,241,.15);color:var(--accent2);}
+  .badge-gray{background:var(--bg3);color:var(--text2);}
+  .badge-yellow{background:rgba(245,158,11,.15);color:#fcd34d;}
+  .modules{display:flex;gap:4px;flex-wrap:wrap;}
+  .mod{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:500;}
+  .mod-imm{background:rgba(99,102,241,.2);color:#a5b4fc;}
+  .mod-tax{background:rgba(16,185,129,.2);color:#6ee7b7;}
+  .mod-ins{background:rgba(245,158,11,.2);color:#fcd34d;}
+  .mod-not{background:rgba(139,92,246,.2);color:#c4b5fd;}
+  .actions{display:flex;gap:6px;}
+  .action-btn{padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all .15s;}
+  .action-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+  .modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-title{font-size:16px;font-weight:600;}
+  .modal-close{background:none;border:none;color:var(--text2);cursor:pointer;padding:4px;border-radius:6px;font-size:18px;}
+  .modal-body{padding:24px;}
+  .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+  .form-group{margin-bottom:16px;}
+  .form-label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500;}
+  .form-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s;}
+  .form-input:focus{border-color:var(--accent);}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .module-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .module-toggle{display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;}
+  .module-toggle input{accent-color:var(--accent);}
+  .module-toggle label{font-size:13px;cursor:pointer;}
+  .hidden{display:none;}
+  .empty{text-align:center;padding:48px 20px;color:var(--text2);}
+  .empty-icon{font-size:32px;margin-bottom:12px;}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;z-index:999;animation:slideIn .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.3);}
+  .toast.success{border-color:var(--green);color:var(--green);}
+  .toast.error{border-color:var(--red);color:var(--red);}
+  @keyframes slideIn{from{transform:translateX(20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+  /* LOGIN */
+  .login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;}
+  .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px;width:100%;max-width:380px;}
+  .login-logo{text-align:center;margin-bottom:28px;}
+  .login-logo h1{font-size:24px;font-weight:700;margin-bottom:6px;}
+  .login-logo p{font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:1px;}
+  .login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;margin-bottom:16px;display:none;}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div id="login-screen" class="login-screen" style="display:flex">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>🏛️ ImmigPath</h1>
+      <p>Super Admin · Acceso Restringido</p>
+    </div>
+    <div id="login-err" class="login-err"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="login-email" type="email" placeholder="tu@email.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary" id="login-btn" style="width:100%;padding:11px;font-size:14px;margin-top:4px" onclick="doLogin()">
+      Iniciar Sesión
+    </button>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div class="app" id="main-app" style="display:none">
+  <aside class="sidebar">
+    <div class="logo">
+      <h1>ImmigPath Platform</h1>
+      <span>Super Admin</span>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Principal</div>
+      <button class="nav-item active" onclick="showSection('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="showSection('offices',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        Oficinas
+      </button>
+      <div class="nav-label">Sistema</div>
+      <button class="nav-item" onclick="doSignOut()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Cerrar Sesión
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar" id="avatar-initials">SA</div>
+        <div class="user-info">
+          <div class="user-name" id="admin-name">Super Admin</div>
+          <div class="user-role">superadmin</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div id="section-dashboard">
+      <div class="header">
+        <h2>Dashboard</h2>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="openModal('modal-new-office')">+ Nueva Oficina</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Oficinas Activas</div>
+            <div class="stat-value" id="stat-offices">—</div>
+            <div class="stat-sub" id="stat-offices-sub"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Clientes</div>
+            <div class="stat-value" id="stat-clients">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Casos Activos</div>
+            <div class="stat-value" id="stat-cases">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Ingresos del Mes</div>
+            <div class="stat-value" id="stat-revenue">—</div>
+          </div>
+        </div>
+        <div class="table-container">
+          <div class="table-header">
+            <h3>Oficinas Registradas</h3>
+            <input class="search-input" type="search" placeholder="Buscar oficina..." oninput="filterOffices(this.value)">
+          </div>
+          <table>
+            <thead><tr><th>Oficina</th><th>Plan</th><th>Módulos</th><th>Clientes</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="offices-table-body">
+              <tr><td colspan="6"><div class="empty"><div class="empty-icon">🏢</div>No hay oficinas aún</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- OFFICES -->
+    <div id="section-offices" class="hidden">
+      <div class="header">
+        <h2>Gestión de Oficinas</h2>
+        <button class="btn btn-primary" onclick="openModal('modal-new-office')">+ Nueva Oficina</button>
+      </div>
+      <div class="content">
+        <div class="table-container">
+          <div class="table-header"><h3>Todas las Oficinas</h3></div>
+          <table>
+            <thead><tr><th>Nombre</th><th>Dueño</th><th>Email</th><th>Plan</th><th>Módulos</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="offices-full-table">
+              <tr><td colspan="7"><div class="empty">Cargando...</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nueva Oficina -->
+<div id="modal-new-office" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nueva Oficina</span>
+      <button class="modal-close" onclick="closeModal('modal-new-office')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre de la Oficina *</label>
+        <input class="form-input" id="new-office-name" placeholder="Ej: Rivera & Asociados">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre del Dueño *</label>
+          <input class="form-input" id="new-office-owner" placeholder="Carlos Rivera">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email del Admin *</label>
+          <input class="form-input" id="new-office-email" type="email" placeholder="carlos@oficina.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input class="form-input" id="new-office-phone" placeholder="(555) 000-0000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Plan</label>
+          <select class="form-input" id="new-office-plan">
+            <option value="basic">Básico — $49/mes</option>
+            <option value="professional" selected>Profesional — $99/mes</option>
+            <option value="enterprise">Empresarial — $199/mes</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Módulos Activados</label>
+        <div class="module-grid">
+          <div class="module-toggle"><input type="checkbox" id="mod-imm" value="immigration" checked><label for="mod-imm">🏛️ Inmigración</label></div>
+          <div class="module-toggle"><input type="checkbox" id="mod-tax" value="taxes" checked><label for="mod-tax">🧾 Taxes</label></div>
+          <div class="module-toggle"><input type="checkbox" id="mod-ins" value="insurance"><label for="mod-ins">🛡️ Seguros</label></div>
+          <div class="module-toggle"><input type="checkbox" id="mod-not" value="notary"><label for="mod-not">📋 Notaría</label></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password inicial del Admin *</label>
+        <input class="form-input" id="new-office-pass" type="password" placeholder="Mínimo 8 caracteres">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-office')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createOffice()">Crear Oficina</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
+  authDomain: "immigration-platform-11380.firebaseapp.com",
+  projectId: "immigration-platform-11380",
+  storageBucket: "immigration-platform-11380.firebasestorage.app",
+  messagingSenderId: "682062748742",
+  appId: "1:682062748742:web:5b2466ddf7d8ae05a67e47",
+  measurementId: "G-3VXLEW9B2M"
+};
+
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser = null;
+let officesCache = [];
+
+// ── Auth ─────────────────────────────────────────
+window.doLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-err');
+  const btn = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+  btn.textContent = 'Iniciando sesión...';
+  btn.disabled = true;
+  try {
+    const userCred = await signInWithEmailAndPassword(auth, email, pass);
+    const user = userCred.user;
+    console.log('Auth OK, UID:', user.uid);
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    console.log('Doc exists:', userDoc.exists());
+    if (userDoc.exists() && userDoc.data().role === 'superadmin') {
+      currentUser = { uid: user.uid, ...userDoc.data() };
+      document.getElementById('admin-name').textContent = currentUser.displayName || 'Super Admin';
+      const initials = (currentUser.displayName || 'SA').substring(0,2).toUpperCase();
+      document.getElementById('avatar-initials').textContent = initials;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'flex';
+      loadDashboard();
+    } else {
+      errEl.textContent = 'Acceso denegado. Solo Super Admins.';
+      errEl.style.display = 'block';
+      await signOut(auth);
+      btn.textContent = 'Iniciar Sesión';
+      btn.disabled = false;
+    }
+  } catch(err) {
+    errEl.textContent = 'Error: ' + err.message;
+    errEl.style.display = 'block';
+    btn.textContent = 'Iniciar Sesión';
+    btn.disabled = false;
+  }
+};
+
+document.getElementById('login-pass').addEventListener('keydown', e => {
+  if(e.key === 'Enter') doLogin();
+});
+
+window.doSignOut = async function() {
+  await signOut(auth);
+};
+
+// ── Dashboard ────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const officesSnap = await getDocs(collection(db, 'offices'));
+    officesCache = officesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const active = officesCache.filter(o => o.isActive);
+    document.getElementById('stat-offices').textContent = active.length;
+    document.getElementById('stat-offices-sub').textContent = officesCache.length + ' total';
+    let clients = 0, cases = 0;
+    officesCache.forEach(o => { clients += (o.stats?.totalClients||0); cases += (o.stats?.activeCases||0); });
+    document.getElementById('stat-clients').textContent = clients;
+    document.getElementById('stat-cases').textContent = cases;
+    document.getElementById('stat-revenue').textContent = '$' + (active.length * 99).toLocaleString();
+    renderOfficesTable(officesCache);
+    renderOfficesFullTable(officesCache);
+  } catch(err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+}
+
+function renderOfficesTable(offices) {
+  const tbody = document.getElementById('offices-table-body');
+  if (!offices.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">🏢</div>No hay oficinas. ¡Crea la primera!</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = offices.map(o => `
+    <tr>
+      <td><div style="font-weight:500">${o.name}</div><div style="font-size:11px;color:var(--text2)">${o.email||''}</div></td>
+      <td><span class="badge ${getPlanBadge(o.plan)}">${o.plan||'basic'}</span></td>
+      <td><div class="modules">${renderModulePills(o.enabledModules||[])}</div></td>
+      <td>${o.stats?.totalClients||0}</td>
+      <td><span class="badge ${o.isActive?'badge-green':'badge-red'}">${o.isActive?'● Activa':'○ Inactiva'}</span></td>
+      <td><div class="actions">
+        <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function renderOfficesFullTable(offices) {
+  const tbody = document.getElementById('offices-full-table');
+  tbody.innerHTML = offices.map(o => `
+    <tr>
+      <td><div style="font-weight:500">${o.name}</div></td>
+      <td>${o.ownerName||'—'}</td>
+      <td style="color:var(--text2)">${o.email||'—'}</td>
+      <td><span class="badge ${getPlanBadge(o.plan)}">${o.plan}</span></td>
+      <td><div class="modules">${renderModulePills(o.enabledModules||[])}</div></td>
+      <td><span class="badge ${o.isActive?'badge-green':'badge-red'}">${o.isActive?'Activa':'Inactiva'}</span></td>
+      <td><button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button></td>
+    </tr>`).join('');
+}
+
+function renderModulePills(modules) {
+  const map = {immigration:'mod-imm',taxes:'mod-tax',insurance:'mod-ins',notary:'mod-not'};
+  const labels = {immigration:'Imm',taxes:'Tax',insurance:'Seg',notary:'Not'};
+  return modules.map(m => `<span class="mod ${map[m]||''}">${labels[m]||m}</span>`).join('');
+}
+
+function getPlanBadge(plan) {
+  return {basic:'badge-gray',professional:'badge-purple',enterprise:'badge-yellow'}[plan]||'badge-gray';
+}
+
+// ── Create Office ────────────────────────────────
+window.createOffice = async function() {
+  const name = document.getElementById('new-office-name').value.trim();
+  const owner = document.getElementById('new-office-owner').value.trim();
+  const email = document.getElementById('new-office-email').value.trim();
+  const phone = document.getElementById('new-office-phone').value.trim();
+  const plan = document.getElementById('new-office-plan').value;
+  const pass = document.getElementById('new-office-pass').value;
+  if (!name||!owner||!email||!pass) { showToast('Completa todos los campos requeridos','error'); return; }
+  if (pass.length < 8) { showToast('La contraseña debe tener mínimo 8 caracteres','error'); return; }
+  const modules = ['mod-imm','mod-tax','mod-ins','mod-not']
+    .filter(id => document.getElementById(id).checked)
+    .map(id => ({  'mod-imm':'immigration','mod-tax':'taxes','mod-ins':'insurance','mod-not':'notary'})[id]);
+  try {
+    const userCred = await createUserWithEmailAndPassword(auth, email, pass);
+    const uid = userCred.user.uid;
+    const officeRef = await addDoc(collection(db, 'offices'), {
+      name, ownerName:owner, email, phone, plan, isActive:true,
+      enabledModules:modules,
+      branding:{logoUrl:null,primaryColor:'#6366f1',businessName:name},
+      stats:{totalClients:0,activeCases:0,totalCases:0},
+      createdAt:serverTimestamp(), createdBy:currentUser.uid,
+    });
+    await setDoc(doc(db,'users',uid), {
+      uid, email, displayName:owner, role:'office_admin',
+      officeId:officeRef.id, moduleAccess:modules,
+      isActive:true, createdAt:serverTimestamp(),
+    });
+    closeModal('modal-new-office');
+    showToast('✓ Oficina "'+name+'" creada exitosamente','success');
+    loadDashboard();
+  } catch(err) {
+    showToast('Error: '+err.message,'error');
+  }
+};
+
+window.toggleOffice = async function(id, isActive) {
+  try {
+    await updateDoc(doc(db,'offices',id), {isActive:!isActive});
+    showToast(isActive?'Oficina desactivada':'Oficina activada','success');
+    loadDashboard();
+  } catch(err) { showToast('Error: '+err.message,'error'); }
+};
+
+window.filterOffices = function(q) {
+  const filtered = officesCache.filter(o => o.name.toLowerCase().includes(q.toLowerCase()));
+  renderOfficesTable(filtered);
+};
+
+// ── UI ───────────────────────────────────────────
+window.showSection = function(section, btn) {
+  document.querySelectorAll('[id^="section-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('section-'+section)?.classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  btn?.classList.add('active');
+};
+
+window.openModal = function(id) { document.getElementById(id)?.classList.remove('hidden'); };
+window.closeModal = function(id) { document.getElementById(id)?.classList.add('hidden'); };
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = 'toast '+type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', e => { if(e.target===bd) bd.classList.add('hidden'); });
+});
+</script>
+</body>
+</html>
