@@ -65,20 +65,20 @@ const { useState, useEffect, useCallback } = React;
 //  Configuracin 
 const SISTEMAS = {
   uscis: { label:"USCIS", icon:"🏛", color:"#0369A1", bg:"#F0F9FF", border:"#BAE6FD",
-    tiposCaso:["I-485 Ajuste de estatus","I-130 Petición familiar","I-765 Permiso de trabajo","I-131 Advance Parole","N-400 Naturalización","I-589 Asilo","I-90 Renovar Green Card","Otro"] },
+    tiposCaso:["I-485 Ajuste de estatus","I-130 Peticion familiar","I-765 Permiso de trabajo","I-131 Advance Parole","N-400 Naturalizacion","I-589 Asilo","I-90 Renovar Green Card","Otro"] },
   eoir:  { label:"EOIR",  icon:"⚖️", color:"#7C3AED", bg:"#F5F3FF", border:"#DDD6FE",
-    tiposCaso:["Asilo","Deportación","Cancelación","Ajuste de estatus","Apelación","Otro"] },
+    tiposCaso:["Asilo","Deportacion","Cancelacion","Ajuste de estatus","Apelacion","Otro"] },
   foia:  { label:"FOIA",  icon:"📂", color:"#0891B2", bg:"#ECFEFF", border:"#A5F3FC",
     tiposCaso:["FOIA - Expediente migratorio","FOIA - Expediente USCIS","FOIA - Expediente ICE","FOIA - Expediente CBP","Otro"] },
 };
 const FOIA_ESTADOS = ["Enviado","En proceso","Respuesta recibida","Cerrado"];
-const PROCESOS_COMUNES = ["Asilo (I-589)","Permiso de trabajo (I-765)","Ajuste de estatus (I-485)","Petición familiar (I-130)","Advance Parole (I-131)","Naturalización (N-400)","Renovar Green Card (I-90)","Cancelación de deportación","FOIA","Consultoría","Otro"];
+const PROCESOS_COMUNES = ["Asilo (I-589)","Permiso de trabajo (I-765)","Ajuste de estatus (I-485)","Peticion familiar (I-130)","Advance Parole (I-131)","Naturalizacion (N-400)","Renovar Green Card (I-90)","Cancelacion de deportación","FOIA","Consultoria","Otro"];
 const STATUS_CONFIG = {
   vencido:{label:"Vencida",color:"#DC2626",bg:"#FEF2F2",border:"#FECACA",icon:"🔴"},
   hoy:{label:"Hoy",color:"#EA580C",bg:"#FFF7ED",border:"#FED7AA",icon:"🟠"},
   urgente:{label:"Urgente",color:"#D97706",bg:"#FFFBEB",border:"#FDE68A",icon:"🟡"},
-  proximo:{label:"Próxima",color:"#2563EB",bg:"#EFF6FF",border:"#BFDBFE",icon:"🔵"},
-  ok:{label:"Al día",color:"#16A34A",bg:"#F0FDF4",border:"#BBF7D0",icon:"🟢"},
+  proximo:{label:"Proxima",color:"#2563EB",bg:"#EFF6FF",border:"#BFDBFE",icon:"🔵"},
+  ok:{label:"Al dia",color:"#16A34A",bg:"#F0FDF4",border:"#BBF7D0",icon:"🟢"},
   pendiente:{label:"Pendiente",color:"#6B7280",bg:"#F9FAFB",border:"#E5E7EB",icon:"⚪"},
 };
 
@@ -181,7 +181,7 @@ function LoginScreen({onLogin}){
             :<div style={{fontSize:48}}>⚖️</div>
           }
         </div>
-        <h1 style={{fontSize:22,fontWeight:800,color:"#0F172A",margin:0}}>{loginName||"Monitor de Inmigración"}</h1>
+        <h1 style={{fontSize:22,fontWeight:800,color:"#0F172A",margin:0}}>{loginName||"Monitor de Inmigracion"}</h1>
         <p style={{fontSize:13,color:"#64748B",marginTop:6}}>Ingresa con tu cuenta para continuar</p>
       </div>
       <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" onKeyDown={e=>e.key==="Enter"&&login()} style={{width:"100%",padding:"11px 13px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/></div>
@@ -830,7 +830,7 @@ const loadTeam=async()=>{
           <div>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               {officeLogo?<img src={officeLogo} alt="Logo" style={{height:36,width:36,borderRadius:8,objectFit:"contain",background:"rgba(255,255,255,0.1)",padding:2}}/>:<span style={{fontSize:28}}>⚖️</span>}
-              <h1 style={{margin:0,fontSize:19,fontWeight:700}}>Monitor de Casos de Inmigración</h1>
+              <h1 style={{margin:0,fontSize:19,fontWeight:700}}>Monitor de Casos de Inmigracion</h1>
             </div>
             <p style={{margin:"3px 0 0",fontSize:12,opacity:0.65}}>🏢 {officeName} &nbsp;·&nbsp; 👤 {user.email} &nbsp;·&nbsp; <span style={{background:isAdmin?"rgba(255,255,255,0.2)":"rgba(255,200,0,0.2)",borderRadius:20,padding:"1px 8px",fontSize:11}}>{isAdmin?"👑 Admin":"👩 Empleada"}</span></p>
           </div>
@@ -843,7 +843,7 @@ const loadTeam=async()=>{
               📊 Dashboard
               {(stats.alertas.length>0||stats.vencidos.length>0)&&<span style={{position:"absolute",top:-6,right:-6,background:"#EF4444",color:"#fff",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{stats.alertas.length+stats.vencidos.length}</span>}
             </button>
-            {isAdmin&&<button onClick={()=>setShowNomina(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>💰 Nómina</button>}
+            {isAdmin&&<button onClick={()=>setShowNomina(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>💰 Nomina</button>}
             {isAdmin&&<button onClick={()=>setShowPagosConfig(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>⚙️ Pagos</button>}
             {isAdmin&&<button onClick={()=>setShowPagosReporte(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📊 Cobros</button>}
             {isAdmin&&<button onClick={()=>setShowTeam(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>👥 Equipo</button>}
@@ -856,10 +856,10 @@ const loadTeam=async()=>{
         
         <div style={{display:"flex",gap:0,borderBottom:"2px solid rgba(255,255,255,0.15)",marginBottom:0}}>
           <button onClick={()=>setModuloActivo("inmigracion")} style={{background:"transparent",border:"none",color:moduloActivo==="inmigracion"?"#fff":"rgba(255,255,255,0.55)",fontWeight:moduloActivo==="inmigracion"?700:400,fontSize:13,padding:"10px 18px",cursor:"pointer",borderBottom:moduloActivo==="inmigracion"?"3px solid #fff":"3px solid transparent",marginBottom:"-2px"}}>
-            🏛 Inmigración <span style={{background:"rgba(255,255,255,0.18)",borderRadius:20,padding:"1px 7px",fontSize:11,marginLeft:4}}>{clientes.length}</span>
+            🏛 Inmigracion <span style={{background:"rgba(255,255,255,0.18)",borderRadius:20,padding:"1px 7px",fontSize:11,marginLeft:4}}>{clientes.length}</span>
           </button>
           <button onClick={()=>setModuloActivo("notaria")} style={{background:"transparent",border:"none",color:moduloActivo==="notaria"?"#fff":"rgba(255,255,255,0.55)",fontWeight:moduloActivo==="notaria"?700:400,fontSize:13,padding:"10px 18px",cursor:"pointer",borderBottom:moduloActivo==="notaria"?"3px solid #C084FC":"3px solid transparent",marginBottom:"-2px"}}>
-            📋 Notaría <span style={{background:"rgba(255,255,255,0.18)",borderRadius:20,padding:"1px 7px",fontSize:11,marginLeft:4}}>{clientesNotaria.length}</span>
+            📋 Notaria <span style={{background:"rgba(255,255,255,0.18)",borderRadius:20,padding:"1px 7px",fontSize:11,marginLeft:4}}>{clientesNotaria.length}</span>
           </button>
         </div>
         
@@ -871,7 +871,7 @@ const loadTeam=async()=>{
           ))}
         </div>}
         <div style={{display:"flex",gap:7,padding:"12px 0",flexWrap:"wrap"}}>
-          {[["vencido","🔴","Vencidas"],["hoy","🟠","Hoy"],["urgente","🟡","Urgentes"],["proximo","🔵","Próximas"],["ok","🟢","Al día"],["pendiente","⚪","Sin fecha"]].map(([k,icon,label])=>(
+          {[["vencido","🔴","Vencidas"],["hoy","🟠","Hoy"],["urgente","🟡","Urgentes"],["proximo","🔵","Proximas"],["ok","🟢","Al dia"],["pendiente","⚪","Sin fecha"]].map(([k,icon,label])=>(
             <div key={k} onClick={()=>setFiltroStatus(filtroStatus===k?"todos":k)} style={{background:filtroStatus===k?"rgba(255,255,255,0.25)":"rgba(255,255,255,0.1)",borderRadius:8,padding:"6px 12px",cursor:"pointer",border:filtroStatus===k?"1px solid rgba(255,255,255,0.5)":"1px solid transparent",display:"flex",alignItems:"center",gap:5}}>
               <span style={{fontSize:13}}>{icon}</span><span style={{fontSize:17,fontWeight:700}}>{cnt(k,filtroSistema==="todos"?"todos":filtroSistema)}</span><span style={{fontSize:10,opacity:0.8}}>{label}</span>
             </div>
@@ -886,7 +886,7 @@ const loadTeam=async()=>{
         <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Nombre, A#, recibo, FOIA tracking, encargada, país..." style={{flex:1,minWidth:200,padding:"9px 14px",borderRadius:8,border:"1px solid #CBD5E1",fontSize:14,background:"#fff",outline:"none"}}/>
         <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #CBD5E1",fontSize:13,background:"#fff",cursor:"pointer"}}><option value="fecha">Por fecha</option><option value="nombre">Por nombre</option></select>
         <select value={filtroStatus} onChange={e=>setFiltroStatus(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #CBD5E1",fontSize:13,background:"#fff",cursor:"pointer"}}>
-          <option value="todos">Todos los estados</option><option value="vencido">🔴 Vencidas</option><option value="hoy">🟠 Hoy</option><option value="urgente">🟡 Urgentes</option><option value="proximo">🔵 Próximas</option><option value="ok">🟢 Al día</option><option value="pendiente">⚪ Sin fecha</option>
+          <option value="todos">Todos los estados</option><option value="vencido">🔴 Vencidas</option><option value="hoy">🟠 Hoy</option><option value="urgente">🟡 Urgentes</option><option value="proximo">🔵 Proximas</option><option value="ok">🟢 Al dia</option><option value="pendiente">⚪ Sin fecha</option>
         </select>
       </div>
     </div>
@@ -1029,9 +1029,9 @@ const loadTeam=async()=>{
                     </div>}
                   </div>
                   <div style={{textAlign:"center",minWidth:95}}>
-                    <div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.04em"}}>Próxima fecha</div>
+                    <div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.04em"}}>Proxima fecha</div>
                     <div style={{fontWeight:700,color:"#0F172A",fontSize:15}}>{pf?fmt(pf):"—"}</div>
-                    {dias!==null&&<div style={{fontSize:11,color:scfg.color,fontWeight:600,marginTop:1}}>{dias<0?`Hace ${Math.abs(dias)}d`:dias===0?"¡HOY!":`En ${dias}d`}</div>}
+                    {dias!==null&&<div style={{fontSize:11,color:scfg.color,fontWeight:600,marginTop:1}}>{dias<0?`Hace ${Math.abs(dias)}d`:dias===0?"HOY!":`En ${dias}d`}</div>}
                   </div>
                   <div style={{display:"flex",gap:6}}>
                     <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>✏️</button>
@@ -1075,18 +1075,18 @@ const loadTeam=async()=>{
                                   <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:8}}>
                                     <div style={{textAlign:"center"}}>
                                       <div style={{fontSize:32,fontWeight:800,color:colorReloj,lineHeight:1}}>{diasReloj}</div>
-                                      <div style={{fontSize:11,color:"#A5B4FC"}}>días transcurridos</div>
+                                      <div style={{fontSize:11,color:"#A5B4FC"}}>dias transcurridos</div>
                                     </div>
                                     <div style={{flex:1}}>
                                       <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                                         <span style={{fontSize:11,color:"#A5B4FC"}}>Presentado: {fmt(ca.fechaAsilo)}</span>
-                                        <span style={{fontSize:11,color:"#A5B4FC"}}>Meta: 180 días</span>
+                                        <span style={{fontSize:11,color:"#A5B4FC"}}>Meta: 180 dias</span>
                                       </div>
                                       <div style={{background:"#312E81",borderRadius:20,height:10,overflow:"hidden"}}>
                                         <div style={{height:"100%",borderRadius:20,background:colorReloj,width:`${pctReloj}%`}}/>
                                       </div>
                                       <div style={{fontSize:11,color:colorReloj,fontWeight:700,marginTop:4}}>
-                                        {diasReloj>=180?`✅ Elegible para EAD — lleva ${diasReloj} días`:`⏳ Faltan ${180-diasReloj} días para aplicar al EAD`}
+                                        {diasReloj>=180?`✅ Elegible para EAD — lleva ${diasReloj} dias`:`⏳ Faltan ${180-diasReloj} dias para aplicar al EAD`}
                                       </div>
                                     </div>
                                   </div>
@@ -1095,23 +1095,20 @@ const loadTeam=async()=>{
                             })()}
 
                             
-                            {ca.fechaCorte&&ca.sistema!=="foia"&&(()=>{
-                              const label=ca.sistema==="eoir"?"📅 Fecha de corte":(ca.tipoCaso||"").includes("I-589")?(ca.tipoCita==="huellas"?"🫆 Biometrics":"🎤 Fecha de entrevista"):"📅 Fecha de cita";
-                              return(
-                                <div style={{gridColumn:"1/-1",background:scfgCaso.bg,border:`2px solid ${scfgCaso.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-                                  <div><div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600,marginBottom:4}}>{label}</div><div style={{fontSize:28,fontWeight:800,color:scfgCaso.color,lineHeight:1}}>{fmt(ca.fechaCorte)}</div></div>
-                                  <div style={{textAlign:"center"}}>
-                                    <div style={{background:scfgCaso.color,color:"#fff",borderRadius:20,padding:"6px 16px",fontSize:13,fontWeight:700}}>
-                                      {diasFecha!==null?(diasFecha<0?`Hace ${Math.abs(diasFecha)} días`:diasFecha===0?"¡HOY!":`En ${diasFecha} días`):"-"}
-                                    </div>
-                                    <div style={{fontSize:11,color:"#94A3B8",marginTop:4}}>{scfgCaso.icon} {scfgCaso.label}</div>
-                                  </div>
+                            {ca.fechaCorte&&ca.sistema!=="foia"&&<div style={{gridColumn:"1/-1",background:scfgCaso.bg,border:"2px solid "+scfgCaso.border,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                              <div>
+                                <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600,marginBottom:4}}>{ca.sistema==="eoir"?"Fecha de corte":(ca.tipoCaso||"").includes("I-589")?(ca.tipoCita==="huellas"?"Biometrics":"Fecha de entrevista"):"Fecha de cita"}</div>
+                                <div style={{fontSize:28,fontWeight:800,color:scfgCaso.color,lineHeight:1}}>{fmt(ca.fechaCorte)}</div>
+                              </div>
+                              <div style={{textAlign:"center"}}>
+                                <div style={{background:scfgCaso.color,color:"#fff",borderRadius:20,padding:"6px 16px",fontSize:13,fontWeight:700}}>
+                                  {diasFecha===null?"-":diasFecha<0?"Hace "+Math.abs(diasFecha)+" dias":diasFecha===0?"HOY!":"En "+diasFecha+" dias"}
                                 </div>
-                              );
-                            })()}
-
+                                <div style={{fontSize:11,color:"#94A3B8",marginTop:4}}>{scfgCaso.icon} {scfgCaso.label}</div>
+                              </div>
+                            </div>}
                             
-                            {ca.fechaHuellas&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>🫆 Biometrics</div><div style={{fontSize:13,fontWeight:600}}>{fmt(ca.fechaHuellas)}</div></div>}
+                            {ca.fechaHuellas&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Biometrics</div><div style={{fontSize:13,fontWeight:600}}>{fmt(ca.fechaHuellas)}</div></div>}
 
                             
                             {ca.sistema==="foia"&&ca.foiaTracking&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Tracking #</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600,color:"#0891B2"}}>{ca.foiaTracking}</div></div>}
@@ -1123,7 +1120,7 @@ const loadTeam=async()=>{
                               <div style={{fontSize:12,fontWeight:700,color:ca.tieneEAD==="si"?"#15803D":"#DC2626",marginBottom:ca.eadVence?6:0}}>{ca.tieneEAD==="si"?"✅ Tiene EAD":"❌ Sin EAD — Puede aplicar"}</div>
                               {ca.eadVence&&<div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
                                 <div><div style={{fontSize:10,color:"#6B7280",textTransform:"uppercase"}}>{ca.tieneEAD==="si"?"Vence":"Puede aplicar el"}</div><div style={{fontSize:13,fontWeight:700,color:ca.tieneEAD==="si"&&getDias(ca.eadVence)!==null&&getDias(ca.eadVence)<=30?"#DC2626":"#15803D"}}>{fmt(ca.eadVence)}{ca.tieneEAD==="si"&&getDias(ca.eadVence)!==null&&getDias(ca.eadVence)<=30&&" ⚠️"}</div></div>
-                                {ca.tieneEAD==="si"&&ca.eadRenovado&&<div><div style={{fontSize:10,color:"#6B7280",textTransform:"uppercase"}}>Renovación</div><div style={{fontSize:12,fontWeight:600,color:ca.eadRenovado==="si"?"#15803D":"#D97706"}}>{ca.eadRenovado==="si"?"✅ Renovado":"⏳ Pendiente renovar"}</div></div>}
+                                {ca.tieneEAD==="si"&&ca.eadRenovado&&<div><div style={{fontSize:10,color:"#6B7280",textTransform:"uppercase"}}>Renovacion</div><div style={{fontSize:12,fontWeight:600,color:ca.eadRenovado==="si"?"#15803D":"#D97706"}}>{ca.eadRenovado==="si"?"✅ Renovado":"⏳ Pendiente renovar"}</div></div>}
                               </div>}
                             </div>}
 
@@ -1175,7 +1172,7 @@ const loadTeam=async()=>{
     {showNotariaModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:520,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
-          <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700,color:"#0F172A"}}>{editNotariaId?"✏️ Editar documento":"📋 Nuevo documento — Notaría"}</h2>
+          <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700,color:"#0F172A"}}>{editNotariaId?"✏️ Editar documento":"📋 Nuevo documento — Notaria"}</h2>
           <div style={{background:"#F5F3FF",borderRadius:10,padding:"14px",marginBottom:16,border:"1px solid #DDD6FE"}}>
             <div style={{fontSize:12,fontWeight:700,color:"#7C3AED",marginBottom:10,textTransform:"uppercase"}}>Información del cliente</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -1527,8 +1524,8 @@ const loadTeam=async()=>{
                 <BtnEstado val="vencido"  label="Vencidas" icon="●" color="#DC2626"/>
                 <BtnEstado val="urgente"  label="Urgentes" icon="●" color="#D97706"/>
                 <BtnEstado val="hoy"      label="Hoy"      icon="●" color="#EA580C"/>
-                <BtnEstado val="proximo"  label="Próximas" icon="●" color="#2563EB"/>
-                <BtnEstado val="ok"       label="Al día"   icon="●" color="#16A34A"/>
+                <BtnEstado val="proximo"  label="Proximas" icon="●" color="#2563EB"/>
+                <BtnEstado val="ok"       label="Al dia"   icon="●" color="#16A34A"/>
               </div>
             </div>
 
@@ -1884,11 +1881,11 @@ const loadTeam=async()=>{
         "Asilo (I-589)": 100,
         "Permiso de trabajo (I-765)": 50,
         "Ajuste de estatus (I-485)": 150,
-        "Petición familiar (I-130)": 100,
-        "Naturalización (N-400)": 80,
-        "Cancelación de deportación": 150,
+        "Peticion familiar (I-130)": 100,
+        "Naturalizacion (N-400)": 80,
+        "Cancelacion de deportación": 150,
         "FOIA": 40,
-        "Consultoría": 30,
+        "Consultoria": 30,
         "Advance Parole (I-131)": 60,
         "Renovar Green Card (I-90)": 80,
         "Otro": 50,
@@ -1920,7 +1917,7 @@ const loadTeam=async()=>{
           <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:760,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
               <div>
-                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>💰 Reporte de Nómina</h2>
+                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>💰 Reporte de Nomina</h2>
                 <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>{officeName} — {new Date().toLocaleDateString("es-US",{month:"long",year:"numeric"})}</p>
               </div>
               <div style={{display:"flex",gap:8}}>
@@ -2301,17 +2298,17 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
           <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tipo de cita</label>
           <select value={caso.tipoCita||""} onChange={e=>onChange({...caso,tipoCita:e.target.value,fechaCorte:"",fechaHuellas:""})} style={{width:"100%",padding:"7px 9px",borderRadius:6,border:"1px solid #BFDBFE",fontSize:13,background:"#fff",cursor:"pointer"}}>
             <option value="">Seleccionar...</option>
-            <option value="huellas">🫆 Biometrics</option>
+            <option value="huellas">Biometrics</option>
             <option value="entrevista">🎤 Entrevista</option>
             <option value="ambas">📅 Ambas</option>
           </select>
         </div>
         {caso.tipoCita==="huellas"&&<div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha Biometrics</label><input type="date" value={caso.fechaHuellas||""} onChange={e=>onChange({...caso,fechaHuellas:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div>}
         {caso.tipoCita==="entrevista"&&<div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>🎤 Fecha de Entrevista</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div>}
-        {caso.tipoCita==="ambas"&&<><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>🫆 Fecha Biometrics</label><input type="date" value={caso.fechaHuellas||""} onChange={e=>onChange({...caso,fechaHuellas:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>🎤 Fecha de Entrevista</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div></>}
+        {caso.tipoCita==="ambas"&&<><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}> Fecha Biometrics</label><input type="date" value={caso.fechaHuellas||""} onChange={e=>onChange({...caso,fechaHuellas:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>🎤 Fecha de Entrevista</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div></>}
         
         <div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#A5B4FC",marginBottom:3,textTransform:"uppercase"}}>⏱️ Fecha en que se ingresó el asilo</label><input type="date" value={caso.fechaAsilo||""} onChange={e=>onChange({...caso,fechaAsilo:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #4338CA",background:"#1E1B4B",color:"#fff",fontSize:13,outline:"none"}}/></div>
-        {caso.fechaAsilo&&(()=>{const inicio=new Date(caso.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);const dias=Math.floor((hoy-inicio)/86400000);const pct=Math.min(100,Math.round((dias/180)*100));const color=dias>=180?"#4ADE80":dias>=120?"#FACC15":"#60A5FA";return(<div style={{background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:8,padding:"10px 12px"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{textAlign:"center",minWidth:50}}><div style={{fontSize:28,fontWeight:800,color,lineHeight:1}}>{dias}</div><div style={{fontSize:10,color:"#A5B4FC"}}>días</div></div><div style={{flex:1}}><div style={{background:"#312E81",borderRadius:20,height:8,overflow:"hidden",marginBottom:4}}><div style={{height:"100%",borderRadius:20,background:color,width:`${pct}%`}}/></div><div style={{fontSize:11,color,fontWeight:600}}>{dias>=180?`✅ Elegible para EAD — ${dias} días`:`⏳ Faltan ${180-dias} días para EAD`}</div></div></div></div>);})()} 
+        {caso.fechaAsilo&&(()=>{const inicio=new Date(caso.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);const dias=Math.floor((hoy-inicio)/86400000);const pct=Math.min(100,Math.round((dias/180)*100));const color=dias>=180?"#4ADE80":dias>=120?"#FACC15":"#60A5FA";return(<div style={{background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:8,padding:"10px 12px"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{textAlign:"center",minWidth:50}}><div style={{fontSize:28,fontWeight:800,color,lineHeight:1}}>{dias}</div><div style={{fontSize:10,color:"#A5B4FC"}}>dias</div></div><div style={{flex:1}}><div style={{background:"#312E81",borderRadius:20,height:8,overflow:"hidden",marginBottom:4}}><div style={{height:"100%",borderRadius:20,background:color,width:`${pct}%`}}/></div><div style={{fontSize:11,color,fontWeight:600}}>{dias>=180?`✅ Elegible para EAD — ${dias} dias`:`⏳ Faltan ${180-dias} dias para EAD`}</div></div></div></div>);})()} 
       </div>
     )}
 
