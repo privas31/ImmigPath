@@ -1311,7 +1311,7 @@ function App(){
                   pdfdoc.setTextColor(255,255,255);
                   pdfdoc.setFontSize(13);
                   pdfdoc.setFont("helvetica","bold");
-                  const officeNamePDF=(officeData?.name||"Oficina").replace(replace(/[^\u0020-\u007E]/g,"");
+                  const officeNamePDF=(officeData?.name||"Oficina").split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("");
                   pdfdoc.text("Reporte de Nomina — "+officeNamePDF, margin, 11);
                   pdfdoc.setFontSize(8);
                   pdfdoc.setFont("helvetica","normal");
@@ -1337,7 +1337,7 @@ function App(){
                       (c.casos||[]).forEach(ca=>{
                         (ca.procesos||[]).forEach(p=>{
                           if(p.nombre){
-                            const key=p.nombre.replace(replace(/[^\u0020-\u007E]/g,"").trim();
+                            const key=p.nombre.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim();
                             if(!key)return;
                             if(!procesos[key])procesos[key]={cantidad:0};
                             procesos[key].cantidad++;
@@ -1347,18 +1347,18 @@ function App(){
                     });
 
                     const empRows=Object.entries(procesos).map(([nombre,data])=>{
-                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.replace(replace(/[^\u0020-\u007E]/g,"").trim()===nombre)||nombre;
+                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim()===nombre)||nombre;
                       const tarifa=tarifasNomina[keyOrig]!==undefined?tarifasNomina[keyOrig]:(TARIFAS_DEFAULT2[keyOrig]||50);
                       return[nombre,String(data.cantidad),"$"+tarifa.toFixed(2),"$"+(tarifa*data.cantidad).toFixed(2)];
                     });
                     const totalEmp=Object.entries(procesos).reduce((s,[nombre,data])=>{
-                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.replace(replace(/[^\u0020-\u007E]/g,"").trim()===nombre)||nombre;
+                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim()===nombre)||nombre;
                       const tarifa=tarifasNomina[keyOrig]!==undefined?tarifasNomina[keyOrig]:(TARIFAS_DEFAULT2[keyOrig]||50);
                       return s+(tarifa*data.cantidad);
                     },0);
                     grandTotal+=totalEmp;
 
-                    const empName=emp.replace(replace(/[^\u0020-\u007E]/g,"");
+                    const empName=emp.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("");
 
                     // Card header de la empleada
                     pdfdoc.setFillColor(241,245,249);
