@@ -190,13 +190,15 @@
           <div class="stat-card"><div class="stat-label">Casos Activos</div><div class="stat-value" id="stat-cases">—</div></div>
           <div class="stat-card"><div class="stat-label">Ingresos del Mes</div><div class="stat-value" id="stat-revenue">—</div></div>
         </div>
+        <div id="office-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:24px"></div>
+
         <div class="table-container">
           <div class="table-header">
             <h3>Oficinas Registradas</h3>
             <input class="search-input" type="search" placeholder="Buscar oficina..." oninput="filterOffices(this.value)">
           </div>
           <table>
-            <thead><tr><th>Oficina</th><th>Plan</th><th>Módulos</th><th>Clientes</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Oficina</th><th>Plan</th><th>Modulos</th><th>Estadisticas</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody id="offices-table-body"><tr><td colspan="6"><div class="empty"><div class="empty-icon">🏢</div>No hay oficinas aún</div></td></tr></tbody>
           </table>
         </div>
@@ -213,7 +215,7 @@
         <div class="table-container">
           <div class="table-header"><h3>Todas las Oficinas</h3></div>
           <table>
-            <thead><tr><th>Nombre</th><th>Dueño</th><th>Email</th><th>Plan</th><th>Módulos</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Dueno</th><th>Email</th><th>Plan</th><th>Modulos</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody id="offices-full-table"><tr><td colspan="7"><div class="empty">Cargando...</div></td></tr></tbody>
           </table>
         </div>
@@ -313,7 +315,7 @@
 <script type="module">
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
@@ -442,6 +444,7 @@ async function loadDashboard() {
   try {
     const officesSnap = await getDocs(collection(db, 'offices'));
     officesCache = officesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderOfficeCards(officesCache);
     const active = officesCache.filter(o => o.isActive);
     document.getElementById('stat-offices').textContent = active.length;
     document.getElementById('stat-offices-sub').textContent = officesCache.length + ' total';
@@ -455,35 +458,143 @@ async function loadDashboard() {
   } catch(err) { showToast('Error: ' + err.message, 'error'); }
 }
 
+async function loadOfficeStats(officeId) {
+  try {
+    const snap = await getDocs(query(collection(db,'clientes'), where('officeId','==',officeId)));
+    const clientes = snap.docs.map(d => d.data());
+    const totalClientes = clientes.length;
+    let totalCobrar = 0, totalCobrado = 0;
+    clientes.forEach(c => {
+      (c.casos||[]).forEach(ca => {
+        (ca.procesos||[]).forEach(p => {
+          totalCobrar += parseFloat((p.precio||'0').toString().replace(/[^0-9.]/g,''))||0;
+          totalCobrado += parseFloat((p.pagado||'0').toString().replace(/[^0-9.]/g,''))||0;
+        });
+      });
+    });
+    // Notaria
+    let totalNotaria = 0;
+    try {
+      const nSnap = await getDocs(query(collection(db,'notaria'), where('officeId','==',officeId)));
+      totalNotaria = nSnap.size;
+    } catch(e) {}
+    return { totalClientes, totalCobrar, totalCobrado, totalNotaria };
+  } catch(e) { return { totalClientes:0, totalCobrar:0, totalCobrado:0, totalNotaria:0 }; }
+}
+
+function fmtM(v) { return '$'+parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+
+function renderOfficeCards(offices) {
+  const container = document.getElementById('office-cards');
+  if (!container) return;
+  if (!offices.length) { container.innerHTML = ''; return; }
+  container.innerHTML = offices.map(o => `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer" onclick="window.open('/app.html?o=${o.id}','_blank')">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        ${o.logoUrl?`<img src="${o.logoUrl}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:rgba(99,102,241,0.1);padding:3px" onerror="this.style.display='none'">`:'<div style="width:36px;height:36px;border-radius:8px;background:rgba(99,102,241,0.15);display:flex;align-items:center;justify-content:center;font-size:18px">🏢</div>'}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.name}</div>
+          <div style="font-size:11px;color:var(--text2)">${o.ownerName||''}</div>
+        </div>
+        <span class="badge ${o.isActive?'badge-green':'badge-red'}" style="font-size:10px">${o.isActive?'Activa':'Inactiva'}</span>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">${renderModulePills(o.enabledModules||[])}</div>
+      <div id="card-stats-${o.id}" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:700;color:var(--accent2)">${o.stats?.totalClients||0}</div>
+          <div style="font-size:10px;color:var(--text2)">Clientes</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:14px;font-weight:700;color:var(--green)" id="card-rev-${o.id}">—</div>
+          <div style="font-size:10px;color:var(--text2)">Cobrado</div>
+        </div>
+      </div>
+      <button onclick="event.stopPropagation();window.open('/app.html?o=${o.id}','_blank')" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);background:rgba(99,102,241,0.1);color:var(--accent2);font-size:12px;font-weight:600;cursor:pointer">Entrar al monitor →</button>
+    </div>`).join('');
+
+  // Cargar estadisticas
+  offices.forEach(async o => {
+    const stats = await loadOfficeStats(o.id);
+    const revEl = document.getElementById('card-rev-'+o.id);
+    if (revEl) revEl.textContent = fmtM(stats.totalCobrado);
+    const statsEl = document.getElementById('card-stats-'+o.id);
+    if (statsEl) {
+      statsEl.innerHTML = `
+        <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:700;color:var(--accent2)">${stats.totalClientes}</div>
+          <div style="font-size:10px;color:var(--text2)">Clientes</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:14px;font-weight:700;color:var(--green)">${fmtM(stats.totalCobrado)}</div>
+          <div style="font-size:10px;color:var(--text2)">Cobrado</div>
+        </div>`;
+    }
+  });
+}
+
 function renderOfficesTable(offices) {
   const tbody = document.getElementById('offices-table-body');
   if (!offices.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">🏢</div>No hay oficinas. ¡Crea la primera!</div></td></tr>'; return; }
   tbody.innerHTML = offices.map(o => `
-    <tr>
-      <td><div style="font-weight:500">${o.name}</div><div style="font-size:11px;color:var(--text2)">${o.email||''}</div></td>
+    <tr id="row-${o.id}">
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${o.logoUrl?`<img src="${o.logoUrl}" style="width:28px;height:28px;border-radius:6px;object-fit:contain;background:rgba(99,102,241,0.1);padding:2px" onerror="this.style.display='none'">`:'<div style="width:28px;height:28px;border-radius:6px;background:rgba(99,102,241,0.15);display:flex;align-items:center;justify-content:center;font-size:14px">🏢</div>'}
+          <div>
+            <div style="font-weight:600">${o.name}</div>
+            <div style="font-size:11px;color:var(--text2)">${o.ownerName||''} · ${o.email||''}</div>
+          </div>
+        </div>
+      </td>
       <td><span class="badge ${getPlanBadge(o.plan)}">${o.plan||'basic'}</span></td>
       <td><div class="modules">${renderModulePills(o.enabledModules||[])}</div></td>
-      <td>${o.stats?.totalClients||0}</td>
+      <td id="stats-${o.id}" style="font-size:12px;color:var(--text2)">
+        <span style="color:var(--accent2);font-weight:600">${o.stats?.totalClients||0}</span> clientes
+      </td>
       <td><span class="badge ${o.isActive?'badge-green':'badge-red'}">${o.isActive?'● Activa':'○ Inactiva'}</span></td>
-      <td><div class="actions">
-        <button class="action-btn" onclick="editOfficeModules('${o.id}')">Módulos</button>
-        <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
-      </div></td>
+      <td>
+        <div class="actions">
+          <button class="action-btn" onclick="window.open('/app.html?o=${o.id}','_blank')" title="Entrar al monitor de esta oficina" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
+          <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
+          <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
+        </div>
+      </td>
     </tr>`).join('');
+
+  // Cargar estadisticas reales para cada oficina
+  offices.forEach(async o => {
+    const stats = await loadOfficeStats(o.id);
+    const el = document.getElementById('stats-'+o.id);
+    if (el) {
+      el.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div><span style="color:var(--accent2);font-weight:600">${stats.totalClientes}</span> <span style="color:var(--text2)">clientes imm.</span></div>
+          ${stats.totalNotaria>0?`<div><span style="color:#c4b5fd;font-weight:600">${stats.totalNotaria}</span> <span style="color:var(--text2)">notaria</span></div>`:''}
+          <div style="font-size:10px;color:var(--green)">${fmtM(stats.totalCobrado)} <span style="color:var(--text2)">cobrado</span></div>
+          ${stats.totalCobrar>stats.totalCobrado?`<div style="font-size:10px;color:var(--red)">${fmtM(stats.totalCobrar-stats.totalCobrado)} <span style="color:var(--text2)">pendiente</span></div>`:''}
+        </div>`;
+    }
+  });
 }
 
 function renderOfficesFullTable(offices) {
   const tbody = document.getElementById('offices-full-table');
   tbody.innerHTML = offices.map(o => `
     <tr>
-      <td><div style="font-weight:500">${o.name}</div></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${o.logoUrl?`<img src="${o.logoUrl}" style="width:24px;height:24px;border-radius:5px;object-fit:contain" onerror="this.style.display='none'">`:''}
+          <div style="font-weight:500">${o.name}</div>
+        </div>
+      </td>
       <td>${o.ownerName||'—'}</td>
       <td style="color:var(--text2)">${o.email||'—'}</td>
       <td><span class="badge ${getPlanBadge(o.plan)}">${o.plan}</span></td>
       <td><div class="modules">${renderModulePills(o.enabledModules||[])}</div></td>
       <td><span class="badge ${o.isActive?'badge-green':'badge-red'}">${o.isActive?'Activa':'Inactiva'}</span></td>
       <td>
-        <button class="action-btn" onclick="editOfficeModules('${o.id}')">Módulos</button>
+        <button class="action-btn" onclick="window.open('/app.html?o=${o.id}','_blank')" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
+        <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
         <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
       </td>
     </tr>`).join('');
