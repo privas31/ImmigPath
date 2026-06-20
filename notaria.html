@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Notaria — ImmigPath</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script>
+(function(){if(typeof window.jspdf!=="undefined"&&window.jspdf.jsPDF){window.jsPDF=window.jspdf.jsPDF;}})();
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
+  authDomain: "immigration-platform-11380.firebaseapp.com",
+  projectId: "immigration-platform-11380",
+  storageBucket: "immigration-platform-11380.firebasestorage.app",
+  messagingSenderId: "682062748742",
+  appId: "1:682062748742:web:5b2466ddf7d8ae05a67e47"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+window._firebase = { auth, db, onAuthStateChanged, signOut, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, getDoc };
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect}=React;
+
+const TIPOS=["Apostilla","Poder Notarial","Traduccion","Carta","Affidavit","Declaracion Jurada","Acta de Nacimiento","Acta de Matrimonio","Divorcio","Otro"];
+
+const ESTADOS={
+  recibido:{label:"Recibido",color:"#6B7280",bg:"#F9FAFB",border:"#E5E7EB",icon:"IN"},
+  en_proceso:{label:"En proceso",color:"#D97706",bg:"#FFFBEB",border:"#FDE68A",icon:"PR"},
+  listo:{label:"Listo",color:"#2563EB",bg:"#EFF6FF",border:"#BFDBFE",icon:"OK"},
+  entregado:{label:"Entregado",color:"#16A34A",bg:"#F0FDF4",border:"#BBF7D0",icon:"DO"},
+};
+
+function fmtMoney(v){if(!v&&v!==0)return"";const n=parseFloat((v||"0").toString().replace(/[^0-9.]/g,""));if(isNaN(n))return"";return"$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function parseMoney(v){return parseFloat((v||"0").toString().replace(/[^0-9.]/g,""))||0;}
+function getPct(t,p){if(!t)return null;return Math.min(100,Math.round((p/t)*100));}
+function pagoColor(pct){if(pct===null)return"#6B7280";if(pct>=100)return"#16A34A";if(pct>=50)return"#D97706";return"#DC2626";}
+function fmt(f){if(!f)return"";const[y,m,d]=f.split("-");return m+"/"+d+"/"+y;}
+function getDias(f){if(!f)return null;const h=new Date();h.setHours(0,0,0,0);return Math.round((new Date(f+"T00:00:00")-h)/86400000);}
+
+function App(){
+  const[user,setUser]=useState(null);
+  const[userData,setUserData]=useState(null);
+  const[officeData,setOfficeData]=useState(null);
+  const[docs,setDocs]=useState([]);
+  const[loading,setLoading]=useState(true);
+  const[showModal,setShowModal]=useState(false);
+  const[editId,setEditId]=useState(null);
+  const[filtroEstado,setFiltroEstado]=useState("todos");
+  const[busqueda,setBusqueda]=useState("todos");
+  const[toast,setToast]=useState(null);
+  const[form,setForm]=useState({nombre:"",telefono:"",email:"",tipoServicio:"",descripcion:"",estado:"recibido",fechaEntrega:"",precioTotal:"",pagado:"",notas:"",encargada:""});
+
+  const showToast=(msg,type="ok")=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
+
+  useEffect(()=>{
+    const{auth,onAuthStateChanged,db,doc,getDoc}=window._firebase;
+    return onAuthStateChanged(auth,async u=>{
+      if(!u){window.location.href="/app.html";return;}
+      try{
+        const ud=await getDoc(doc(db,"users",u.uid));
+        if(!ud.exists()){window.location.href="/app.html";return;}
+        const data=ud.data();
+        setUserData(data);
+        setUser(u);
+        if(data.officeId){
+          const od=await getDoc(doc(db,"offices",data.officeId));
+          if(od.exists())setOfficeData({id:od.id,...od.data()});
+        }
+      }catch(e){window.location.href="/app.html";}
+    });
+  },[]);
+
+  useEffect(()=>{if(user&&officeData)loadDocs();},[user,officeData]);
+
+  const loadDocs=async()=>{
+    setLoading(true);
+    try{
+      const{db,collection,getDocs,query,where,orderBy}=window._firebase;
+      const officeId=officeData?.id||userData?.officeId;
+      let q;
+      try{
+        q=query(collection(db,"notaria"),where("officeId","==",officeId),orderBy("createdAt","desc"));
+        const snap=await getDocs(q);
+        setDocs(snap.docs.map(d=>({id:d.id,...d.data()})));
+      }catch(e){
+        q=query(collection(db,"notaria"),where("officeId","==",officeId));
+        const snap=await getDocs(q);
+        setDocs(snap.docs.map(d=>({id:d.id,...d.data()})));
+      }
+    }catch(e){console.error(e);}
+    setLoading(false);
+  };
+
+  const saveDoc=async()=>{
+    if(!form.nombre||!form.tipoServicio)return;
+    const{db,collection,addDoc,doc,updateDoc}=window._firebase;
+    const officeId=officeData?.id||userData?.officeId||"";
+    try{
+      if(editId){
+        await updateDoc(doc(db,"notaria",editId),{...form,officeId,updatedAt:new Date().toISOString()});
+        setDocs(prev=>prev.map(d=>d.id===editId?{...d,...form,officeId}:d));
+        showToast("Documento actualizado");
+      }else{
+        const ref=await addDoc(collection(db,"notaria"),{...form,officeId,createdAt:new Date().toISOString(),createdBy:user.email});
+        setDocs(prev=>[{id:ref.id,...form,officeId,createdAt:new Date().toISOString()},...prev]);
+        showToast("Documento agregado");
+      }
+      setShowModal(false);
+      setEditId(null);
+      setForm({nombre:"",telefono:"",email:"",tipoServicio:"",descripcion:"",estado:"recibido",fechaEntrega:"",precioTotal:"",pagado:"",notas:"",encargada:""});
+    }catch(e){showToast("Error al guardar","error");}
+  };
+
+  const deleteDoc2=async(id)=>{
+    try{
+      const{db,doc,deleteDoc}=window._firebase;
+      await deleteDoc(doc(db,"notaria",id));
+      setDocs(prev=>prev.filter(d=>d.id!==id));
+      showToast("Eliminado");
+    }catch(e){showToast("Error","error");}
+  };
+
+  const updateEstado=async(id,estado)=>{
+    try{
+      const{db,doc,updateDoc}=window._firebase;
+      await updateDoc(doc(db,"notaria",id),{estado});
+      setDocs(prev=>prev.map(d=>d.id===id?{...d,estado}:d));
+      showToast("Estado actualizado");
+    }catch(e){showToast("Error","error");}
+  };
+
+  const isAdmin=userData?.role==="office_admin"||userData?.role==="superadmin";
+
+  if(!user)return React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",color:"#64748B",fontSize:16}},"Verificando sesion...");
+
+  const filtered=docs.filter(d=>{
+    if(filtroEstado!=="todos"&&d.estado!==filtroEstado)return false;
+    const q=busqueda.toLowerCase();
+    if(q==="todos")return true;
+    return d.nombre.toLowerCase().includes(q)||(d.tipoServicio||"").toLowerCase().includes(q)||(d.telefono||"").includes(q);
+  });
+
+  const officeName=officeData?.name||"Oficina";
+  const officeLogoUrl=officeData?.logoUrl||null;
+
+  return(
+    <div style={{minHeight:"100vh",background:"#F1F5F9"}}>
+
+      {/* HEADER */}
+      <div style={{background:"linear-gradient(135deg,#0F172A 0%,#4C1D95 100%)",padding:"16px 24px",color:"#fff"}}>
+        <div style={{maxWidth:1080,margin:"0 auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              {officeLogoUrl&&<img src={officeLogoUrl} alt="Logo" style={{height:32,width:32,borderRadius:6,objectFit:"contain",background:"rgba(255,255,255,0.1)",padding:2}}/>}
+              <div>
+                <h1 style={{margin:0,fontSize:18,fontWeight:700}}>Notaria — {officeName}</h1>
+                <p style={{margin:"2px 0 0",fontSize:11,opacity:0.65}}>{user.email}</p>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <a href="/app.html" style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5}}>
+                Inmigracion
+              </a>
+              <button onClick={()=>{setEditId(null);setForm({nombre:"",telefono:"",email:"",tipoServicio:"",descripcion:"",estado:"recibido",fechaEntrega:"",precioTotal:"",pagado:"",notas:"",encargada:""});setShowModal(true);}} style={{background:"#7C3AED",color:"#fff",border:"none",borderRadius:8,padding:"7px 16px",fontSize:13,cursor:"pointer",fontWeight:700}}>+ Nuevo documento</button>
+              <button onClick={async()=>{const{auth,signOut}=window._firebase;await signOut(auth);window.location.href="/app.html";}} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer"}}>Salir</button>
+            </div>
+          </div>
+
+          {/* Estadisticas */}
+          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            {Object.entries(ESTADOS).map(([k,v])=>{
+              const count=docs.filter(d=>d.estado===k).length;
+              return(
+                <div key={k} onClick={()=>setFiltroEstado(filtroEstado===k?"todos":k)} style={{background:filtroEstado===k?v.bg:"rgba(255,255,255,0.1)",border:"1px solid "+(filtroEstado===k?v.border:"rgba(255,255,255,0.2)"),borderRadius:8,padding:"7px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:16,fontWeight:800,color:filtroEstado===k?v.color:"#fff"}}>{count}</span>
+                  <span style={{fontSize:11,color:filtroEstado===k?v.color:"rgba(255,255,255,0.7)"}}>{v.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* BUSQUEDA */}
+      <div style={{maxWidth:1080,margin:"16px auto 0",padding:"0 20px"}}>
+        <input value={busqueda==="todos"?"":busqueda} onChange={e=>setBusqueda(e.target.value||"todos")} placeholder="Buscar por nombre, tipo de servicio, telefono..." style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1px solid #CBD5E1",fontSize:14,background:"#fff",outline:"none"}}/>
+      </div>
+
+      {/* LISTA */}
+      <div style={{maxWidth:1080,margin:"14px auto 40px",padding:"0 20px"}}>
+        {loading?<div style={{textAlign:"center",padding:60,color:"#94A3B8"}}>Cargando...</div>:
+        filtered.length===0?<div style={{textAlign:"center",padding:60,color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px solid #E2E8F0"}}>
+          <div style={{fontSize:40,marginBottom:10}}>📋</div>
+          <div style={{marginBottom:16}}>Sin documentos</div>
+          <button onClick={()=>{setShowModal(true);}} style={{background:"#7C3AED",color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:14,cursor:"pointer",fontWeight:600}}>+ Agregar primer documento</button>
+        </div>:
+        <div style={{display:"grid",gap:10}}>
+          {filtered.map(d=>{
+            const st=ESTADOS[d.estado]||ESTADOS.recibido;
+            const totalP=parseMoney(d.precioTotal);
+            const pagadoP=parseMoney(d.pagado);
+            const pct=getPct(totalP,pagadoP);
+            const pc=pagoColor(pct);
+            const dias=getDias(d.fechaEntrega);
+            return(
+              <div key={d.id} style={{background:"#fff",borderRadius:12,border:"1px solid "+st.border,borderLeft:"4px solid "+st.color,padding:"14px 16px",boxShadow:"0 1px 4px rgba(0,0,0,0.05)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10}}>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
+                      <span style={{fontWeight:700,fontSize:15,color:"#0F172A"}}>{d.nombre}</span>
+                      <span style={{background:"#F5F3FF",color:"#7C3AED",border:"1px solid #DDD6FE",borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:600}}>{d.tipoServicio||"Sin tipo"}</span>
+                      <span style={{background:st.bg,color:st.color,border:"1px solid "+st.border,borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:600}}>{st.label}</span>
+                    </div>
+                    <div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:12,color:"#64748B",marginBottom:6}}>
+                      {d.telefono&&<span>Tel: {d.telefono}</span>}
+                      {d.email&&<span>{d.email}</span>}
+                      {d.encargada&&<span style={{color:"#7C3AED",fontWeight:600}}>Encargada: {d.encargada}</span>}
+                      {d.descripcion&&<span style={{fontStyle:"italic"}}>{d.descripcion}</span>}
+                    </div>
+                    {isAdmin&&totalP>0&&<div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
+                      <div style={{flex:1,maxWidth:200,background:"#F1F5F9",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:(pct||0)+"%"}}/></div>
+                      <span style={{fontSize:11,fontWeight:700,color:pc}}>{pct||0}%</span>
+                      <span style={{fontSize:11,color:"#94A3B8"}}>{fmtMoney(pagadoP)} / {fmtMoney(totalP)}</span>
+                    </div>}
+                    {d.notas&&<div style={{marginTop:8,padding:"6px 10px",background:"#F8FAFC",borderRadius:6,fontSize:12,color:"#64748B",fontStyle:"italic"}}>{d.notas}</div>}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
+                    {d.fechaEntrega&&<div style={{textAlign:"right"}}>
+                      <div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase"}}>Entrega</div>
+                      <div style={{fontWeight:700,color:"#0F172A",fontSize:14}}>{fmt(d.fechaEntrega)}</div>
+                      {dias!==null&&<div style={{fontSize:11,fontWeight:600,color:dias<0?"#DC2626":dias===0?"#EA580C":dias<=3?"#D97706":"#2563EB"}}>
+                        {dias<0?"Hace "+Math.abs(dias)+"d":dias===0?"HOY!":dias<=3?"Urg: "+dias+"d":"En "+dias+"d"}
+                      </div>}
+                    </div>}
+                    <div style={{display:"flex",gap:6}}>
+                      <select value={d.estado} onChange={e=>updateEstado(d.id,e.target.value)} style={{padding:"5px 8px",borderRadius:7,border:"1px solid #E2E8F0",background:"#F8FAFC",fontSize:11,cursor:"pointer",color:"#374151"}}>
+                        {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+                      </select>
+                      <button onClick={()=>{setEditId(d.id);setForm({nombre:d.nombre||"",telefono:d.telefono||"",email:d.email||"",tipoServicio:d.tipoServicio||"",descripcion:d.descripcion||"",estado:d.estado||"recibido",fechaEntrega:d.fechaEntrega||"",precioTotal:d.precioTotal||"",pagado:d.pagado||"",notas:d.notas||"",encargada:d.encargada||""});setShowModal(true);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>Editar</button>
+                      {isAdmin&&<button onClick={()=>deleteDoc2(d.id)} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>Eliminar</button>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>}
+      </div>
+
+      {/* MODAL */}
+      {showModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+          <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:520,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
+            <h2 style={{margin:"0 0 16px",fontSize:16,fontWeight:700,color:"#0F172A"}}>{editId?"Editar documento":"Nuevo documento - Notaria"}</h2>
+
+            <div style={{background:"#F5F3FF",borderRadius:10,padding:14,marginBottom:14,border:"1px solid #DDD6FE"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#7C3AED",marginBottom:10,textTransform:"uppercase"}}>Cliente</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Nombre *</label><input value={form.nombre} onChange={e=>setForm(p=>({...p,nombre:e.target.value}))} placeholder="Nombre completo" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
+                <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Telefono</label><input value={form.telefono} onChange={e=>setForm(p=>({...p,telefono:e.target.value}))} placeholder="(407) 555-1234" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
+              </div>
+              <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Email</label><input value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))} placeholder="cliente@email.com" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
+            </div>
+
+            <div style={{background:"#F8FAFC",borderRadius:10,padding:14,marginBottom:14,border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#374151",marginBottom:10,textTransform:"uppercase"}}>Servicio</div>
+              <div style={{marginBottom:10}}>
+                <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:6,textTransform:"uppercase"}}>Tipo de servicio *</label>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {TIPOS.map(t=>(
+                    <button key={t} onClick={()=>setForm(p=>({...p,tipoServicio:t}))} style={{padding:"5px 10px",borderRadius:7,border:form.tipoServicio===t?"2px solid #7C3AED":"1px solid #E2E8F0",background:form.tipoServicio===t?"#F5F3FF":"#fff",color:form.tipoServicio===t?"#7C3AED":"#374151",fontWeight:form.tipoServicio===t?700:400,fontSize:11,cursor:"pointer"}}>{t}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Descripcion</label><input value={form.descripcion} onChange={e=>setForm(p=>({...p,descripcion:e.target.value}))} placeholder="Ej. Poder notarial para venta de propiedad" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Estado</label>
+                  <select value={form.estado} onChange={e=>setForm(p=>({...p,estado:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:12,background:"#fff",cursor:"pointer"}}>
+                    {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+                  </select>
+                </div>
+                <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Fecha de entrega</label><input type="date" value={form.fechaEntrega} onChange={e=>setForm(p=>({...p,fechaEntrega:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:12,outline:"none"}}/></div>
+              </div>
+              {isAdmin&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Precio total</label><input type="number" value={form.precioTotal} onChange={e=>setForm(p=>({...p,precioTotal:e.target.value}))} placeholder="0.00" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
+                <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Pagado</label><input type="number" value={form.pagado} onChange={e=>setForm(p=>({...p,pagado:e.target.value}))} placeholder="0.00" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
+              </div>}
+              <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Encargada</label><input value={form.encargada} onChange={e=>setForm(p=>({...p,encargada:e.target.value}))} placeholder="Nombre de la encargada" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
+              <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Notas</label><textarea value={form.notas} onChange={e=>setForm(p=>({...p,notas:e.target.value}))} placeholder="Documentos recibidos, pendientes, observaciones..." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:12,resize:"vertical",outline:"none"}}/></div>
+            </div>
+
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowModal(false);setEditId(null);}} style={{padding:"9px 18px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:13,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={saveDoc} disabled={!form.nombre||!form.tipoServicio} style={{padding:"9px 18px",borderRadius:8,border:"none",background:(!form.nombre||!form.tipoServicio)?"#E5E7EB":"#7C3AED",color:(!form.nombre||!form.tipoServicio)?"#9CA3AF":"#fff",fontSize:13,fontWeight:600,cursor:(!form.nombre||!form.tipoServicio)?"not-allowed":"pointer"}}>{editId?"Guardar cambios":"Agregar documento"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast&&<div style={{position:"fixed",bottom:24,right:24,background:toast.type==="error"?"#EF4444":"#0F172A",color:"#fff",padding:"11px 18px",borderRadius:10,fontSize:14,fontWeight:500,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",zIndex:200}}>{toast.msg}</div>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>
