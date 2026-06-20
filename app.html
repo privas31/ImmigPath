@@ -144,7 +144,7 @@ function LoginScreen({onLogin}){
       let officeInfo=null;
       if(userData.officeId){
         const officeDoc=await getDoc(doc(db,"offices",userData.officeId));
-        if(officeDoc.exists())officeInfo={id:officeDoc.id,...officeDoc.data()};
+        if(officeDoc.exists()){officeInfo={id:officeDoc.id,...officeDoc.data()};if(officeDoc.data().logoUrl)setOfficeLogo(officeDoc.data().logoUrl);}
       }
       onLogin(cred.user,userData,officeInfo);
     }catch(e){setErr("Email o contraseña incorrectos");}setLoading(false);};
@@ -160,7 +160,7 @@ function LoginScreen({onLogin}){
 
 //  MAIN APP 
 function App(){
-  const[user,setUser]=useState(null);const[userData,setUserData]=useState(null);const[officeData,setOfficeData]=useState(null);
+  const[user,setUser]=useState(null);const[userData,setUserData]=useState(null);const[officeData,setOfficeData]=useState(null);const[officeLogo,setOfficeLogo]=useState(null);
   const[authLoading,setAuthLoading]=useState(true);
   const[clientes,setClientes]=useState([]);const[loading,setLoading]=useState(false);
   const[showModal,setShowModal]=useState(false);const[editId,setEditId]=useState(null);const[formCliente,setFormCliente]=useState(emptyCliente);
@@ -170,6 +170,9 @@ function App(){
   const[confirmDelete,setConfirmDelete]=useState(null);const[expandedId,setExpandedId]=useState(null);const[activeCasoTab,setActiveCasoTab]=useState({});
   const[showPDF,setShowPDF]=useState(false);const[pdfOpts,setPdfOpts]=useState({sistema:"todos",estado:"todos"});
   const[showAddUser,setShowAddUser]=useState(false);const[newUserEmail,setNewUserEmail]=useState("");const[newUserPass,setNewUserPass]=useState("");const[addUserMsg,setAddUserMsg]=useState("");
+  const[newUserName,setNewUserName]=useState("");
+  const[newUserRole,setNewUserRole]=useState("employee");
+  const[addUserLoading,setAddUserLoading]=useState(false);
   const[equipo,setEquipo]=useState([]);const[showTeam,setShowTeam]=useState(false);const[newMember,setNewMember]=useState("");
   const[showDashboard,setShowDashboard]=useState(false);
   const[showNomina,setShowNomina]=useState(false);
@@ -202,7 +205,7 @@ function App(){
           setUserData(ud);
           if(ud.officeId){
             const officeDoc=await getDoc(doc(db,"offices",ud.officeId));
-            if(officeDoc.exists())setOfficeData({id:officeDoc.id,...officeDoc.data()});
+            if(officeDoc.exists()){setOfficeData({id:officeDoc.id,...officeDoc.data()});if(officeDoc.data().logoUrl)setOfficeLogo(officeDoc.data().logoUrl);}
           }
           setUser(u);
         }
@@ -320,10 +323,15 @@ const loadPagosConfig=async()=>{
 const savePagosConfig=async(cfg)=>{
   setConfigSaving(true);
   try{
-    const{db,doc,setDoc}=window._firebase;
+    const{db,doc,setDoc,updateDoc}=window._firebase;
     const officeId=officeData?.id||userData?.officeId||"default";
     await setDoc(doc(db,"config",`pagos_${officeId}`),cfg);
     setPagosConfig(cfg);
+    // Guardar logo en el documento de la oficina
+    if(officeData?.id){
+      await updateDoc(doc(db,"offices",officeData.id),{logoUrl:officeLogo||""});
+      setOfficeData(prev=>({...prev,logoUrl:officeLogo||""}));
+    }
     showToastFn("Configuracion guardada ✓");
   }catch(e){showToastFn("Error al guardar","error");}
   setConfigSaving(false);
@@ -501,7 +509,33 @@ const loadTeam=async()=>{
   };
 
   const handleDelete=async(id)=>{try{const{db,doc,deleteDoc}=window._firebase;await deleteDoc(doc(db,"clientes",id));setClientes(prev=>prev.filter(c=>c.id!==id));showToastFn("Cliente eliminado");}catch(e){showToastFn("Error","error");}setConfirmDelete(null);};
-  const handleAddUser=async()=>{if(!newUserEmail||!newUserPass)return;try{const{auth,createUserWithEmailAndPassword}=window._firebase;await createUserWithEmailAndPassword(auth,newUserEmail,newUserPass);setAddUserMsg("✅ Usuario creado");setNewUserEmail("");setNewUserPass("");}catch(e){setAddUserMsg("❌ "+e.message);}};
+  const handleAddUser=async()=>{
+    if(!newUserEmail||!newUserPass||!newUserName){setAddUserMsg("❌ Completa todos los campos");return;}
+    setAddUserLoading(true);setAddUserMsg("");
+    try{
+      const{auth,createUserWithEmailAndPassword,db,doc,setDoc}=window._firebase;
+      const officeId=officeData?.id||userData?.officeId||"";
+      // 1. Crear en Firebase Auth
+      const cred=await createUserWithEmailAndPassword(auth,newUserEmail,newUserPass);
+      // 2. Crear documento en Firestore
+      await setDoc(doc(db,"users",cred.user.uid),{
+        displayName:newUserName.trim(),
+        email:newUserEmail.trim(),
+        role:newUserRole,
+        officeId:officeId,
+        createdAt:new Date().toISOString(),
+        createdBy:user.email,
+      });
+      setAddUserMsg("✅ Usuario creado correctamente");
+      setNewUserEmail("");setNewUserPass("");setNewUserName("");setNewUserRole("employee");
+      showToastFn("Usuario "+newUserName+" creado ✓");
+    }catch(e){
+      if(e.code==="auth/email-already-in-use") setAddUserMsg("❌ Este email ya tiene una cuenta");
+      else if(e.code==="auth/weak-password") setAddUserMsg("❌ La contraseña debe tener al menos 6 caracteres");
+      else setAddUserMsg("❌ "+e.message);
+    }
+    setAddUserLoading(false);
+  };
 
   const filtered=clientes.filter(c=>{
     const st=getStatusCliente(c);
@@ -688,7 +722,10 @@ const loadTeam=async()=>{
       <div style={{maxWidth:1080,margin:"0 auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10,marginBottom:16}}>
           <div>
-            <h1 style={{margin:0,fontSize:19,fontWeight:700}}>🗂 Monitor de Casos de Inmigración</h1>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              {officeLogo?<img src={officeLogo} alt="Logo" style={{height:36,width:36,borderRadius:8,objectFit:"contain",background:"rgba(255,255,255,0.1)",padding:2}}/>:<span style={{fontSize:28}}>⚖️</span>}
+              <h1 style={{margin:0,fontSize:19,fontWeight:700}}>Monitor de Casos de Inmigración</h1>
+            </div>
             <p style={{margin:"3px 0 0",fontSize:12,opacity:0.65}}>🏢 {officeName} &nbsp;·&nbsp; 👤 {user.email} &nbsp;·&nbsp; <span style={{background:isAdmin?"rgba(255,255,255,0.2)":"rgba(255,200,0,0.2)",borderRadius:20,padding:"1px 8px",fontSize:11}}>{isAdmin?"👑 Admin":"👩 Empleada"}</span></p>
           </div>
           <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
@@ -1385,14 +1422,37 @@ const loadTeam=async()=>{
 
     {/* MODAL USUARIOS */}
     {showAddUser&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-      <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:400,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
-        <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>🔐 Agregar usuario</h2>
-        <Field label="Email" value={newUserEmail} onChange={setNewUserEmail} placeholder="usuario@email.com" type="email"/>
-        <Field label="Contraseña temporal" value={newUserPass} onChange={setNewUserPass} placeholder="Mínimo 6 caracteres" type="password"/>
-        {addUserMsg&&<div style={{padding:"9px 13px",borderRadius:8,background:addUserMsg.includes("✅")?"#F0FDF4":"#FEF2F2",border:`1px solid ${addUserMsg.includes("✅")?"#BBF7D0":"#FECACA"}`,fontSize:13,color:addUserMsg.includes("✅")?"#15803D":"#DC2626",marginBottom:14}}>{addUserMsg}</div>}
+      <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:440,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>🔐 Agregar usuario</h2>
+          <button onClick={()=>{setShowAddUser(false);setAddUserMsg("");setNewUserName("");setNewUserEmail("");setNewUserPass("");setNewUserRole("employee");}} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer"}}>✕</button>
+        </div>
+        <div style={{background:"#F8FAFC",borderRadius:10,padding:"14px",marginBottom:16,border:"1px solid #E2E8F0",fontSize:12,color:"#64748B"}}>
+          Este usuario tendrá acceso solo a <strong style={{color:"#1E3A5F"}}>{officeData?.name}</strong>
+        </div>
+        <Field label="Nombre completo *" value={newUserName} onChange={setNewUserName} placeholder="Ej. Maria Garcia"/>
+        <Field label="Email *" value={newUserEmail} onChange={setNewUserEmail} placeholder="usuario@email.com" type="email"/>
+        <Field label="Contraseña temporal *" value={newUserPass} onChange={setNewUserPass} placeholder="Mínimo 6 caracteres" type="password"/>
+        <div style={{marginBottom:16}}>
+          <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.04em"}}>Rol</label>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {[
+              ["office_admin","👑 Admin","Acceso completo — nómina, cobros, usuarios","#1E3A5F","#EFF6FF","#BFDBFE"],
+              ["employee","👩 Empleada","Ver clientes y casos — sin pagos ni nómina","#7C3AED","#F5F3FF","#DDD6FE"],
+            ].map(([val,label,desc,color,bg,border])=>(
+              <button key={val} onClick={()=>setNewUserRole(val)} style={{padding:"10px",borderRadius:9,border:newUserRole===val?`2px solid ${color}`:`1px solid ${border}`,background:newUserRole===val?bg:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
+                <div style={{fontSize:13,fontWeight:700,color:newUserRole===val?color:"#374151"}}>{label}</div>
+                <div style={{fontSize:11,color:"#64748B",marginTop:3}}>{desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+        {addUserMsg&&<div style={{padding:"10px 14px",borderRadius:8,background:addUserMsg.includes("✅")?"#F0FDF4":"#FEF2F2",border:`1px solid ${addUserMsg.includes("✅")?"#BBF7D0":"#FECACA"}`,fontSize:13,color:addUserMsg.includes("✅")?"#15803D":"#DC2626",marginBottom:14}}>{addUserMsg}</div>}
         <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-          <button onClick={()=>{setShowAddUser(false);setAddUserMsg("");setNewUserEmail("");setNewUserPass("");}} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cerrar</button>
-          <button onClick={handleAddUser} style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>Crear usuario</button>
+          <button onClick={()=>{setShowAddUser(false);setAddUserMsg("");setNewUserName("");setNewUserEmail("");setNewUserPass("");setNewUserRole("employee");}} style={{padding:"10px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
+          <button onClick={handleAddUser} disabled={addUserLoading||!newUserEmail||!newUserPass||!newUserName} style={{padding:"10px 20px",borderRadius:8,border:"none",background:(addUserLoading||!newUserEmail||!newUserPass||!newUserName)?"#E5E7EB":"#1E3A5F",color:(addUserLoading||!newUserEmail||!newUserPass||!newUserName)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(addUserLoading||!newUserEmail||!newUserPass||!newUserName)?"not-allowed":"pointer"}}>
+            {addUserLoading?"Creando...":"✅ Crear usuario"}
+          </button>
         </div>
       </div>
     </div>)}
@@ -1806,8 +1866,20 @@ const loadTeam=async()=>{
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:480,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-            <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>⚙️ Configuracion de Pagos</h2>
+            <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>⚙️ Configuracion de Oficina</h2>
             <button onClick={()=>setShowPagosConfig(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer"}}>✕</button>
+          </div>
+          {/* LOGO */}
+          <div style={{background:"#F8FAFC",borderRadius:10,padding:"16px",marginBottom:14,border:"1px solid #E2E8F0"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>🖼️ Logo de la oficina</div>
+            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
+              {officeLogo?<img src={officeLogo} alt="Logo" style={{width:60,height:60,borderRadius:10,objectFit:"contain",border:"1px solid #E2E8F0",background:"#fff",padding:4}}/>:<div style={{width:60,height:60,borderRadius:10,border:"1px dashed #CBD5E1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🏢</div>}
+              <div style={{flex:1}}>
+                <div style={{fontSize:12,color:"#64748B",marginBottom:6}}>Pega la URL de tu logo (imagen en internet)</div>
+                <input value={officeLogo||""} onChange={e=>setOfficeLogo(e.target.value)} placeholder="https://tu-sitio.com/logo.png" style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
+              </div>
+            </div>
+            <div style={{fontSize:11,color:"#94A3B8"}}>💡 Sube tu logo a Google Drive, Dropbox o Imgur y pega el link directo aquí. El logo aparecerá en el header del monitor.</div>
           </div>
           {/* ZELLE */}
           <div style={{background:"#F8FAFC",borderRadius:10,padding:"16px",marginBottom:14,border:"1px solid #E2E8F0"}}>
