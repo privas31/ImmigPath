@@ -362,26 +362,155 @@ function App(){
 
   const generatePDF=()=>{
     const jsPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
-    if(!jsPDF){showToastFn("Error cargando PDF. Recarga la página.","error");return;}
+    if(!jsPDF){showToastFn("Error cargando PDF. Recarga la pagina.","error");return;}
     const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
-    const datos=filtered;if(!datos.length){showToastFn("Sin casos","error");return;}
-    pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,297,22,"F");pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(14);pdfdoc.setFont("helvetica","bold");
-    const officeName=officeData?.name||"Monitor de Inmigración";
-    pdfdoc.text(officeName,14,10);pdfdoc.setFontSize(9);pdfdoc.setFont("helvetica","normal");pdfdoc.text(`${new Date().toLocaleString("es-MX")}   |   ${datos.length} clientes   |   ${user.email}`,14,17);
-    const sLabel={vencido:"VENCIDA",hoy:"HOY",urgente:"URGENTE",proximo:"PROXIMA",ok:"AL DIA",pendiente:"PENDIENTE"};const sColor={vencido:[220,38,38],hoy:[234,88,12],urgente:[217,119,6],proximo:[37,99,235],ok:[22,163,74],pendiente:[107,114,128]};
-    const rows=[];
-    datos.forEach(c=>{
-      const st=getStatusCliente(c);const pf=getProximaFecha(c);const dias=pf?getDias(pf):null;
-      const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-      const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
-      const pct=getPct(totalP,pagadoP);
-      const sistemas=(c.casos||[]).map(ca=>(SISTEMAS[ca.sistema]?.label||ca.sistema)+" "+(ca.tipoCaso||"")).join(" | ");
-      rows.push({row:[c.nombre||"—",c.paisOrigen||"—",fmtA(c.alienNum)||"—",sistemas,pf?fmt(pf):"—",dias===null?"—":dias<0?`Hace ${Math.abs(dias)}d`:dias===0?"HOY":`En ${dias}d`,sLabel[st]||"—",c.encargada||"—",totalP?fmtMoney(totalP):"—",pagadoP?fmtMoney(pagadoP):"—",pct!==null?`${pct}%`:"—"],status:st});
-    });
-    pdfdoc.autoTable({startY:26,head:[["Nombre","País","A#","Sistemas / Casos","Próx. fecha","Tiempo","Estado","Encargada","Total","Pagado","%"]],body:rows.map(r=>r.row),styles:{fontSize:7,cellPadding:2,overflow:"linebreak",valign:"middle"},headStyles:{fillColor:[30,64,175],textColor:255,fontStyle:"bold",fontSize:7.5},columnStyles:{0:{cellWidth:28},1:{cellWidth:16},2:{cellWidth:18},3:{cellWidth:50},4:{cellWidth:18},5:{cellWidth:13},6:{cellWidth:14},7:{cellWidth:20},8:{cellWidth:16},9:{cellWidth:16},10:{cellWidth:10}},alternateRowStyles:{fillColor:[248,250,252]},
-    didParseCell:(data)=>{if(data.section==="body"&&data.column.index===6){const r=rows[data.row.index];if(r){const[rv,gv,bv]=sColor[r.status]||[107,114,128];data.cell.styles.textColor=[rv,gv,bv];data.cell.styles.fontStyle="bold";}}},margin:{left:4,right:4}});
-    const pc=pdfdoc.internal.getNumberOfPages();for(let i=1;i<=pc;i++){pdfdoc.setPage(i);pdfdoc.setFontSize(7);pdfdoc.setTextColor(150,150,150);pdfdoc.text(`Pag ${i} de ${pc}  |  Confidencial`,4,pdfdoc.internal.pageSize.height-4);}
-    pdfdoc.save(`reporte-${new Date().toISOString().slice(0,10)}.pdf`);setShowPDF(false);showToastFn(`PDF: ${datos.length} clientes ✓`);
+    const datos=filtered;
+    if(!datos.length){showToastFn("Sin casos para exportar","error");return;}
+
+                  // ── Helper: limpiar texto para jsPDF ──
+                  const cleanTxt = s => (s||"").replace(/[^\x00-\x7F]/g, "").trim();
+                  const W2 = 297; const M = 10;
+
+                  // ── HEADER ──────────────────────────────────────────────
+                  // Banda superior azul marino
+                  pdfdoc.setFillColor(30,58,95);
+                  pdfdoc.rect(0,0,W2,26,"F");
+                  // Nombre oficina
+                  pdfdoc.setTextColor(255,255,255);
+                  pdfdoc.setFontSize(12);
+                  pdfdoc.setFont("helvetica","bold");
+                  pdfdoc.text(cleanTxt(officeData?.name||"Monitor de Inmigracion"), M, 10);
+                  // Subtitulo
+                  pdfdoc.setFontSize(7.5);
+                  pdfdoc.setFont("helvetica","normal");
+                  pdfdoc.setTextColor(168,196,224);
+                  const fechaPDF = new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"});
+                  pdfdoc.text(fechaPDF + "   |   " + datos.length + " clientes   |   " + cleanTxt(user.email), M, 17);
+                  // Badge Confidencial derecha
+                  pdfdoc.setFillColor(255,255,255);
+                  pdfdoc.setFillColor(255,255,255,0.12);
+                  pdfdoc.setDrawColor(255,255,255,0.25);
+                  pdfdoc.roundedRect(W2-M-30, 7, 28, 7, 1.5, 1.5, "FD");
+                  pdfdoc.setTextColor(203,216,232);
+                  pdfdoc.setFontSize(6.5);
+                  pdfdoc.text("Confidencial", W2-M-29, 12);
+
+                  // ── TABLA ────────────────────────────────────────────────
+                  // Labels y colores de estado (sin caracteres especiales)
+                  const sLabel2={vencido:"Vencida",hoy:"Hoy",urgente:"Urgente",proximo:"Proxima",ok:"Al dia",pendiente:"Pendiente"};
+                  const sBg={vencido:[254,242,242],hoy:[255,247,237],urgente:[255,251,235],proximo:[239,246,255],ok:[240,253,244],pendiente:[249,250,251]};
+                  const sFg={vencido:[220,38,38],hoy:[234,88,12],urgente:[217,119,6],proximo:[37,99,235],ok:[22,163,74],pendiente:[107,114,128]};
+
+                  const rows3=[];
+                  datos.forEach(c=>{
+                    const st=getStatusCliente(c);
+                    const pf=getProximaFecha(c);
+                    const dias=pf?getDias(pf):null;
+                    const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                    const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                    const pct=getPct(totalP,pagadoP);
+                    // Sistemas: badges unicos por sistema + tipo de caso simplificado
+                    const sistemasBadges=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()))];
+                    // Mapear tipoCaso a etiquetas cortas
+                    const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"AP","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
+                    const tiposBadges=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
+                    const sistemasStr=[...sistemasBadges,...tiposBadges].join(" | ");
+                    // Tiempo legible
+                    let tiempoStr="—";
+                    if(dias!==null){
+                      if(dias<0) tiempoStr="Hace "+Math.abs(dias)+"d";
+                      else if(dias===0) tiempoStr="Hoy";
+                      else tiempoStr="+"+dias+"d";
+                    }
+                    rows3.push({
+                      row:[
+                        cleanTxt(c.nombre)||"—",
+                        cleanTxt(c.paisOrigen)||"—",
+                        fmtA(c.alienNum)||"—",
+                        sistemasStr,
+                        pf?fmt(pf):"—",
+                        tiempoStr,
+                        sLabel2[st]||"—",
+                        cleanTxt(c.encargada)||"—",
+                        totalP?fmtMoney(totalP):"—",
+                        pagadoP?fmtMoney(pagadoP):"—",
+                        pct!==null?pct+"%":"—"
+                      ],
+                      status:st
+                    });
+                  });
+
+                  pdfdoc.autoTable({
+                    startY: 30,
+                    head:[["Nombre","Pais","A#","Sistemas","Fecha","Dias","Estado","Encargada","Total","Pagado","%"]],
+                    body: rows3.map(r=>r.row),
+                    styles:{
+                      fontSize: 7.5,
+                      cellPadding: [3,4],
+                      overflow: "linebreak",
+                      valign: "middle",
+                      textColor: [30,41,59],
+                      lineColor: [226,232,240],
+                      lineWidth: 0.1
+                    },
+                    headStyles:{
+                      fillColor: [30,58,95],
+                      textColor: [255,255,255],
+                      fontStyle: "bold",
+                      fontSize: 7.5,
+                      cellPadding: [4,4],
+                      lineWidth: 0
+                    },
+                    alternateRowStyles:{
+                      fillColor: [248,250,252]
+                    },
+                    columnStyles:{
+                      0:{cellWidth:32, fontStyle:"bold"},
+                      1:{cellWidth:18},
+                      2:{cellWidth:20, font:"courier", fontSize:7},
+                      3:{cellWidth:55},
+                      4:{cellWidth:18, halign:"center"},
+                      5:{cellWidth:12, halign:"center"},
+                      6:{cellWidth:16, halign:"center", fontStyle:"bold"},
+                      7:{cellWidth:24},
+                      8:{cellWidth:18, halign:"right"},
+                      9:{cellWidth:18, halign:"right"},
+                      10:{cellWidth:10, halign:"center"}
+                    },
+                    didParseCell:(data)=>{
+                      if(data.section==="body" && data.column.index===6){
+                        const r=rows3[data.row.index];
+                        if(r){
+                          const fg=sFg[r.status]||[107,114,128];
+                          const bg=sBg[r.status]||[249,250,251];
+                          data.cell.styles.textColor=fg;
+                          data.cell.styles.fillColor=bg;
+                          data.cell.styles.fontStyle="bold";
+                        }
+                      }
+                    },
+                    margin:{left:M, right:M},
+                    tableLineColor:[226,232,240],
+                    tableLineWidth:0.1
+                  });
+
+                  // ── FOOTER ───────────────────────────────────────────────
+                  const pcPDF=pdfdoc.internal.getNumberOfPages();
+                  for(let i=1;i<=pcPDF;i++){
+                    pdfdoc.setPage(i);
+                    const pH=pdfdoc.internal.pageSize.height;
+                    pdfdoc.setDrawColor(226,232,240);
+                    pdfdoc.setLineWidth(0.3);
+                    pdfdoc.line(M, pH-8, W2-M, pH-8);
+                    pdfdoc.setFontSize(6.5);
+                    pdfdoc.setTextColor(148,163,184);
+                    pdfdoc.setFont("helvetica","normal");
+                    pdfdoc.text("CONFIDENCIAL — Solo para uso interno  |  "+cleanTxt(officeData?.name||"ImmigPath")+"  |  Pag "+i+" de "+pcPDF, M, pH-3.5);
+                  }
+
+    pdfdoc.save("reporte-"+new Date().toISOString().slice(0,10)+".pdf");
+    setShowPDF(false);
+    showToastFn("PDF: "+datos.length+" clientes");
   };
 
   if(authLoading)return<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontSize:16,color:"#6B7280"}}>⚖️ Cargando...</div>;
@@ -819,32 +948,155 @@ function App(){
               <button onClick={()=>{
                 // Generar PDF con los clientes filtrados del modal
                 const jsPDF=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
-                if(!jsPDF){showToastFn("Error cargando PDF. Recarga la página.","error");return;}
+                if(!jsPDF){showToastFn("Error cargando PDF. Recarga la pagina.","error");return;}
                 const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
                 const datos=pdfClientes;
                 if(!datos.length){showToastFn("Sin clientes para este filtro","error");return;}
-                pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,297,22,"F");
-                pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(14);pdfdoc.setFont("helvetica","bold");
-                const officeName2=officeData?.name||"Monitor de Inmigración";
-                pdfdoc.text(officeName2,14,10);pdfdoc.setFontSize(9);pdfdoc.setFont("helvetica","normal");
-                pdfdoc.text(`${new Date().toLocaleString("es-MX")} | ${datos.length} clientes | ${user.email}`,14,17);
-                const sLabel={vencido:"VENCIDA",hoy:"HOY",urgente:"URGENTE",proximo:"PROXIMA",ok:"AL DIA",pendiente:"PENDIENTE"};
-                const sColor={vencido:[220,38,38],hoy:[234,88,12],urgente:[217,119,6],proximo:[37,99,235],ok:[22,163,74],pendiente:[107,114,128]};
-                const rows2=[];
-                datos.forEach(c=>{
-                  const st=getStatusCliente(c);const pf=getProximaFecha(c);const dias=pf?getDias(pf):null;
-                  const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-                  const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
-                  const pct=getPct(totalP,pagadoP);
-                  const sistemas=(c.casos||[]).map(ca=>(SISTEMAS[ca.sistema]?.label||ca.sistema)+" "+(ca.tipoCaso||"")).join(" | ");
-                  rows2.push({row:[c.nombre||"—",c.paisOrigen||"—",fmtA(c.alienNum)||"—",sistemas,pf?fmt(pf):"—",dias===null?"—":dias<0?`Hace ${Math.abs(dias)}d`:dias===0?"HOY":`En ${dias}d`,sLabel[st]||"—",c.encargada||"—",totalP?fmtMoney(totalP):"—",pagadoP?fmtMoney(pagadoP):"—",pct!==null?`${pct}%`:"—"],status:st});
-                });
-                pdfdoc.autoTable({startY:26,head:[["Nombre","País","A#","Sistemas / Casos","Próx. fecha","Tiempo","Estado","Encargada","Total","Pagado","%"]],body:rows2.map(r=>r.row),styles:{fontSize:7,cellPadding:2,overflow:"linebreak",valign:"middle"},headStyles:{fillColor:[30,64,175],textColor:255,fontStyle:"bold",fontSize:7.5},columnStyles:{0:{cellWidth:28},1:{cellWidth:16},2:{cellWidth:18},3:{cellWidth:50},4:{cellWidth:18},5:{cellWidth:13},6:{cellWidth:14},7:{cellWidth:20},8:{cellWidth:16},9:{cellWidth:16},10:{cellWidth:10}},alternateRowStyles:{fillColor:[248,250,252]},didParseCell:(data)=>{if(data.section==="body"&&data.column.index===6){const r=rows2[data.row.index];if(r){const[rv,gv,bv]=sColor[r.status]||[107,114,128];data.cell.styles.textColor=[rv,gv,bv];data.cell.styles.fontStyle="bold";}}},margin:{left:4,right:4}});
-                const pc=pdfdoc.internal.getNumberOfPages();
-                for(let i=1;i<=pc;i++){pdfdoc.setPage(i);pdfdoc.setFontSize(7);pdfdoc.setTextColor(150,150,150);pdfdoc.text(`Pag ${i} de ${pc} | Confidencial`,4,pdfdoc.internal.pageSize.height-4);}
-                pdfdoc.save(`reporte-${new Date().toISOString().slice(0,10)}.pdf`);
+
+                  // ── Helper: limpiar texto para jsPDF ──
+                  const cleanTxt = s => (s||"").replace(/[^\x00-\x7F]/g, "").trim();
+                  const W2 = 297; const M = 10;
+
+                  // ── HEADER ──────────────────────────────────────────────
+                  // Banda superior azul marino
+                  pdfdoc.setFillColor(30,58,95);
+                  pdfdoc.rect(0,0,W2,26,"F");
+                  // Nombre oficina
+                  pdfdoc.setTextColor(255,255,255);
+                  pdfdoc.setFontSize(12);
+                  pdfdoc.setFont("helvetica","bold");
+                  pdfdoc.text(cleanTxt(officeData?.name||"Monitor de Inmigracion"), M, 10);
+                  // Subtitulo
+                  pdfdoc.setFontSize(7.5);
+                  pdfdoc.setFont("helvetica","normal");
+                  pdfdoc.setTextColor(168,196,224);
+                  const fechaPDF = new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"});
+                  pdfdoc.text(fechaPDF + "   |   " + datos.length + " clientes   |   " + cleanTxt(user.email), M, 17);
+                  // Badge Confidencial derecha
+                  pdfdoc.setFillColor(255,255,255);
+                  pdfdoc.setFillColor(255,255,255,0.12);
+                  pdfdoc.setDrawColor(255,255,255,0.25);
+                  pdfdoc.roundedRect(W2-M-30, 7, 28, 7, 1.5, 1.5, "FD");
+                  pdfdoc.setTextColor(203,216,232);
+                  pdfdoc.setFontSize(6.5);
+                  pdfdoc.text("Confidencial", W2-M-29, 12);
+
+                  // ── TABLA ────────────────────────────────────────────────
+                  // Labels y colores de estado (sin caracteres especiales)
+                  const sLabel2={vencido:"Vencida",hoy:"Hoy",urgente:"Urgente",proximo:"Proxima",ok:"Al dia",pendiente:"Pendiente"};
+                  const sBg={vencido:[254,242,242],hoy:[255,247,237],urgente:[255,251,235],proximo:[239,246,255],ok:[240,253,244],pendiente:[249,250,251]};
+                  const sFg={vencido:[220,38,38],hoy:[234,88,12],urgente:[217,119,6],proximo:[37,99,235],ok:[22,163,74],pendiente:[107,114,128]};
+
+                  const rows3=[];
+                  datos.forEach(c=>{
+                    const st=getStatusCliente(c);
+                    const pf=getProximaFecha(c);
+                    const dias=pf?getDias(pf):null;
+                    const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                    const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                    const pct=getPct(totalP,pagadoP);
+                    // Sistemas: badges unicos por sistema + tipo de caso simplificado
+                    const sistemasBadges=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()))];
+                    // Mapear tipoCaso a etiquetas cortas
+                    const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"AP","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
+                    const tiposBadges=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
+                    const sistemasStr=[...sistemasBadges,...tiposBadges].join(" | ");
+                    // Tiempo legible
+                    let tiempoStr="—";
+                    if(dias!==null){
+                      if(dias<0) tiempoStr="Hace "+Math.abs(dias)+"d";
+                      else if(dias===0) tiempoStr="Hoy";
+                      else tiempoStr="+"+dias+"d";
+                    }
+                    rows3.push({
+                      row:[
+                        cleanTxt(c.nombre)||"—",
+                        cleanTxt(c.paisOrigen)||"—",
+                        fmtA(c.alienNum)||"—",
+                        sistemasStr,
+                        pf?fmt(pf):"—",
+                        tiempoStr,
+                        sLabel2[st]||"—",
+                        cleanTxt(c.encargada)||"—",
+                        totalP?fmtMoney(totalP):"—",
+                        pagadoP?fmtMoney(pagadoP):"—",
+                        pct!==null?pct+"%":"—"
+                      ],
+                      status:st
+                    });
+                  });
+
+                  pdfdoc.autoTable({
+                    startY: 30,
+                    head:[["Nombre","Pais","A#","Sistemas","Fecha","Dias","Estado","Encargada","Total","Pagado","%"]],
+                    body: rows3.map(r=>r.row),
+                    styles:{
+                      fontSize: 7.5,
+                      cellPadding: [3,4],
+                      overflow: "linebreak",
+                      valign: "middle",
+                      textColor: [30,41,59],
+                      lineColor: [226,232,240],
+                      lineWidth: 0.1
+                    },
+                    headStyles:{
+                      fillColor: [30,58,95],
+                      textColor: [255,255,255],
+                      fontStyle: "bold",
+                      fontSize: 7.5,
+                      cellPadding: [4,4],
+                      lineWidth: 0
+                    },
+                    alternateRowStyles:{
+                      fillColor: [248,250,252]
+                    },
+                    columnStyles:{
+                      0:{cellWidth:32, fontStyle:"bold"},
+                      1:{cellWidth:18},
+                      2:{cellWidth:20, font:"courier", fontSize:7},
+                      3:{cellWidth:55},
+                      4:{cellWidth:18, halign:"center"},
+                      5:{cellWidth:12, halign:"center"},
+                      6:{cellWidth:16, halign:"center", fontStyle:"bold"},
+                      7:{cellWidth:24},
+                      8:{cellWidth:18, halign:"right"},
+                      9:{cellWidth:18, halign:"right"},
+                      10:{cellWidth:10, halign:"center"}
+                    },
+                    didParseCell:(data)=>{
+                      if(data.section==="body" && data.column.index===6){
+                        const r=rows3[data.row.index];
+                        if(r){
+                          const fg=sFg[r.status]||[107,114,128];
+                          const bg=sBg[r.status]||[249,250,251];
+                          data.cell.styles.textColor=fg;
+                          data.cell.styles.fillColor=bg;
+                          data.cell.styles.fontStyle="bold";
+                        }
+                      }
+                    },
+                    margin:{left:M, right:M},
+                    tableLineColor:[226,232,240],
+                    tableLineWidth:0.1
+                  });
+
+                  // ── FOOTER ───────────────────────────────────────────────
+                  const pcPDF=pdfdoc.internal.getNumberOfPages();
+                  for(let i=1;i<=pcPDF;i++){
+                    pdfdoc.setPage(i);
+                    const pH=pdfdoc.internal.pageSize.height;
+                    pdfdoc.setDrawColor(226,232,240);
+                    pdfdoc.setLineWidth(0.3);
+                    pdfdoc.line(M, pH-8, W2-M, pH-8);
+                    pdfdoc.setFontSize(6.5);
+                    pdfdoc.setTextColor(148,163,184);
+                    pdfdoc.setFont("helvetica","normal");
+                    pdfdoc.text("CONFIDENCIAL — Solo para uso interno  |  "+cleanTxt(officeData?.name||"ImmigPath")+"  |  Pag "+i+" de "+pcPDF, M, pH-3.5);
+                  }
+
+                pdfdoc.save("reporte-"+new Date().toISOString().slice(0,10)+".pdf");
                 setShowPDF(false);setPdfOpts({sistema:"todos",estado:"todos"});
-                showToastFn(`PDF: ${datos.length} clientes ✓`);
+                showToastFn("PDF: "+datos.length+" clientes");
               }} disabled={pdfClientes.length===0} style={{padding:"10px 22px",borderRadius:9,border:"none",background:pdfClientes.length===0?"#E5E7EB":"#1E40AF",color:pdfClientes.length===0?"#9CA3AF":"#fff",fontSize:14,fontWeight:700,cursor:pdfClientes.length===0?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:7}}>
                 📥 Generar PDF
               </button>
@@ -1069,34 +1321,141 @@ function App(){
                   const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
                   if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
                   const pdfdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
+                  const W=210; const margin=14;
                   const empleadas2=[...new Set(clientes.map(c=>c.encargada).filter(Boolean))];
-                  const TARIFAS_DEFAULT2={"Asilo (I-589)":100,"Permiso de trabajo (I-765)":50,"Ajuste de estatus (I-485)":150,"Petición familiar (I-130)":100,"Naturalización (N-400)":80,"Cancelación de deportación":150,"FOIA":40,"Consultoría":30,"Advance Parole (I-131)":60,"Renovar Green Card (I-90)":80,"Otro":50};
-                  // Header
-                  pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,210,24,"F");
-                  pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(15);pdfdoc.setFont("helvetica","bold");
-                  pdfdoc.text("💰 Reporte de Nómina — "+(officeData?.name||"Oficina"),14,11);
-                  pdfdoc.setFontSize(9);pdfdoc.setFont("helvetica","normal");
-                  pdfdoc.text(new Date().toLocaleDateString("es-US",{month:"long",year:"numeric",day:"numeric"})+" | "+user.email,14,19);
-                  let yPos=30;
+                  const TARIFAS_DEFAULT2={"Asilo (I-589)":100,"Permiso de trabajo (I-765)":50,"Ajuste de estatus (I-485)":150,"Peticion familiar (I-130)":100,"Naturalizacion (N-400)":80,"Cancelacion de deportacion":150,"FOIA":40,"Consultoria":30,"Advance Parole (I-131)":60,"Renovar Green Card (I-90)":80,"Otro":50};
+
+                  // ── HEADER azul marino ──────────────────────────────────
+                  pdfdoc.setFillColor(30,58,95);
+                  pdfdoc.rect(0,0,W,28,"F");
+                  pdfdoc.setTextColor(255,255,255);
+                  pdfdoc.setFontSize(13);
+                  pdfdoc.setFont("helvetica","bold");
+                  const officeNamePDF=(officeData?.name||"Oficina").replace(/[^ -]/g,"");
+                  pdfdoc.text("Reporte de Nomina — "+officeNamePDF, margin, 11);
+                  pdfdoc.setFontSize(8);
+                  pdfdoc.setFont("helvetica","normal");
+                  pdfdoc.setTextColor(168,196,224);
+                  const fechaStr=new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"});
+                  pdfdoc.text(fechaStr+" | "+user.email, margin, 19);
+                  // Badge "Confidencial"
+                  pdfdoc.setFillColor(255,255,255,0.15);
+                  pdfdoc.setDrawColor(255,255,255,0.3);
+                  pdfdoc.roundedRect(W-margin-28,5,26,8,2,2,"FD");
+                  pdfdoc.setTextColor(203,216,232);
+                  pdfdoc.setFontSize(7);
+                  pdfdoc.text("Confidencial", W-margin-27, 10.5);
+
+                  // ── EMPLEADAS ───────────────────────────────────────────
+                  let yPos=36;
                   let grandTotal=0;
-                  empleadas2.forEach(emp=>{
+
+                  empleadas2.forEach((emp,empIdx)=>{
                     const clientesEmp=clientes.filter(c=>c.encargada===emp);
                     const procesos={};
-                    clientesEmp.forEach(c=>{(c.casos||[]).forEach(ca=>{(ca.procesos||[]).forEach(p=>{if(p.nombre){if(!procesos[p.nombre])procesos[p.nombre]={cantidad:0};procesos[p.nombre].cantidad++;}});});});
-                    const rows=Object.entries(procesos).map(([nombre,data])=>{const tarifa=tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT2[nombre]||50);return[nombre,String(data.cantidad),"$"+tarifa.toFixed(2),"$"+(tarifa*data.cantidad).toFixed(2)];});
-                    const totalEmp=Object.entries(procesos).reduce((s,[nombre,data])=>{const tarifa=tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT2[nombre]||50);return s+(tarifa*data.cantidad);},0);
+                    clientesEmp.forEach(c=>{
+                      (c.casos||[]).forEach(ca=>{
+                        (ca.procesos||[]).forEach(p=>{
+                          if(p.nombre){
+                            const key=p.nombre.replace(/[^ -]/g,"").trim();
+                            if(!key)return;
+                            if(!procesos[key])procesos[key]={cantidad:0};
+                            procesos[key].cantidad++;
+                          }
+                        });
+                      });
+                    });
+
+                    const empRows=Object.entries(procesos).map(([nombre,data])=>{
+                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.replace(/[^ -]/g,"").trim()===nombre)||nombre;
+                      const tarifa=tarifasNomina[keyOrig]!==undefined?tarifasNomina[keyOrig]:(TARIFAS_DEFAULT2[keyOrig]||50);
+                      return[nombre,String(data.cantidad),"$"+tarifa.toFixed(2),"$"+(tarifa*data.cantidad).toFixed(2)];
+                    });
+                    const totalEmp=Object.entries(procesos).reduce((s,[nombre,data])=>{
+                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.replace(/[^ -]/g,"").trim()===nombre)||nombre;
+                      const tarifa=tarifasNomina[keyOrig]!==undefined?tarifasNomina[keyOrig]:(TARIFAS_DEFAULT2[keyOrig]||50);
+                      return s+(tarifa*data.cantidad);
+                    },0);
                     grandTotal+=totalEmp;
-                    pdfdoc.autoTable({startY:yPos,head:[[{content:`👩 ${emp} — ${clientesEmp.length} clientes | Total: $${totalEmp.toFixed(2)}`,colSpan:4}],["Proceso","Casos","Tarifa","Subtotal"]],body:rows.length>0?rows:[["Sin procesos registrados","—","—","—"]],styles:{fontSize:9,cellPadding:3},headStyles:[{fillColor:[30,64,175],textColor:255,fontStyle:"bold",fontSize:10},{fillColor:[51,65,85],textColor:255,fontStyle:"bold",fontSize:8}],columnStyles:{0:{cellWidth:90},1:{cellWidth:20,halign:"center"},2:{cellWidth:30,halign:"right"},3:{cellWidth:30,halign:"right",fontStyle:"bold"}},margin:{left:14,right:14},foot:[[{content:`Total nómina: $${totalEmp.toFixed(2)}`,colSpan:4,styles:{fillColor:[22,163,74],textColor:255,fontStyle:"bold",halign:"right"}}]]});
+
+                    const empName=emp.replace(/[^ -]/g,"");
+
+                    // Card header de la empleada
+                    pdfdoc.setFillColor(241,245,249);
+                    pdfdoc.setDrawColor(226,232,240);
+                    pdfdoc.roundedRect(margin, yPos, W-margin*2, 12, 2, 2, "FD");
+                    pdfdoc.setTextColor(30,58,95);
+                    pdfdoc.setFontSize(10);
+                    pdfdoc.setFont("helvetica","bold");
+                    pdfdoc.text(empName, margin+4, yPos+7);
+                    pdfdoc.setFontSize(8);
+                    pdfdoc.setFont("helvetica","normal");
+                    pdfdoc.setTextColor(100,116,139);
+                    pdfdoc.text(clientesEmp.length+" cliente"+(clientesEmp.length!==1?"s":"")+" asignado"+(clientesEmp.length!==1?"s":""), margin+4, yPos+11.5);
+                    // Total a la derecha
+                    pdfdoc.setTextColor(30,58,95);
+                    pdfdoc.setFontSize(11);
+                    pdfdoc.setFont("helvetica","bold");
+                    const totalStr="$"+totalEmp.toFixed(2);
+                    pdfdoc.text(totalStr, W-margin-4, yPos+7, {align:"right"});
+                    yPos+=14;
+
+                    // Tabla de procesos
+                    pdfdoc.autoTable({
+                      startY: yPos,
+                      head:[["Proceso","Casos","Tarifa","Subtotal"]],
+                      body: empRows.length>0 ? empRows : [["Sin procesos registrados","—","—","—"]],
+                      styles:{fontSize:8.5,cellPadding:[3,4],overflow:"linebreak",valign:"middle",textColor:[30,41,59]},
+                      headStyles:{fillColor:[248,250,252],textColor:[100,116,139],fontStyle:"normal",fontSize:8,lineWidth:0.1,lineColor:[226,232,240]},
+                      alternateRowStyles:{fillColor:[248,250,252]},
+                      columnStyles:{
+                        0:{cellWidth:90,textColor:[30,41,59]},
+                        1:{cellWidth:18,halign:"center"},
+                        2:{cellWidth:28,halign:"right"},
+                        3:{cellWidth:28,halign:"right",fontStyle:"bold",textColor:[30,58,95]}
+                      },
+                      foot:[[{content:"Total nomina: $"+totalEmp.toFixed(2),colSpan:4,styles:{halign:"right",fillColor:[241,245,249],textColor:[30,58,95],fontStyle:"bold",fontSize:9,lineWidth:0.1,lineColor:[226,232,240]}}]],
+                      margin:{left:margin,right:margin},
+                      tableLineColor:[226,232,240],
+                      tableLineWidth:0.1,
+                    });
                     yPos=pdfdoc.lastAutoTable.finalY+10;
-                    if(yPos>260&&empleadas2.indexOf(emp)<empleadas2.length-1){pdfdoc.addPage();yPos=20;}
+
+                    // Nueva página si hace falta
+                    if(yPos>260 && empIdx<empleadas2.length-1){pdfdoc.addPage();yPos=20;}
                   });
-                  // Total general
-                  pdfdoc.autoTable({startY:yPos,body:[[{content:"💰 TOTAL GENERAL DE NÓMINA: $"+grandTotal.toFixed(2),styles:{fillColor:[15,23,42],textColor:255,fontStyle:"bold",fontSize:13,halign:"center"}}]],margin:{left:14,right:14}});
+
+                  // ── TOTAL GENERAL ────────────────────────────────────────
+                  if(yPos>260){pdfdoc.addPage();yPos=20;}
+                  pdfdoc.setFillColor(30,58,95);
+                  pdfdoc.roundedRect(margin, yPos, W-margin*2, 14, 3, 3, "F");
+                  pdfdoc.setTextColor(168,196,224);
+                  pdfdoc.setFontSize(8);
+                  pdfdoc.setFont("helvetica","normal");
+                  pdfdoc.text("TOTAL GENERAL DE NOMINA", margin+6, yPos+6);
+                  pdfdoc.setTextColor(255,255,255);
+                  pdfdoc.setFontSize(13);
+                  pdfdoc.setFont("helvetica","bold");
+                  pdfdoc.text("$"+grandTotal.toFixed(2), W-margin-4, yPos+10, {align:"right"});
+                  yPos+=22;
+
+                  // ── FOOTER ───────────────────────────────────────────────
                   const totalPages=pdfdoc.internal.getNumberOfPages();
-                  for(let i=1;i<=totalPages;i++){pdfdoc.setPage(i);pdfdoc.setFontSize(7);pdfdoc.setTextColor(150,150,150);pdfdoc.text(`Pág ${i} de ${totalPages} | Confidencial — ${officeName}`,14,pdfdoc.internal.pageSize.height-6);}
-                  pdfdoc.save(`nomina-${new Date().toISOString().slice(0,10)}.pdf`);
-                  showToastFn("PDF de nómina descargado ✓");
-                }} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>📄 PDF Nómina</button>
+                  for(let i=1;i<=totalPages;i++){
+                    pdfdoc.setPage(i);
+                    pdfdoc.setFontSize(7);
+                    pdfdoc.setTextColor(148,163,184);
+                    pdfdoc.setFont("helvetica","normal");
+                    const pageH=pdfdoc.internal.pageSize.height;
+                    pdfdoc.setDrawColor(226,232,240);
+                    pdfdoc.setLineWidth(0.3);
+                    pdfdoc.line(margin, pageH-10, W-margin, pageH-10);
+                    pdfdoc.text("CONFIDENCIAL — Solo para uso interno  |  "+officeNamePDF+"  |  Pag "+i+" de "+totalPages, margin, pageH-5);
+                  }
+
+                  pdfdoc.save("nomina-"+new Date().toISOString().slice(0,10)+".pdf");
+                  showToastFn("PDF de nomina descargado");
+                }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Descargar PDF Nomina</button>
                 <button onClick={()=>setShowNomina(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar ✕</button>
               </div>
             </div>
