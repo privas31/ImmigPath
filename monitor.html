@@ -368,7 +368,7 @@ function App(){
     if(!datos.length){showToastFn("Sin casos para exportar","error");return;}
 
                   // ── Helper: limpiar texto para jsPDF ──
-                  const cleanTxt = s => (s||"").replace(/[^\x00-\x7F]/g, "").trim();
+                  const cleanTxt = s => { if(!s) return ""; let r=""; for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);if(c>=32&&c<=126)r+=s[i];} return r.trim(); };
                   const W2 = 297; const M = 10;
 
                   // ── HEADER ──────────────────────────────────────────────
@@ -944,7 +944,7 @@ function App(){
                 if(!datos.length){showToastFn("Sin clientes para este filtro","error");return;}
 
                   // ── Helper: limpiar texto para jsPDF ──
-                  const cleanTxt = s => (s||"").replace(/[^\x00-\x7F]/g, "").trim();
+                  const cleanTxt = s => { if(!s) return ""; let r=""; for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);if(c>=32&&c<=126)r+=s[i];} return r.trim(); };
                   const W2 = 297; const M = 10;
 
                   // ── HEADER ──────────────────────────────────────────────
