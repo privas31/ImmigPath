@@ -333,6 +333,16 @@ let officesCache = [];
 
 // ── Cargar branding al inicio ─────────────────────────────────────────────
 async function loadBrandingConfig() {
+  // Cargar desde localStorage primero (instantáneo)
+  try {
+    const cached = localStorage.getItem('sa_branding');
+    if (cached) {
+      const data = JSON.parse(cached);
+      applyBranding(data.logoUrl || null, data.platformName || 'ImmigPath');
+    }
+  } catch(e) {}
+
+  // Luego cargar desde Firestore y actualizar
   try {
     const snap = await getDoc(doc(db, 'config', 'superadmin_branding'));
     if (snap.exists()) {
@@ -341,6 +351,8 @@ async function loadBrandingConfig() {
       document.getElementById('brand-logo').value = data.logoUrl || '';
       document.getElementById('brand-name').value = data.platformName || 'ImmigPath';
       if (data.logoUrl) previewLogo();
+      // Guardar en localStorage para próxima vez
+      localStorage.setItem('sa_branding', JSON.stringify({logoUrl: data.logoUrl, platformName: data.platformName}));
     }
   } catch(e) {}
 }
@@ -383,6 +395,7 @@ window.saveBranding = async function() {
   try {
     await setDoc(doc(db, 'config', 'superadmin_branding'), { logoUrl, platformName: name, updatedAt: new Date().toISOString() });
     applyBranding(logoUrl, name);
+    localStorage.setItem('sa_branding', JSON.stringify({logoUrl, platformName: name}));
     showToast('✓ Branding guardado', 'success');
   } catch(e) {
     showToast('Error: ' + e.message, 'error');
