@@ -1042,6 +1042,172 @@ const loadTeam=async()=>{
     </div>)}
 
     
+
+    {showModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+        <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:580,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"94vh",overflowY:"auto"}}>
+          <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700,color:"#0F172A"}}>{editId?"Editar cliente":"Nuevo cliente"}</h2>
+          <div style={{background:"#F8FAFC",borderRadius:10,padding:"14px",marginBottom:16,border:"1px solid #E2E8F0"}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10,textTransform:"uppercase"}}>Informacion personal</div>
+            <Field label="Nombre completo *" value={formCliente.nombre} onChange={v=>setFormCliente(p=>({...p,nombre:v}))} placeholder="Nombre completo"/>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <Field label="Numero Alien (A#)" value={formCliente.alienNum} onChange={v=>setFormCliente(p=>({...p,alienNum:v.replace(/[^\d-]/g,"")}))} placeholder="012-345-678" mono/>
+              <div style={{marginBottom:11}}>
+                <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Pais de origen</label>
+                <select value={formCliente.paisOrigen} onChange={e=>setFormCliente(p=>({...p,paisOrigen:e.target.value}))} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,background:"#fff",cursor:"pointer"}}>
+                  <option value="">Seleccionar...</option>{PAISES.map(p=><option key={p} value={p}>{getFlag(p)} {p}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <Field label="Telefono" value={formCliente.telefono||""} onChange={v=>setFormCliente(p=>({...p,telefono:v}))} placeholder="(407) 555-1234" type="tel"/>
+              <Field label="Email" value={formCliente.email||""} onChange={v=>setFormCliente(p=>({...p,email:v}))} placeholder="cliente@email.com" type="email"/>
+            </div>
+            {isAdmin&&<div style={{marginBottom:11}}>
+              <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Encargada</label>
+              <select value={formCliente.encargada} onChange={e=>setFormCliente(p=>({...p,encargada:e.target.value}))} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,background:"#fff",cursor:"pointer"}}>
+                <option value="">Sin asignar</option>{equipo.map(m=><option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>}
+            <div>
+              <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Notas generales</label>
+              <textarea value={formCliente.nota} onChange={e=>setFormCliente(p=>({...p,nota:e.target.value}))} placeholder="Observaciones del cliente..." rows={2} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,resize:"vertical",outline:"none"}}/>
+            </div>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A"}}>Casos del cliente</div>
+            <button onClick={addCaso} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>+ Agregar caso</button>
+          </div>
+          {formCliente.casos.length===0&&<div style={{textAlign:"center",padding:"20px",color:"#94A3B8",fontSize:13,background:"#F8FAFC",borderRadius:10,border:"1px dashed #E2E8F0",marginBottom:14}}>Sin casos. Haz clic en "+ Agregar caso".</div>}
+          {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo} isAdmin={isAdmin}/>))}
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
+            <button onClick={()=>setShowModal(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={handleSubmit} disabled={!formCliente.nombre||saving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(!formCliente.nombre||saving)?"#E5E7EB":"#1E40AF",color:(!formCliente.nombre||saving)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(!formCliente.nombre||saving)?"not-allowed":"pointer"}}>{saving?"Guardando...":editId?"Guardar cambios":"Agregar cliente"}</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showBorradores&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+        <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:680,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+            <h2 style={{margin:0,fontSize:18,fontWeight:700}}>Formularios Recibidos</h2>
+            <button onClick={()=>setShowBorradores(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar</button>
+          </div>
+          {borradoresLoading?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}>Cargando...</div>:
+          borradores.length===0?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}><div style={{fontSize:40,marginBottom:10}}>📭</div><div>No hay formularios pendientes</div></div>:(
+            <div style={{display:"grid",gap:12}}>
+              {borradores.map(b=>(
+                <div key={b.id} style={{background:"#F8FAFC",borderRadius:10,border:"1px solid #E2E8F0",padding:"16px",borderLeft:"4px solid #2563EB"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8,marginBottom:10}}>
+                    <div>
+                      <span style={{fontWeight:700,fontSize:15,color:"#0F172A"}}>{b.nombre||"Sin nombre"} </span>
+                      <span style={{background:"#EFF6FF",color:"#2563EB",border:"1px solid #BFDBFE",borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:600}}>{b.tipoFormulario}</span>
+                    </div>
+                    <div style={{fontSize:11,color:"#94A3B8"}}>{new Date(b.fechaEnvio).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"})}</div>
+                  </div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button onClick={()=>activarBorrador(b)} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"8px 16px",fontSize:12,cursor:"pointer",fontWeight:600}}>Activar como cliente</button>
+                    <button onClick={()=>rechazarBorrador(b.id)} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"8px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>Eliminar</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"14px",marginTop:16}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#1D4ED8",marginBottom:6}}>Link del formulario</div>
+            <div style={{background:"#fff",border:"1px solid #BFDBFE",borderRadius:7,padding:"8px 12px",fontFamily:"monospace",fontSize:12,color:"#1D4ED8",wordBreak:"break-all"}}>{window.location.origin+"/formulario.html"}</div>
+            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/formulario.html");showToastFn("Link copiado");}} style={{marginTop:8,background:"#1E40AF",color:"#fff",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>Copiar link</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showDashboard&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16,overflowY:"auto"}}>
+        <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:700,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+            <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>Dashboard — {officeName}</h2>
+            <button onClick={()=>setShowDashboard(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10,marginBottom:16}}>
+            {[{label:"Total clientes",value:clientes.length,icon:"👥",color:"#1E40AF",bg:"#EFF6FF"},
+              {label:"EOIR activos",value:clientes.filter(c=>(c.casos||[]).some(ca=>ca.sistema==="eoir")).length,icon:"⚖️",color:"#7C3AED",bg:"#F5F3FF"},
+              {label:"USCIS activos",value:clientes.filter(c=>(c.casos||[]).some(ca=>ca.sistema==="uscis")).length,icon:"🏛",color:"#0369A1",bg:"#F0F9FF"},
+              {label:"Fechas vencidas",value:stats.vencidos.length,icon:"🔴",color:"#DC2626",bg:"#FEF2F2"},
+              {label:"Alertas 7d",value:stats.alertas.length,icon:"🟡",color:"#D97706",bg:"#FFFBEB"}].map((s,i)=>(
+              <div key={i} style={{background:s.bg,borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid "+s.color+"22"}}>
+                <div style={{fontSize:24}}>{s.icon}</div>
+                <div style={{fontSize:26,fontWeight:800,color:s.color,lineHeight:1,marginTop:4}}>{s.value}</div>
+                <div style={{fontSize:11,color:"#64748B",marginTop:3}}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {isAdmin&&<div style={{background:"#fff",borderRadius:12,padding:"16px",border:"1px solid #E2E8F0"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:14}}>Reporte de cobros</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+              <div style={{background:"#F0FDF4",borderRadius:9,padding:"12px",textAlign:"center",border:"1px solid #BBF7D0"}}><div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Total cobrado</div><div style={{fontSize:18,fontWeight:800,color:"#16A34A"}}>{fmtMoney(stats.totalCobrado)}</div></div>
+              <div style={{background:"#FEF2F2",borderRadius:9,padding:"12px",textAlign:"center",border:"1px solid #FECACA"}}><div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Pendiente</div><div style={{fontSize:18,fontWeight:800,color:"#DC2626"}}>{fmtMoney(stats.pendiente)}</div></div>
+              <div style={{background:"#EFF6FF",borderRadius:9,padding:"12px",textAlign:"center",border:"1px solid #BFDBFE"}}><div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Total facturado</div><div style={{fontSize:18,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(stats.totalCobrar)}</div></div>
+            </div>
+          </div>}
+        </div>
+      </div>
+    )}
+
+    {showTeam&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+      <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:420,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+        <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Equipo</h2>
+        <div style={{display:"flex",gap:8,marginBottom:12}}>
+          <input value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder="Nombre..." style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+          <button onClick={addMember} style={{padding:"9px 16px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontWeight:600,fontSize:14,cursor:"pointer"}}>+ Agregar</button>
+        </div>
+        <div style={{display:"grid",gap:8,marginBottom:16,maxHeight:220,overflowY:"auto"}}>
+          {equipo.length===0?<div style={{textAlign:"center",padding:16,color:"#94A3B8",fontSize:13}}>Sin miembros aun</div>:equipo.map((m,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#F8FAFC",borderRadius:8,padding:"9px 13px",border:"1px solid #E2E8F0"}}>
+              <span style={{fontWeight:500}}>👩 {m}</span>
+              <button onClick={()=>removeMember(i)} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:6,padding:"4px 9px",fontSize:12,cursor:"pointer"}}>Eliminar</button>
+            </div>
+          ))}
+        </div>
+        <button onClick={()=>setShowTeam(false)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer",fontWeight:600}}>Cerrar</button>
+      </div>
+    </div>)}
+
+    {showPDF&&(()=>{
+      const pdfClientes=clientes.filter(c=>{
+        if(pdfOpts.sistema!=="todos"&&!(c.casos||[]).some(ca=>ca.sistema===pdfOpts.sistema))return false;
+        if(pdfOpts.estado!=="todos"&&getStatusCliente(c)!==pdfOpts.estado)return false;
+        return true;
+      });
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+          <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+              <h2 style={{margin:0,fontSize:18,fontWeight:800,color:"#0F172A"}}>Descargar PDF</h2>
+            </div>
+            <p style={{fontSize:13,color:"#64748B",margin:"0 0 20px"}}>Elige que clientes incluir</p>
+            <div style={{marginBottom:18}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#374151",textTransform:"uppercase",marginBottom:10}}>SISTEMA</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {[["todos","Todos","🗂"],["eoir","EOIR","⚖️"],["uscis","USCIS","🏛"],["foia","FOIA","📂"]].map(([val,label,icon])=>(
+                  <button key={val} onClick={()=>setPdfOpts(p=>({...p,sistema:val}))} style={{padding:"8px 14px",borderRadius:8,border:pdfOpts.sistema===val?"2px solid #1E40AF":"1px solid #E2E8F0",background:pdfOpts.sistema===val?"#EFF6FF":"#F8FAFC",color:pdfOpts.sistema===val?"#1E40AF":"#64748B",fontWeight:pdfOpts.sistema===val?700:400,fontSize:13,cursor:"pointer"}}>{icon} {label}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:13,color:"#475569"}}>
+              {pdfClientes.length} cliente{pdfClientes.length!==1?"s":""} en el reporte
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button onClick={()=>setShowPDF(false)} style={{padding:"10px 22px",borderRadius:9,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={()=>{generatePDF();setShowPDF(false);}} disabled={pdfClientes.length===0} style={{padding:"10px 22px",borderRadius:9,border:"none",background:pdfClientes.length===0?"#E5E7EB":"#1E40AF",color:pdfClientes.length===0?"#9CA3AF":"#fff",fontSize:14,fontWeight:700,cursor:pdfClientes.length===0?"not-allowed":"pointer"}}>Generar PDF</button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+
     {confirmDelete&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
       <div style={{background:"#fff",borderRadius:14,width:340,padding:28,textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
         <div style={{fontSize:40}}>🗑️</div><h3 style={{margin:"10px 0 6px",color:"#0F172A"}}>¿Eliminar este cliente?</h3>
