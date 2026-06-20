@@ -144,13 +144,22 @@ function LoginScreen({onLogin}){
       let officeInfo=null;
       if(userData.officeId){
         const officeDoc=await getDoc(doc(db,"offices",userData.officeId));
-        if(officeDoc.exists()){officeInfo={id:officeDoc.id,...officeDoc.data()};if(officeDoc.data().logoUrl)setOfficeLogo(officeDoc.data().logoUrl);}
+        if(officeDoc.exists()){officeInfo={id:officeDoc.id,...officeDoc.data()};if(officeDoc.data().logoUrl){setOfficeLogo(officeDoc.data().logoUrl);window._officeLogo=officeDoc.data().logoUrl;}}
       }
       onLogin(cred.user,userData,officeInfo);
     }catch(e){setErr("Email o contraseña incorrectos");}setLoading(false);};
   return(<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0F172A 0%,#1E40AF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
     <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:400,padding:36,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
-      <div style={{textAlign:"center",marginBottom:28}}><div style={{fontSize:48,marginBottom:8}}>⚖️</div><h1 style={{fontSize:22,fontWeight:800,color:"#0F172A",margin:0}}>Monitor de Inmigración</h1><p style={{fontSize:13,color:"#64748B",marginTop:6}}>Ingresa con tu cuenta para continuar</p></div>
+      <div style={{textAlign:"center",marginBottom:28}}>
+        <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}>
+          {window._officeLogo
+            ?<img src={window._officeLogo} alt="Logo" style={{height:64,maxWidth:200,objectFit:"contain"}}/>
+            :<div style={{fontSize:48}}>⚖️</div>
+          }
+        </div>
+        <h1 style={{fontSize:22,fontWeight:800,color:"#0F172A",margin:0}}>Monitor de Inmigración</h1>
+        <p style={{fontSize:13,color:"#64748B",marginTop:6}}>Ingresa con tu cuenta para continuar</p>
+      </div>
       <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" onKeyDown={e=>e.key==="Enter"&&login()} style={{width:"100%",padding:"11px 13px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/></div>
       <div style={{marginBottom:20}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Contraseña</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&login()} style={{width:"100%",padding:"11px 13px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/></div>
       {err&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#DC2626",marginBottom:16}}>⚠️ {err}</div>}
@@ -205,7 +214,7 @@ function App(){
           setUserData(ud);
           if(ud.officeId){
             const officeDoc=await getDoc(doc(db,"offices",ud.officeId));
-            if(officeDoc.exists()){setOfficeData({id:officeDoc.id,...officeDoc.data()});if(officeDoc.data().logoUrl)setOfficeLogo(officeDoc.data().logoUrl);}
+            if(officeDoc.exists()){setOfficeData({id:officeDoc.id,...officeDoc.data()});if(officeDoc.data().logoUrl){setOfficeLogo(officeDoc.data().logoUrl);window._officeLogo=officeDoc.data().logoUrl;}}
           }
           setUser(u);
         }
@@ -266,11 +275,13 @@ const descargarReciboPDF=async(pago)=>{
   const pdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
   const W=210; const M=18;
   pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,30,"F");
+  if(officeLogo){try{pdoc.addImage(officeLogo,"PNG",M,4,22,22);}catch(e){}}
+  const lOff2=officeLogo?26:M;
   pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
-  pdoc.text("Recibo de Pago",M,13);
+  pdoc.text("Recibo de Pago",lOff2,13);
   pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
-  pdoc.text(officeData?.name||"ImmigPath",M,20);
-  pdoc.text("Ref: "+(pago.refNum||"—"),M,26);
+  pdoc.text(officeData?.name||"ImmigPath",lOff2,20);
+  pdoc.text("Ref: "+(pago.refNum||"—"),lOff2,26);
   pdoc.setTextColor(203,216,232); pdoc.setFontSize(8);
   pdoc.text(new Date(pago.fecha).toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),W-M,20,{align:"right"});
   let y=42;
@@ -361,11 +372,13 @@ const generarReciboPDF=async(pago)=>{
   const W=210; const M=18;
   // Header
   pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,30,"F");
+  if(officeLogo){try{pdoc.addImage(officeLogo,"PNG",M,4,22,22);}catch(e){}}
+  const lOff=officeLogo?26:M;
   pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
-  pdoc.text("Recibo de Pago",M,13);
+  pdoc.text("Recibo de Pago",lOff,13);
   pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
-  pdoc.text(officeData?.name||"ImmigPath",M,20);
-  pdoc.text("Ref: "+pago.refNum,M,26);
+  pdoc.text(officeData?.name||"ImmigPath",lOff,20);
+  pdoc.text("Ref: "+pago.refNum,lOff,26);
   // Fecha derecha
   pdoc.setTextColor(203,216,232); pdoc.setFontSize(8);
   pdoc.text(new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),W-M,20,{align:"right"});
