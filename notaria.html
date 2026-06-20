@@ -85,7 +85,16 @@ function App(){
         setUser(u);
         if(data.officeId){
           const od=await getDoc(doc(db,"offices",data.officeId));
-          if(od.exists())setOfficeData({id:od.id,...od.data()});
+          if(od.exists()){
+            const odData=od.data();
+            // Verificar que la oficina tiene el modulo de notaria activo
+            const modules=odData.enabledModules||["immigration","notary"];
+            if(!modules.includes("notary")&&data.role!=="superadmin"){
+              window.location.href="/app.html";
+              return;
+            }
+            setOfficeData({id:od.id,...odData});
+          }
         }
       }catch(e){window.location.href="/app.html";}
     });
