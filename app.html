@@ -912,34 +912,7 @@ const loadTeam=async()=>{
                   </div>
                 )}
               </div>
-              {exp&&<div style={{borderTop:"1px solid #E2E8F0",background:"#F8FAFC",padding:"14px 16px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                  <span style={{fontSize:12,fontWeight:700,color:"#0F172A"}}>🧾 Historial de Recibos</span>
-                  {pagosPorCliente[c.id]&&pagosPorCliente[c.id].length>0&&
-                    <span style={{background:"#1E3A5F",color:"#fff",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>{pagosPorCliente[c.id].length}</span>
-                  }
-                </div>
-                {loadingPagos[c.id]&&<div style={{fontSize:12,color:"#94A3B8",padding:"6px 0"}}>Cargando pagos...</div>}
-                {pagosPorCliente[c.id]&&pagosPorCliente[c.id].length===0&&!loadingPagos[c.id]&&
-                  <div style={{fontSize:12,color:"#94A3B8",fontStyle:"italic"}}>Sin pagos registrados aun.</div>
-                }
-                {(pagosPorCliente[c.id]||[]).map(pago=>(
-                  <div key={pago.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{pago.concepto||"—"}</div>
-                      <div style={{fontSize:11,color:"#64748B",marginTop:3,display:"flex",gap:8,flexWrap:"wrap"}}>
-                        <span>{new Date(pago.fecha).toLocaleDateString("es-US",{day:"2-digit",month:"short",year:"numeric"})}</span>
-                        <span style={{background:pago.metodo==="zelle"?"#F0FDF4":"#EFF6FF",color:pago.metodo==="zelle"?"#16A34A":"#2563EB",border:`1px solid ${pago.metodo==="zelle"?"#BBF7D0":"#BFDBFE"}`,borderRadius:20,padding:"1px 7px",fontSize:10,fontWeight:600}}>{pago.metodo==="zelle"?"Zelle":"Stripe"}</span>
-                        <span style={{color:"#CBD5E1"}}>Ref: {pago.refNum||"—"}</span>
-                      </div>
-                    </div>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <div style={{fontSize:15,fontWeight:800,color:"#16A34A"}}>{fmtMoney(parseMoney(pago.monto))}</div>
-                      <button onClick={()=>descargarReciboPDF(pago)} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>📄 Recibo</button>
-                    </div>
-                  </div>
-                ))}
-              </div>}
+
             );
           })}
         </div>
