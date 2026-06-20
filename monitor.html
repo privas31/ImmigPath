@@ -44,7 +44,7 @@
 <script type="text/babel">
 const { useState, useEffect, useCallback } = React;
 
-// ── Configuración ─────────────────────────────────────────────────────────────
+//  Configuracin 
 const SISTEMAS = {
   uscis: { label:"USCIS", icon:"🏛", color:"#0369A1", bg:"#F0F9FF", border:"#BAE6FD",
     tiposCaso:["I-485 Ajuste de estatus","I-130 Petición familiar","I-765 Permiso de trabajo","I-131 Advance Parole","N-400 Naturalización","I-589 Asilo","I-90 Renovar Green Card","Otro"] },
@@ -64,7 +64,7 @@ const STATUS_CONFIG = {
   pendiente:{label:"Pendiente",color:"#6B7280",bg:"#F9FAFB",border:"#E5E7EB",icon:"⚪"},
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 function getStatus(f){if(!f)return"pendiente";const h=new Date();h.setHours(0,0,0,0);const d=Math.round((new Date(f+"T00:00:00")-h)/86400000);if(d<0)return"vencido";if(d===0)return"hoy";if(d<=3)return"urgente";if(d<=14)return"proximo";return"ok";}
 function getDias(f){if(!f)return null;const h=new Date();h.setHours(0,0,0,0);return Math.round((new Date(f+"T00:00:00")-h)/86400000);}
 function fmt(f){if(!f)return"—";const[y,m,d]=f.split("-");return`${m}/${d}/${y}`;}
@@ -87,13 +87,13 @@ function getFlag(p){return FLAG_MAP[p]||"🌍";}
 const emptyCaso={sistema:"uscis",tipoCaso:"",receiptNum:"",alienNum:"",corte:"",juez:"",fechaCorte:"",fechaHuellas:"",tipoCita:"",tieneEAD:"",eadReceipt:"",eadVence:"",eadRenovado:"",fechaAsilo:"",estatusReloj:"",estatusCaso:"",origenCaso:"",foiaTracking:"",foiaEstado:"",foiaRespuesta:"",procesos:[],nota:""};
 const emptyCliente={nombre:"",paisOrigen:"",alienNum:"",telefono:"",email:"",encargada:"",casos:[],nota:""};
 
-// ── Pequeños componentes ──────────────────────────────────────────────────────
+//  Pequeos componentes 
 function Field({label,value,onChange,type="text",placeholder="",mono=false}){
   return(<div style={{marginBottom:11}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>{label}</label><input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,outline:"none",fontFamily:mono?"monospace":"inherit"}}/></div>);
 }
 function Badge({cfg,label}){return<span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:600,whiteSpace:"nowrap"}}>{cfg.icon} {label}</span>;}
 
-// ── Editor de procesos de pago ────────────────────────────────────────────────
+//  Editor de procesos de pago 
 function ProcesosEditor({procesos,onChange}){
   const add=()=>onChange([...procesos,{nombre:"",precio:"",pagado:"",notas:"",id:Date.now()}]);
   const upd=(i,f,v)=>{const n=[...procesos];n[i]={...n[i],[f]:v};onChange(n);};
@@ -129,7 +129,7 @@ function ProcesosEditor({procesos,onChange}){
   </div>);
 }
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
+//  LOGIN 
 function LoginScreen({onLogin}){
   const[email,setEmail]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[loading,setLoading]=useState(false);
   const login=async()=>{if(!email||!pw){setErr("Ingresa tu email y contraseña");return;}setLoading(true);setErr("");
@@ -158,7 +158,7 @@ function LoginScreen({onLogin}){
     </div></div>);
 }
 
-// ── MAIN APP ──────────────────────────────────────────────────────────────────
+//  MAIN APP 
 function App(){
   const[user,setUser]=useState(null);const[userData,setUserData]=useState(null);const[officeData,setOfficeData]=useState(null);
   const[authLoading,setAuthLoading]=useState(true);
@@ -209,7 +209,7 @@ function App(){
     try{
       const{db,collection,getDocs,query,where,orderBy}=window._firebase;
       const officeId=officeData?.id||userData?.officeId;
-      // ═══ MULTI-OFFICE: filter by officeId ═══
+      //  MULTI-OFFICE: filter by officeId 
       let q;
       if(officeId){
         q=query(collection(db,"clientes"),where("officeId","==",officeId),orderBy("createdAt","desc"));
@@ -319,7 +319,7 @@ function App(){
         setClientes(prev=>prev.map(c=>c.id===editId?{...c,...formCliente,officeId}:c));
         showToastFn("Cliente actualizado ✓");
       }else{
-        // ═══ MULTI-OFFICE: always save officeId ═══
+        //  MULTI-OFFICE: always save officeId 
         const encargadaAuto = formCliente.encargada || currentUser?.displayName || userData?.displayName || user.email;
         const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString(),createdBy:user.email});
         setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString()},...prev]);
@@ -367,11 +367,11 @@ function App(){
     const datos=filtered;
     if(!datos.length){showToastFn("Sin casos para exportar","error");return;}
 
-                  // ── Helper: limpiar texto para jsPDF ──
+                  //  Helper: limpiar texto para jsPDF 
                   const cleanTxt = s => { if(!s) return ""; let r=""; for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);if(c>=32&&c<=126)r+=s[i];} return r.trim(); };
                   const W2 = 297; const M = 10;
 
-                  // ── HEADER ──────────────────────────────────────────────
+                  //  HEADER 
                   // Banda superior azul marino
                   pdfdoc.setFillColor(30,58,95);
                   pdfdoc.rect(0,0,W2,26,"F");
@@ -395,8 +395,8 @@ function App(){
                   pdfdoc.setFontSize(6.5);
                   pdfdoc.text("Confidencial", W2-M-29, 12);
 
-                  // ── TABLA ────────────────────────────────────────────────
-                  // (estado removido del PDF — no se muestra)
+                  //  TABLA 
+                  // (estado removido del PDF  no se muestra)
 
                   const rows3=[];
                   datos.forEach(c=>{
@@ -406,7 +406,7 @@ function App(){
                     const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
                     const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
                     const pct=getPct(totalP,pagadoP);
-                    // Sistemas: texto limpio deduplicado, separado por " · "
+                    // Sistemas: texto limpio deduplicado, separado por "  "
                     const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"A.P.","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
                     const sistemasUnicos=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()).filter(Boolean))];
                     const tiposUnicos=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
@@ -484,7 +484,7 @@ function App(){
                     tableLineWidth:0.1
                   });
 
-                  // ── FOOTER ───────────────────────────────────────────────
+                  //  FOOTER 
                   const pcPDF=pdfdoc.internal.getNumberOfPages();
                   for(let i=1;i<=pcPDF;i++){
                     pdfdoc.setPage(i);
@@ -507,7 +507,7 @@ function App(){
   if(!user||!officeData)return<LoginScreen onLogin={handleLogin}/>;
 
   const officeName=officeData?.name||"Mi Oficina";
-  // ═══ PERMISOS POR ROL ═══
+  //  PERMISOS POR ROL 
   const isAdmin = userData?.role==="office_admin" || userData?.role==="superadmin";
 
   return(<div style={{fontFamily:"'Segoe UI',Inter,sans-serif",minHeight:"100vh",background:"#F1F5F9"}}>
@@ -878,7 +878,7 @@ function App(){
 
     {/* MODAL PDF */}
     {showPDF&&(()=>{
-      // Calcular clientes según filtros del modal PDF
+      // Calcular clientes segn filtros del modal PDF
       const pdfClientes = clientes.filter(c => {
         const st = getStatusCliente(c);
         if(pdfOpts.sistema !== "todos" && !(c.casos||[]).some(ca => ca.sistema === pdfOpts.sistema)) return false;
@@ -943,11 +943,11 @@ function App(){
                 const datos=pdfClientes;
                 if(!datos.length){showToastFn("Sin clientes para este filtro","error");return;}
 
-                  // ── Helper: limpiar texto para jsPDF ──
+                  //  Helper: limpiar texto para jsPDF 
                   const cleanTxt = s => { if(!s) return ""; let r=""; for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);if(c>=32&&c<=126)r+=s[i];} return r.trim(); };
                   const W2 = 297; const M = 10;
 
-                  // ── HEADER ──────────────────────────────────────────────
+                  //  HEADER 
                   // Banda superior azul marino
                   pdfdoc.setFillColor(30,58,95);
                   pdfdoc.rect(0,0,W2,26,"F");
@@ -971,8 +971,8 @@ function App(){
                   pdfdoc.setFontSize(6.5);
                   pdfdoc.text("Confidencial", W2-M-29, 12);
 
-                  // ── TABLA ────────────────────────────────────────────────
-                  // (estado removido del PDF — no se muestra)
+                  //  TABLA 
+                  // (estado removido del PDF  no se muestra)
 
                   const rows3=[];
                   datos.forEach(c=>{
@@ -982,7 +982,7 @@ function App(){
                     const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
                     const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
                     const pct=getPct(totalP,pagadoP);
-                    // Sistemas: texto limpio deduplicado, separado por " · "
+                    // Sistemas: texto limpio deduplicado, separado por "  "
                     const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"A.P.","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
                     const sistemasUnicos=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()).filter(Boolean))];
                     const tiposUnicos=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
@@ -1060,7 +1060,7 @@ function App(){
                     tableLineWidth:0.1
                   });
 
-                  // ── FOOTER ───────────────────────────────────────────────
+                  //  FOOTER 
                   const pcPDF=pdfdoc.internal.getNumberOfPages();
                   for(let i=1;i<=pcPDF;i++){
                     pdfdoc.setPage(i);
@@ -1305,13 +1305,13 @@ function App(){
                   const empleadas2=[...new Set(clientes.map(c=>c.encargada).filter(Boolean))];
                   const TARIFAS_DEFAULT2={"Asilo (I-589)":100,"Permiso de trabajo (I-765)":50,"Ajuste de estatus (I-485)":150,"Peticion familiar (I-130)":100,"Naturalizacion (N-400)":80,"Cancelacion de deportacion":150,"FOIA":40,"Consultoria":30,"Advance Parole (I-131)":60,"Renovar Green Card (I-90)":80,"Otro":50};
 
-                  // ── HEADER azul marino ──────────────────────────────────
+                  //  HEADER azul marino 
                   pdfdoc.setFillColor(30,58,95);
                   pdfdoc.rect(0,0,W,28,"F");
                   pdfdoc.setTextColor(255,255,255);
                   pdfdoc.setFontSize(13);
                   pdfdoc.setFont("helvetica","bold");
-                  const officeNamePDF=(officeData?.name||"Oficina").replace(/[^ -]/g,"");
+                  const officeNamePDF=(officeData?.name||"Oficina").replace(replace(/[^\u0020-\u007E]/g,"");
                   pdfdoc.text("Reporte de Nomina — "+officeNamePDF, margin, 11);
                   pdfdoc.setFontSize(8);
                   pdfdoc.setFont("helvetica","normal");
@@ -1326,7 +1326,7 @@ function App(){
                   pdfdoc.setFontSize(7);
                   pdfdoc.text("Confidencial", W-margin-27, 10.5);
 
-                  // ── EMPLEADAS ───────────────────────────────────────────
+                  //  EMPLEADAS 
                   let yPos=36;
                   let grandTotal=0;
 
@@ -1337,7 +1337,7 @@ function App(){
                       (c.casos||[]).forEach(ca=>{
                         (ca.procesos||[]).forEach(p=>{
                           if(p.nombre){
-                            const key=p.nombre.replace(/[^ -]/g,"").trim();
+                            const key=p.nombre.replace(replace(/[^\u0020-\u007E]/g,"").trim();
                             if(!key)return;
                             if(!procesos[key])procesos[key]={cantidad:0};
                             procesos[key].cantidad++;
@@ -1347,18 +1347,18 @@ function App(){
                     });
 
                     const empRows=Object.entries(procesos).map(([nombre,data])=>{
-                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.replace(/[^ -]/g,"").trim()===nombre)||nombre;
+                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.replace(replace(/[^\u0020-\u007E]/g,"").trim()===nombre)||nombre;
                       const tarifa=tarifasNomina[keyOrig]!==undefined?tarifasNomina[keyOrig]:(TARIFAS_DEFAULT2[keyOrig]||50);
                       return[nombre,String(data.cantidad),"$"+tarifa.toFixed(2),"$"+(tarifa*data.cantidad).toFixed(2)];
                     });
                     const totalEmp=Object.entries(procesos).reduce((s,[nombre,data])=>{
-                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.replace(/[^ -]/g,"").trim()===nombre)||nombre;
+                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.replace(replace(/[^\u0020-\u007E]/g,"").trim()===nombre)||nombre;
                       const tarifa=tarifasNomina[keyOrig]!==undefined?tarifasNomina[keyOrig]:(TARIFAS_DEFAULT2[keyOrig]||50);
                       return s+(tarifa*data.cantidad);
                     },0);
                     grandTotal+=totalEmp;
 
-                    const empName=emp.replace(/[^ -]/g,"");
+                    const empName=emp.replace(replace(/[^\u0020-\u007E]/g,"");
 
                     // Card header de la empleada
                     pdfdoc.setFillColor(241,245,249);
@@ -1401,11 +1401,11 @@ function App(){
                     });
                     yPos=pdfdoc.lastAutoTable.finalY+10;
 
-                    // Nueva página si hace falta
+                    // Nueva pgina si hace falta
                     if(yPos>260 && empIdx<empleadas2.length-1){pdfdoc.addPage();yPos=20;}
                   });
 
-                  // ── TOTAL GENERAL ────────────────────────────────────────
+                  //  TOTAL GENERAL 
                   if(yPos>260){pdfdoc.addPage();yPos=20;}
                   pdfdoc.setFillColor(30,58,95);
                   pdfdoc.roundedRect(margin, yPos, W-margin*2, 14, 3, 3, "F");
@@ -1419,7 +1419,7 @@ function App(){
                   pdfdoc.text("$"+grandTotal.toFixed(2), W-margin-4, yPos+10, {align:"right"});
                   yPos+=22;
 
-                  // ── FOOTER ───────────────────────────────────────────────
+                  //  FOOTER 
                   const totalPages=pdfdoc.internal.getNumberOfPages();
                   for(let i=1;i<=totalPages;i++){
                     pdfdoc.setPage(i);
@@ -1508,7 +1508,7 @@ function App(){
   </div>);
 }
 
-// ── Editor de Caso simplificado ──────────────────────────────────────────────
+//  Editor de Caso simplificado 
 function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
   const sys=SISTEMAS[caso.sistema]||SISTEMAS.uscis;
   return(<div style={{background:"#F8FAFC",border:`2px solid ${sys.border}`,borderRadius:10,padding:"14px",marginBottom:12}}>
