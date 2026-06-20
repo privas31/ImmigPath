@@ -36,6 +36,24 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     window._firebase = { auth, db, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, setDoc, getDoc };
+
+    // Cargar logo y nombre de oficina desde ?o= antes del login
+    (async()=>{
+      const params = new URLSearchParams(window.location.search);
+      const officeCode = params.get("o");
+      if(officeCode){
+        try{
+          const snap = await getDoc(doc(db,"offices",officeCode));
+          if(snap.exists()){
+            const data = snap.data();
+            if(data.logoUrl){ window._officeLogo = data.logoUrl; }
+            if(data.name){ window._officeName = data.name; }
+            // Forzar re-render del login si ya está montado
+            if(window._forceLoginUpdate) window._forceLoginUpdate();
+          }
+        }catch(e){}
+      }
+    })();
   </script>
   <style>* { box-sizing:border-box; margin:0; padding:0; } body { font-family:'Segoe UI',Inter,sans-serif; background:#F1F5F9; } ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}</style>
 </head>
@@ -132,6 +150,12 @@ function ProcesosEditor({procesos,onChange}){
 //  LOGIN 
 function LoginScreen({onLogin}){
   const[email,setEmail]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[loading,setLoading]=useState(false);
+  const[loginLogo,setLoginLogo]=useState(window._officeLogo||null);
+  const[loginName,setLoginName]=useState(window._officeName||null);
+  useEffect(()=>{
+    window._forceLoginUpdate=()=>{setLoginLogo(window._officeLogo||null);setLoginName(window._officeName||null);};
+    return()=>{window._forceLoginUpdate=null;};
+  },[]);
   const login=async()=>{if(!email||!pw){setErr("Ingresa tu email y contraseña");return;}setLoading(true);setErr("");
     try{
       const{auth,signInWithEmailAndPassword,db,doc,getDoc}=window._firebase;
@@ -152,12 +176,12 @@ function LoginScreen({onLogin}){
     <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:400,padding:36,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
       <div style={{textAlign:"center",marginBottom:28}}>
         <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}>
-          {window._officeLogo
-            ?<img src={window._officeLogo} alt="Logo" style={{height:64,maxWidth:200,objectFit:"contain"}}/>
+          {loginLogo
+            ?<img src={loginLogo} alt="Logo" style={{height:70,maxWidth:220,objectFit:"contain",borderRadius:10}}/>
             :<div style={{fontSize:48}}>⚖️</div>
           }
         </div>
-        <h1 style={{fontSize:22,fontWeight:800,color:"#0F172A",margin:0}}>Monitor de Inmigración</h1>
+        <h1 style={{fontSize:22,fontWeight:800,color:"#0F172A",margin:0}}>{loginName||"Monitor de Inmigración"}</h1>
         <p style={{fontSize:13,color:"#64748B",marginTop:6}}>Ingresa con tu cuenta para continuar</p>
       </div>
       <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" onKeyDown={e=>e.key==="Enter"&&login()} style={{width:"100%",padding:"11px 13px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/></div>
@@ -1918,6 +1942,13 @@ const loadTeam=async()=>{
               <input value={pagosConfig.stripeLink||""} onChange={e=>setPagosConfig(p=>({...p,stripeLink:e.target.value}))} placeholder="https://buy.stripe.com/..." style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
               <div style={{fontSize:11,color:"#94A3B8",marginTop:4}}>Crea tu link en dashboard.stripe.com → Payment Links</div>
             </div>
+          </div>
+          {/* Link de acceso personalizado */}
+          <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:10,padding:"12px 14px",marginBottom:16}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#15803D",marginBottom:6}}>🔗 Link de acceso con logo</div>
+            <div style={{fontFamily:"monospace",fontSize:12,color:"#1E3A5F",wordBreak:"break-all",marginBottom:8}}>{window.location.origin+"/app.html?o="+(officeData?.id||"")}</div>
+            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/app.html?o="+(officeData?.id||"")).then(()=>showToastFn("Link copiado ✓"));}} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>📋 Copiar link</button>
+            <div style={{fontSize:11,color:"#64748B",marginTop:6}}>Comparte este link con tu equipo — verán tu logo al entrar</div>
           </div>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <button onClick={()=>setShowPagosConfig(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer"}}>Cancelar</button>
