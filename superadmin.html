@@ -15,9 +15,11 @@
   .app{display:flex;height:100vh;overflow:hidden;}
   .sidebar{width:240px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
   .main{flex:1;overflow-y:auto;}
-  .logo{padding:20px 16px;border-bottom:1px solid var(--border);}
-  .logo h1{font-size:15px;font-weight:600;}
-  .logo span{font-size:11px;color:var(--accent2);letter-spacing:.5px;text-transform:uppercase;}
+  .logo{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .logo-img{width:36px;height:36px;border-radius:8px;object-fit:contain;background:rgba(99,102,241,0.15);padding:2px;flex-shrink:0;}
+  .logo-img-placeholder{width:36px;height:36px;border-radius:8px;background:rgba(99,102,241,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .logo-text h1{font-size:14px;font-weight:600;}
+  .logo-text span{font-size:10px;color:var(--accent2);letter-spacing:.5px;text-transform:uppercase;}
   .nav{padding:12px 8px;flex:1;}
   .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--text2);margin-bottom:2px;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-size:13px;}
   .nav-item:hover{background:var(--bg3);color:var(--text);}
@@ -91,23 +93,28 @@
   .toast.success{border-color:var(--green);color:var(--green);}
   .toast.error{border-color:var(--red);color:var(--red);}
   @keyframes slideIn{from{transform:translateX(20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
-
-  /* LOGIN */
   .login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;}
   .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px;width:100%;max-width:380px;}
   .login-logo{text-align:center;margin-bottom:28px;}
-  .login-logo h1{font-size:24px;font-weight:700;margin-bottom:6px;}
-  .login-logo p{font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:1px;}
+  .login-logo-img{height:70px;max-width:200px;object-fit:contain;margin-bottom:12px;}
+  .login-logo h1{font-size:22px;font-weight:700;margin-bottom:4px;}
+  .login-logo p{font-size:11px;color:var(--accent2);text-transform:uppercase;letter-spacing:1px;}
   .login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;margin-bottom:16px;display:none;}
+  /* Branding config */
+  .branding-preview{display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;}
+  .branding-logo-prev{width:48px;height:48px;border-radius:8px;object-fit:contain;background:rgba(99,102,241,0.1);padding:3px;}
 </style>
 </head>
 <body>
 
-<!-- ═══ LOGIN SCREEN ═══ -->
-<div id="login-screen" class="login-screen" style="display:flex">
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <h1>🏛️ ImmigPath</h1>
+      <div id="login-logo-container">
+        <div style="font-size:48px;margin-bottom:8px">🏛️</div>
+      </div>
+      <h1 id="login-platform-name">ImmigPath</h1>
       <p>Super Admin · Acceso Restringido</p>
     </div>
     <div id="login-err" class="login-err"></div>
@@ -125,12 +132,15 @@
   </div>
 </div>
 
-<!-- ═══ MAIN APP ═══ -->
+<!-- MAIN APP -->
 <div class="app" id="main-app" style="display:none">
   <aside class="sidebar">
     <div class="logo">
-      <h1>ImmigPath Platform</h1>
-      <span>Super Admin</span>
+      <div id="sidebar-logo-container" class="logo-img-placeholder">🏛️</div>
+      <div class="logo-text">
+        <h1 id="sidebar-platform-name">ImmigPath</h1>
+        <span>Super Admin</span>
+      </div>
     </div>
     <nav class="nav">
       <div class="nav-label">Principal</div>
@@ -141,6 +151,11 @@
       <button class="nav-item" onclick="showSection('offices',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
         Oficinas
+      </button>
+      <div class="nav-label">Configuración</div>
+      <button class="nav-item" onclick="showSection('branding',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        Branding
       </button>
       <div class="nav-label">Sistema</div>
       <button class="nav-item" onclick="doSignOut()">
@@ -170,23 +185,10 @@
       </div>
       <div class="content">
         <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">Oficinas Activas</div>
-            <div class="stat-value" id="stat-offices">—</div>
-            <div class="stat-sub" id="stat-offices-sub"></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Total Clientes</div>
-            <div class="stat-value" id="stat-clients">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Casos Activos</div>
-            <div class="stat-value" id="stat-cases">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Ingresos del Mes</div>
-            <div class="stat-value" id="stat-revenue">—</div>
-          </div>
+          <div class="stat-card"><div class="stat-label">Oficinas Activas</div><div class="stat-value" id="stat-offices">—</div><div class="stat-sub" id="stat-offices-sub"></div></div>
+          <div class="stat-card"><div class="stat-label">Total Clientes</div><div class="stat-value" id="stat-clients">—</div></div>
+          <div class="stat-card"><div class="stat-label">Casos Activos</div><div class="stat-value" id="stat-cases">—</div></div>
+          <div class="stat-card"><div class="stat-label">Ingresos del Mes</div><div class="stat-value" id="stat-revenue">—</div></div>
         </div>
         <div class="table-container">
           <div class="table-header">
@@ -195,9 +197,7 @@
           </div>
           <table>
             <thead><tr><th>Oficina</th><th>Plan</th><th>Módulos</th><th>Clientes</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody id="offices-table-body">
-              <tr><td colspan="6"><div class="empty"><div class="empty-icon">🏢</div>No hay oficinas aún</div></td></tr>
-            </tbody>
+            <tbody id="offices-table-body"><tr><td colspan="6"><div class="empty"><div class="empty-icon">🏢</div>No hay oficinas aún</div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -214,10 +214,39 @@
           <div class="table-header"><h3>Todas las Oficinas</h3></div>
           <table>
             <thead><tr><th>Nombre</th><th>Dueño</th><th>Email</th><th>Plan</th><th>Módulos</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody id="offices-full-table">
-              <tr><td colspan="7"><div class="empty">Cargando...</div></td></tr>
-            </tbody>
+            <tbody id="offices-full-table"><tr><td colspan="7"><div class="empty">Cargando...</div></td></tr></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BRANDING -->
+    <div id="section-branding" class="hidden">
+      <div class="header"><h2>Branding de la Plataforma</h2></div>
+      <div class="content">
+        <div class="table-container" style="padding:24px;max-width:560px">
+          <h3 style="margin-bottom:20px;font-size:15px">🎨 Identidad visual</h3>
+
+          <div class="form-group">
+            <label class="form-label">Nombre de la plataforma</label>
+            <input class="form-input" id="brand-name" placeholder="ImmigPath" value="ImmigPath">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">URL del logo (imagen)</label>
+            <input class="form-input" id="brand-logo" placeholder="https://i.postimg.cc/..." oninput="previewLogo()">
+            <div style="font-size:11px;color:var(--text2);margin-top:6px">Sube tu logo a postimages.org o imgur y pega el link directo aquí</div>
+          </div>
+
+          <div id="logo-preview" style="display:none" class="branding-preview">
+            <img id="logo-preview-img" class="branding-logo-prev" src="" alt="Logo">
+            <div>
+              <div style="font-size:13px;font-weight:600" id="preview-name">ImmigPath</div>
+              <div style="font-size:11px;color:var(--text2)">Así se verá en el sidebar y login</div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="saveBranding()" style="margin-top:8px">Guardar branding</button>
         </div>
       </div>
     </div>
@@ -264,9 +293,9 @@
         <label class="form-label">Módulos Activados</label>
         <div class="module-grid">
           <div class="module-toggle"><input type="checkbox" id="mod-imm" value="immigration" checked><label for="mod-imm">🏛️ Inmigración</label></div>
-          <div class="module-toggle"><input type="checkbox" id="mod-tax" value="taxes" checked><label for="mod-tax">🧾 Taxes</label></div>
+          <div class="module-toggle"><input type="checkbox" id="mod-tax" value="taxes"><label for="mod-tax">🧾 Taxes</label></div>
           <div class="module-toggle"><input type="checkbox" id="mod-ins" value="insurance"><label for="mod-ins">🛡️ Seguros</label></div>
-          <div class="module-toggle"><input type="checkbox" id="mod-not" value="notary"><label for="mod-not">📋 Notaría</label></div>
+          <div class="module-toggle"><input type="checkbox" id="mod-not" value="notary" checked><label for="mod-not">📋 Notaría</label></div>
         </div>
       </div>
       <div class="form-group">
@@ -292,8 +321,7 @@ const firebaseConfig = {
   projectId: "immigration-platform-11380",
   storageBucket: "immigration-platform-11380.firebasestorage.app",
   messagingSenderId: "682062748742",
-  appId: "1:682062748742:web:5b2466ddf7d8ae05a67e47",
-  measurementId: "G-3VXLEW9B2M"
+  appId: "1:682062748742:web:5b2466ddf7d8ae05a67e47"
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -303,7 +331,65 @@ const db = getFirestore(app);
 let currentUser = null;
 let officesCache = [];
 
-// ── Auth ─────────────────────────────────────────
+// ── Cargar branding al inicio ─────────────────────────────────────────────
+async function loadBrandingConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'superadmin_branding'));
+    if (snap.exists()) {
+      const data = snap.data();
+      applyBranding(data.logoUrl || null, data.platformName || 'ImmigPath');
+      document.getElementById('brand-logo').value = data.logoUrl || '';
+      document.getElementById('brand-name').value = data.platformName || 'ImmigPath';
+      if (data.logoUrl) previewLogo();
+    }
+  } catch(e) {}
+}
+
+function applyBranding(logoUrl, name) {
+  // Login
+  const loginLogoContainer = document.getElementById('login-logo-container');
+  if (logoUrl) {
+    loginLogoContainer.innerHTML = `<img src="${logoUrl}" class="login-logo-img" alt="Logo" onerror="this.style.display='none'">`;
+  }
+  document.getElementById('login-platform-name').textContent = name || 'ImmigPath';
+
+  // Sidebar
+  const sidebarLogo = document.getElementById('sidebar-logo-container');
+  if (logoUrl) {
+    sidebarLogo.innerHTML = `<img src="${logoUrl}" class="logo-img" alt="Logo" onerror="this.style.display='none'">`;
+    sidebarLogo.className = '';
+  }
+  document.getElementById('sidebar-platform-name').textContent = name || 'ImmigPath';
+}
+
+window.previewLogo = function() {
+  const url = document.getElementById('brand-logo').value.trim();
+  const name = document.getElementById('brand-name').value.trim() || 'ImmigPath';
+  const preview = document.getElementById('logo-preview');
+  const img = document.getElementById('logo-preview-img');
+  const prevName = document.getElementById('preview-name');
+  prevName.textContent = name;
+  if (url) {
+    img.src = url;
+    preview.style.display = 'flex';
+  } else {
+    preview.style.display = 'none';
+  }
+};
+
+window.saveBranding = async function() {
+  const logoUrl = document.getElementById('brand-logo').value.trim();
+  const name = document.getElementById('brand-name').value.trim() || 'ImmigPath';
+  try {
+    await setDoc(doc(db, 'config', 'superadmin_branding'), { logoUrl, platformName: name, updatedAt: new Date().toISOString() });
+    applyBranding(logoUrl, name);
+    showToast('✓ Branding guardado', 'success');
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+};
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
 window.doLogin = async function() {
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
@@ -314,15 +400,11 @@ window.doLogin = async function() {
   btn.disabled = true;
   try {
     const userCred = await signInWithEmailAndPassword(auth, email, pass);
-    const user = userCred.user;
-    console.log('Auth OK, UID:', user.uid);
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    console.log('Doc exists:', userDoc.exists());
+    const userDoc = await getDoc(doc(db, 'users', userCred.user.uid));
     if (userDoc.exists() && userDoc.data().role === 'superadmin') {
-      currentUser = { uid: user.uid, ...userDoc.data() };
+      currentUser = { uid: userCred.user.uid, ...userDoc.data() };
       document.getElementById('admin-name').textContent = currentUser.displayName || 'Super Admin';
-      const initials = (currentUser.displayName || 'SA').substring(0,2).toUpperCase();
-      document.getElementById('avatar-initials').textContent = initials;
+      document.getElementById('avatar-initials').textContent = (currentUser.displayName || 'SA').substring(0,2).toUpperCase();
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'flex';
       loadDashboard();
@@ -330,26 +412,19 @@ window.doLogin = async function() {
       errEl.textContent = 'Acceso denegado. Solo Super Admins.';
       errEl.style.display = 'block';
       await signOut(auth);
-      btn.textContent = 'Iniciar Sesión';
-      btn.disabled = false;
+      btn.textContent = 'Iniciar Sesión'; btn.disabled = false;
     }
   } catch(err) {
-    errEl.textContent = 'Error: ' + err.message;
+    errEl.textContent = 'Email o contraseña incorrectos';
     errEl.style.display = 'block';
-    btn.textContent = 'Iniciar Sesión';
-    btn.disabled = false;
+    btn.textContent = 'Iniciar Sesión'; btn.disabled = false;
   }
 };
 
-document.getElementById('login-pass').addEventListener('keydown', e => {
-  if(e.key === 'Enter') doLogin();
-});
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+window.doSignOut = async function() { await signOut(auth); location.reload(); };
 
-window.doSignOut = async function() {
-  await signOut(auth);
-};
-
-// ── Dashboard ────────────────────────────────────
+// ── Dashboard ─────────────────────────────────────────────────────────────────
 async function loadDashboard() {
   try {
     const officesSnap = await getDocs(collection(db, 'offices'));
@@ -364,17 +439,12 @@ async function loadDashboard() {
     document.getElementById('stat-revenue').textContent = '$' + (active.length * 99).toLocaleString();
     renderOfficesTable(officesCache);
     renderOfficesFullTable(officesCache);
-  } catch(err) {
-    showToast('Error: ' + err.message, 'error');
-  }
+  } catch(err) { showToast('Error: ' + err.message, 'error'); }
 }
 
 function renderOfficesTable(offices) {
   const tbody = document.getElementById('offices-table-body');
-  if (!offices.length) {
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">🏢</div>No hay oficinas. ¡Crea la primera!</div></td></tr>';
-    return;
-  }
+  if (!offices.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">🏢</div>No hay oficinas. ¡Crea la primera!</div></td></tr>'; return; }
   tbody.innerHTML = offices.map(o => `
     <tr>
       <td><div style="font-weight:500">${o.name}</div><div style="font-size:11px;color:var(--text2)">${o.email||''}</div></td>
@@ -383,6 +453,7 @@ function renderOfficesTable(offices) {
       <td>${o.stats?.totalClients||0}</td>
       <td><span class="badge ${o.isActive?'badge-green':'badge-red'}">${o.isActive?'● Activa':'○ Inactiva'}</span></td>
       <td><div class="actions">
+        <button class="action-btn" onclick="editOfficeModules('${o.id}')">Módulos</button>
         <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
       </div></td>
     </tr>`).join('');
@@ -398,7 +469,10 @@ function renderOfficesFullTable(offices) {
       <td><span class="badge ${getPlanBadge(o.plan)}">${o.plan}</span></td>
       <td><div class="modules">${renderModulePills(o.enabledModules||[])}</div></td>
       <td><span class="badge ${o.isActive?'badge-green':'badge-red'}">${o.isActive?'Activa':'Inactiva'}</span></td>
-      <td><button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button></td>
+      <td>
+        <button class="action-btn" onclick="editOfficeModules('${o.id}')">Módulos</button>
+        <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
+      </td>
     </tr>`).join('');
 }
 
@@ -407,31 +481,58 @@ function renderModulePills(modules) {
   const labels = {immigration:'Imm',taxes:'Tax',insurance:'Seg',notary:'Not'};
   return modules.map(m => `<span class="mod ${map[m]||''}">${labels[m]||m}</span>`).join('');
 }
+function getPlanBadge(plan) { return {basic:'badge-gray',professional:'badge-purple',enterprise:'badge-yellow'}[plan]||'badge-gray'; }
 
-function getPlanBadge(plan) {
-  return {basic:'badge-gray',professional:'badge-purple',enterprise:'badge-yellow'}[plan]||'badge-gray';
-}
+// ── Editar módulos de una oficina ─────────────────────────────────────────────
+window.editOfficeModules = function(officeId) {
+  const office = officesCache.find(o => o.id === officeId);
+  if (!office) return;
+  const modules = office.enabledModules || [];
+  const html = `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:360px;margin:0 auto">
+      <div style="font-size:15px;font-weight:600;margin-bottom:16px">Módulos — ${office.name}</div>
+      <div class="module-grid" style="margin-bottom:16px">
+        ${[['immigration','🏛️ Inmigración'],['taxes','🧾 Taxes'],['insurance','🛡️ Seguros'],['notary','📋 Notaría']].map(([val,label]) => `
+          <div class="module-toggle">
+            <input type="checkbox" id="edit-mod-${val}" value="${val}" ${modules.includes(val)?'checked':''}>
+            <label for="edit-mod-${val}">${label}</label>
+          </div>`).join('')}
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="saveOfficeModules('${officeId}')">Guardar módulos</button>
+    </div>`;
+  document.getElementById('modules-edit-container').innerHTML = html;
+  document.getElementById('modal-modules').classList.remove('hidden');
+};
 
-// ── Create Office ────────────────────────────────
+window.saveOfficeModules = async function(officeId) {
+  const allMods = ['immigration','taxes','insurance','notary'];
+  const selected = allMods.filter(m => document.getElementById('edit-mod-'+m)?.checked);
+  try {
+    await updateDoc(doc(db,'offices',officeId), { enabledModules: selected });
+    showToast('✓ Módulos actualizados', 'success');
+    document.getElementById('modal-modules').classList.add('hidden');
+    loadDashboard();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+};
+
+// ── Crear Oficina ─────────────────────────────────────────────────────────────
 window.createOffice = async function() {
-  const name = document.getElementById('new-office-name').value.trim();
+  const name  = document.getElementById('new-office-name').value.trim();
   const owner = document.getElementById('new-office-owner').value.trim();
   const email = document.getElementById('new-office-email').value.trim();
   const phone = document.getElementById('new-office-phone').value.trim();
-  const plan = document.getElementById('new-office-plan').value;
-  const pass = document.getElementById('new-office-pass').value;
+  const plan  = document.getElementById('new-office-plan').value;
+  const pass  = document.getElementById('new-office-pass').value;
   if (!name||!owner||!email||!pass) { showToast('Completa todos los campos requeridos','error'); return; }
   if (pass.length < 8) { showToast('La contraseña debe tener mínimo 8 caracteres','error'); return; }
-  const modules = ['mod-imm','mod-tax','mod-ins','mod-not']
-    .filter(id => document.getElementById(id).checked)
-    .map(id => ({  'mod-imm':'immigration','mod-tax':'taxes','mod-ins':'insurance','mod-not':'notary'})[id]);
+  const modules = ['mod-imm','mod-tax','mod-ins','mod-not'].filter(id => document.getElementById(id).checked)
+    .map(id => ({'mod-imm':'immigration','mod-tax':'taxes','mod-ins':'insurance','mod-not':'notary'})[id]);
   try {
     const userCred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid = userCred.user.uid;
-    const officeRef = await addDoc(collection(db, 'offices'), {
+    const officeRef = await addDoc(collection(db,'offices'), {
       name, ownerName:owner, email, phone, plan, isActive:true,
       enabledModules:modules,
-      branding:{logoUrl:null,primaryColor:'#6366f1',businessName:name},
       stats:{totalClients:0,activeCases:0,totalCases:0},
       createdAt:serverTimestamp(), createdBy:currentUser.uid,
     });
@@ -441,11 +542,9 @@ window.createOffice = async function() {
       isActive:true, createdAt:serverTimestamp(),
     });
     closeModal('modal-new-office');
-    showToast('✓ Oficina "'+name+'" creada exitosamente','success');
+    showToast('✓ Oficina "'+name+'" creada', 'success');
     loadDashboard();
-  } catch(err) {
-    showToast('Error: '+err.message,'error');
-  }
+  } catch(err) { showToast('Error: '+err.message,'error'); }
 };
 
 window.toggleOffice = async function(id, isActive) {
@@ -461,7 +560,6 @@ window.filterOffices = function(q) {
   renderOfficesTable(filtered);
 };
 
-// ── UI ───────────────────────────────────────────
 window.showSection = function(section, btn) {
   document.querySelectorAll('[id^="section-"]').forEach(el => el.classList.add('hidden'));
   document.getElementById('section-'+section)?.classList.remove('hidden');
@@ -469,13 +567,12 @@ window.showSection = function(section, btn) {
   btn?.classList.add('active');
 };
 
-window.openModal = function(id) { document.getElementById(id)?.classList.remove('hidden'); };
-window.closeModal = function(id) { document.getElementById(id)?.classList.add('hidden'); };
+window.openModal  = id => document.getElementById(id)?.classList.remove('hidden');
+window.closeModal = id => document.getElementById(id)?.classList.add('hidden');
 
 function showToast(msg, type='success') {
   const t = document.createElement('div');
-  t.className = 'toast '+type;
-  t.textContent = msg;
+  t.className = 'toast '+type; t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3500);
 }
@@ -483,6 +580,15 @@ function showToast(msg, type='success') {
 document.querySelectorAll('.modal-backdrop').forEach(bd => {
   bd.addEventListener('click', e => { if(e.target===bd) bd.classList.add('hidden'); });
 });
+
+// Cargar branding al inicio (antes del login)
+loadBrandingConfig();
 </script>
+
+<!-- Modal editar módulos -->
+<div id="modal-modules" class="modal-backdrop hidden">
+  <div id="modules-edit-container"></div>
+</div>
+
 </body>
 </html>
