@@ -164,6 +164,8 @@ function App(){
   const[showAddUser,setShowAddUser]=useState(false);const[newUserEmail,setNewUserEmail]=useState("");const[newUserPass,setNewUserPass]=useState("");const[addUserMsg,setAddUserMsg]=useState("");
   const[equipo,setEquipo]=useState([]);const[showTeam,setShowTeam]=useState(false);const[newMember,setNewMember]=useState("");
   const[showDashboard,setShowDashboard]=useState(false);
+  const[showNomina,setShowNomina]=useState(false);
+  const[tarifasNomina,setTarifasNomina]=useState({});
   const[borradores,setBorradores]=useState([]);const[showBorradores,setShowBorradores]=useState(false);
   const[borradoresLoading,setBorradoresLoading]=useState(false);const[borradoresPendientes,setBorradoresPendientes]=useState(0);
 
@@ -397,6 +399,7 @@ function App(){
               📊 Dashboard
               {(stats.alertas.length>0||stats.vencidos.length>0)&&<span style={{position:"absolute",top:-6,right:-6,background:"#EF4444",color:"#fff",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{stats.alertas.length+stats.vencidos.length}</span>}
             </button>
+            {isAdmin&&<button onClick={()=>setShowNomina(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>💰 Nómina</button>}
             {isAdmin&&<button onClick={()=>setShowTeam(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>👥 Equipo</button>}
             {isAdmin&&<button onClick={()=>setShowAddUser(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔐 Usuarios</button>}
             {isAdmin&&<button onClick={()=>setShowPDF(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 PDF</button>}
@@ -779,6 +782,119 @@ function App(){
         </div>
       </div>
     </div>)}
+
+    {/* MODAL NÓMINA */}
+    {showNomina&&isAdmin&&(()=>{
+      // Calculate nomina data
+      const empleadas = [...new Set(clientes.map(c=>c.encargada).filter(Boolean))];
+      const TARIFAS_DEFAULT = {
+        "Asilo (I-589)": 100,
+        "Permiso de trabajo (I-765)": 50,
+        "Ajuste de estatus (I-485)": 150,
+        "Petición familiar (I-130)": 100,
+        "Naturalización (N-400)": 80,
+        "Cancelación de deportación": 150,
+        "FOIA": 40,
+        "Consultoría": 30,
+        "Advance Parole (I-131)": 60,
+        "Renovar Green Card (I-90)": 80,
+        "Otro": 50,
+      };
+
+      const nominaData = empleadas.map(emp => {
+        const clientesEmp = clientes.filter(c => c.encargada === emp);
+        const procesos = {};
+        clientesEmp.forEach(c => {
+          (c.casos||[]).forEach(ca => {
+            (ca.procesos||[]).forEach(p => {
+              if(p.nombre) {
+                if(!procesos[p.nombre]) procesos[p.nombre] = {cantidad:0, pagado:0};
+                procesos[p.nombre].cantidad++;
+                procesos[p.nombre].pagado += parseMoney(p.pagado);
+              }
+            });
+          });
+        });
+        const totalNomina = Object.entries(procesos).reduce((sum,[nombre,data]) => {
+          const tarifa = tarifasNomina[nombre] !== undefined ? tarifasNomina[nombre] : (TARIFAS_DEFAULT[nombre]||50);
+          return sum + (tarifa * data.cantidad);
+        }, 0);
+        return {emp, clientes:clientesEmp.length, procesos, totalNomina};
+      });
+
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16,overflowY:"auto"}}>
+          <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:760,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div>
+                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>💰 Reporte de Nómina</h2>
+                <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>{officeName} — {new Date().toLocaleDateString("es-US",{month:"long",year:"numeric"})}</p>
+              </div>
+              <button onClick={()=>setShowNomina(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar ✕</button>
+            </div>
+
+            {/* Tarifas configurables */}
+            <div style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:16,border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>⚙️ Tarifas por proceso (editable)</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:8}}>
+                {Object.entries(TARIFAS_DEFAULT).map(([nombre,defVal])=>(
+                  <div key={nombre} style={{display:"flex",alignItems:"center",gap:8,background:"#F8FAFC",borderRadius:8,padding:"6px 10px",border:"1px solid #E2E8F0"}}>
+                    <span style={{fontSize:12,flex:1,color:"#374151"}}>{nombre}</span>
+                    <span style={{fontSize:11,color:"#94A3B8"}}>$</span>
+                    <input type="number" value={tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:defVal}
+                      onChange={e=>setTarifasNomina(p=>({...p,[nombre]:parseFloat(e.target.value)||0}))}
+                      style={{width:60,padding:"3px 6px",borderRadius:6,border:"1px solid #D1D5DB",fontSize:12,textAlign:"right",outline:"none"}}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Nómina por empleada */}
+            {empleadas.length===0?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}>No hay empleadas con clientes asignados</div>:
+            nominaData.map(({emp,clientes:numClientes,procesos,totalNomina})=>(
+              <div key={emp} style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:12,border:"1px solid #E2E8F0"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <div>
+                    <div style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>👩 {emp}</div>
+                    <div style={{fontSize:12,color:"#64748B"}}>{numClientes} cliente{numClientes!==1?"s":""} asignado{numClientes!==1?"s":""}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase"}}>Total nómina</div>
+                    <div style={{fontSize:22,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(totalNomina)}</div>
+                  </div>
+                </div>
+                {Object.keys(procesos).length>0&&(
+                  <div style={{background:"#F8FAFC",borderRadius:8,padding:"10px 12px",border:"1px solid #E2E8F0"}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#374151",marginBottom:8,textTransform:"uppercase"}}>Desglose por proceso</div>
+                    {Object.entries(procesos).map(([nombre,data])=>{
+                      const tarifa = tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
+                      return(
+                        <div key={nombre} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px dashed #E2E8F0"}}>
+                          <span style={{fontSize:13,color:"#374151"}}>{nombre}</span>
+                          <div style={{display:"flex",gap:16,alignItems:"center"}}>
+                            <span style={{fontSize:12,color:"#64748B"}}>{data.cantidad} × {fmtMoney(tarifa)}</span>
+                            <span style={{fontSize:13,fontWeight:700,color:"#1E40AF"}}>{fmtMoney(tarifa*data.cantidad)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {Object.keys(procesos).length===0&&<div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"8px 0"}}>Sin procesos registrados aún</div>}
+              </div>
+            ))}
+
+            {/* Total general */}
+            {nominaData.length>0&&<div style={{background:"#1E293B",borderRadius:12,padding:"16px",border:"1px solid #334155"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#F1F5F9"}}>💰 Total nómina de la oficina</div>
+                <div style={{fontSize:24,fontWeight:800,color:"#34D399"}}>{fmtMoney(nominaData.reduce((s,d)=>s+d.totalNomina,0))}</div>
+              </div>
+            </div>}
+          </div>
+        </div>
+      );
+    })()}
 
     {/* TOAST */}
     {toast&&<div style={{position:"fixed",bottom:24,right:24,background:toast.type==="error"?"#EF4444":"#0F172A",color:"#fff",padding:"11px 18px",borderRadius:10,fontSize:14,fontWeight:500,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",zIndex:200}}>{toast.msg}</div>}
