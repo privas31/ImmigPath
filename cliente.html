@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mi Caso — ImmigPath</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
+  authDomain: "immigration-platform-11380.firebaseapp.com",
+  projectId: "immigration-platform-11380",
+  storageBucket: "immigration-platform-11380.firebasestorage.app",
+  messagingSenderId: "682062748742",
+  appId: "1:682062748742:web:5b2466ddf7d8ae05a67e47"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const params   = new URLSearchParams(window.location.search);
+const clientId = params.get("id");
+
+async function load() {
+  const loadEl  = document.getElementById("loading");
+  const errorEl = document.getElementById("error");
+  const mainEl  = document.getElementById("main");
+
+  if (!clientId) { loadEl.style.display="none"; errorEl.style.display="flex"; return; }
+
+  try {
+    const snap = await getDoc(doc(db, "clientes", clientId));
+    if (!snap.exists()) { loadEl.style.display="none"; errorEl.style.display="flex"; return; }
+
+    const c = snap.data();
+
+    // Cargar nombre de oficina
+    if (c.officeId) {
+      try {
+        const offSnap = await getDoc(doc(db, "offices", c.officeId));
+        if (offSnap.exists()) {
+          document.getElementById("office-name").textContent = offSnap.data().name || "ImmigPath";
+          document.getElementById("office-footer").textContent = offSnap.data().name || "ImmigPath";
+        }
+      } catch(e) {}
+    }
+
+    render(c);
+    loadEl.style.display = "none";
+    mainEl.style.display = "block";
+  } catch(e) {
+    loadEl.style.display  = "none";
+    errorEl.style.display = "flex";
+  }
+}
+
+const T = {
+  es: {
+    title: "Mi Caso de Inmigración",
+    greeting: "Hola",
+    country: "País de origen",
+    alien: "Número Alien (A#)",
+    cases: "Mis Casos",
+    nodate: "No registrada",
+    nadata: "No aplica",
+    pending: "Pendiente",
+    days_until: "faltan",
+    days_ago: "hace",
+    days_today: "¡Es hoy!",
+    day: "día",
+    days: "días",
+    clock_title: "Reloj de Asilo",
+    clock_sub: "días desde la solicitud",
+    clock_ead: "✅ Elegible para permiso de trabajo",
+    clock_pending: "faltan para aplicar al permiso",
+    receipt_asilo: "N° Recibo de Asilo",
+    receipt_wp: "N° Recibo Permiso de Trabajo",
+    fecha_huellas: "Fecha de Huellas (Biometrics)",
+    fecha_entrevista: "Fecha de Entrevista USCIS",
+    fecha_corte: "Fecha de Corte EOIR",
+    ead_vence: "Vencimiento del Permiso de Trabajo",
+    ead_receipt: "N° Recibo Permiso de Trabajo",
+    estatus: "Estatus del Caso",
+    corte: "Corte",
+    juez: "Juez",
+    foia_tracking: "N° Tracking FOIA",
+    foia_estado: "Estado FOIA",
+    footer: "Para preguntas contacta tu oficina",
+    status_ok: "Al día",
+    status_proxima: "Próxima",
+    status_urgente: "Urgente",
+    status_hoy: "¡Hoy!",
+    status_vencida: "Vencida",
+    status_pendiente: "Pendiente",
+  },
+  en: {
+    title: "My Immigration Case",
+    greeting: "Hello",
+    country: "Country of origin",
+    alien: "Alien Number (A#)",
+    cases: "My Cases",
+    nodate: "Not registered",
+    nadata: "Not applicable",
+    pending: "Pending",
+    days_until: "in",
+    days_ago: "ago",
+    days_today: "Today!",
+    day: "day",
+    days: "days",
+    clock_title: "Asylum Clock",
+    clock_sub: "days since filing",
+    clock_ead: "✅ Eligible for work permit",
+    clock_pending: "remaining to apply for work permit",
+    receipt_asilo: "Asylum Receipt #",
+    receipt_wp: "Work Permit Receipt #",
+    fecha_huellas: "Biometrics Appointment",
+    fecha_entrevista: "USCIS Interview Date",
+    fecha_corte: "Court Date (EOIR)",
+    ead_vence: "Work Permit Expiration",
+    ead_receipt: "Work Permit Receipt #",
+    estatus: "Case Status",
+    corte: "Court",
+    juez: "Judge",
+    foia_tracking: "FOIA Tracking #",
+    foia_estado: "FOIA Status",
+    footer: "For questions contact your office",
+    status_ok: "On track",
+    status_proxima: "Upcoming",
+    status_urgente: "Urgent",
+    status_hoy: "Today!",
+    status_vencida: "Past due",
+    status_pendiente: "Pending",
+  }
+};
+
+let lang = "es";
+
+function t(key) { return T[lang][key] || key; }
+
+function fmt(f) {
+  if (!f) return null;
+  const [y,m,d] = f.split("-");
+  return `${m}/${d}/${y}`;
+}
+
+function getDias(f) {
+  if (!f) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  return Math.round((new Date(f+"T00:00:00") - hoy) / 86400000);
+}
+
+function statusInfo(dias) {
+  if (dias === null) return { label: t("status_pendiente"), color: "#6B7280", bg: "#F9FAFB", border: "#E5E7EB" };
+  if (dias < 0)  return { label: t("status_vencida"),  color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" };
+  if (dias === 0) return { label: t("status_hoy"),     color: "#EA580C", bg: "#FFF7ED", border: "#FED7AA" };
+  if (dias <= 3)  return { label: t("status_urgente"), color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" };
+  if (dias <= 14) return { label: t("status_proxima"), color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE" };
+  return { label: t("status_ok"), color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" };
+}
+
+function diasLabel(dias) {
+  if (dias === null) return t("pending");
+  if (dias === 0) return `<span style="color:#EA580C;font-weight:700">${t("days_today")}</span>`;
+  const abs = Math.abs(dias);
+  const unit = abs === 1 ? t("day") : t("days");
+  if (dias > 0) return `<span style="color:#2563EB">${t("days_until")} ${abs} ${unit}</span>`;
+  return `<span style="color:#DC2626">${t("days_ago")} ${abs} ${unit}</span>`;
+}
+
+function fmtAlien(a) {
+  const c = (a||"").replace(/\D/g,"").slice(0,9);
+  if (c.length <= 3) return c;
+  if (c.length <= 6) return c.slice(0,3)+"-"+c.slice(3);
+  return c.slice(0,3)+"-"+c.slice(3,6)+"-"+c.slice(6);
+}
+
+function render(c) {
+  // Nombre e info básica
+  document.getElementById("client-name").textContent = c.nombre || "—";
+  document.getElementById("label-greeting").textContent = t("greeting") + ",";
+  document.getElementById("client-name2").textContent  = (c.nombre||"").split(" ")[0];
+  document.getElementById("label-country").textContent = t("country");
+  document.getElementById("val-country").textContent   = c.paisOrigen || "—";
+  document.getElementById("label-alien").textContent   = t("alien");
+  document.getElementById("val-alien").textContent     = c.alienNum ? fmtAlien(c.alienNum) : "—";
+  document.getElementById("label-cases").textContent   = t("cases");
+
+  const casosEl = document.getElementById("casos-container");
+  casosEl.innerHTML = "";
+
+  (c.casos || []).forEach((ca, i) => {
+    const sysColors = {
+      uscis: { color:"#0369A1", bg:"#F0F9FF", border:"#BAE6FD", label:"USCIS" },
+      eoir:  { color:"#7C3AED", bg:"#F5F3FF", border:"#DDD6FE", label:"EOIR"  },
+      foia:  { color:"#0891B2", bg:"#ECFEFF", border:"#A5F3FC", label:"FOIA"  },
+    };
+    const sys = sysColors[ca.sistema] || sysColors.uscis;
+
+    // Determinar fecha principal
+    const fechaPrincipal = ca.fechaCorte || ca.fechaHuellas || null;
+    const dias = getDias(fechaPrincipal);
+    const st   = statusInfo(dias);
+
+    // Reloj de asilo
+    let clockHTML = "";
+    if (ca.fechaAsilo) {
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+      const diasReloj = Math.floor((hoy - new Date(ca.fechaAsilo+"T00:00:00")) / 86400000);
+      const pct = Math.min(100, Math.round((diasReloj / 180) * 100));
+      const clr = diasReloj >= 180 ? "#16A34A" : diasReloj >= 120 ? "#D97706" : "#2563EB";
+      clockHTML = `
+        <div style="background:#1E1B4B;border-radius:12px;padding:16px;margin-top:12px;">
+          <div style="font-size:11px;font-weight:700;color:#A5B4FC;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em">${t("clock_title")}</div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="text-align:center;min-width:60px">
+              <div style="font-size:36px;font-weight:800;color:${clr};line-height:1">${diasReloj}</div>
+              <div style="font-size:10px;color:#A5B4FC;margin-top:2px">${t("clock_sub")}</div>
+            </div>
+            <div style="flex:1">
+              <div style="background:#312E81;border-radius:20px;height:10px;overflow:hidden;margin-bottom:6px">
+                <div style="height:100%;border-radius:20px;background:${clr};width:${pct}%;transition:width 1s"></div>
+              </div>
+              <div style="font-size:11px;color:${clr};font-weight:700">
+                ${diasReloj >= 180 ? t("clock_ead") : `${180 - diasReloj} ${t("days")} ${t("clock_pending")}`}
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // Filas de info
+    const rows = [];
+    const addRow = (label, val, mono=false) => {
+      if (!val) return;
+      rows.push(`
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F1F5F9;gap:12px">
+          <span style="font-size:12px;color:#64748B;flex-shrink:0">${label}</span>
+          <span style="font-size:13px;font-weight:600;color:#0F172A;text-align:right;${mono?'font-family:monospace':''}">${val}</span>
+        </div>`);
+    };
+
+    if (ca.sistema === "uscis") {
+      if (ca.receiptNum)  addRow(t("receipt_asilo"), ca.receiptNum, true);
+      if (ca.alienNum)    addRow(t("alien"), fmtAlien(ca.alienNum), true);
+      if (ca.fechaHuellas) {
+        const dH = getDias(ca.fechaHuellas);
+        addRow(t("fecha_huellas"), `${fmt(ca.fechaHuellas)} &nbsp; ${diasLabel(dH)}`);
+      }
+      if (ca.fechaCorte) {
+        const dC = getDias(ca.fechaCorte);
+        addRow(t("fecha_entrevista"), `${fmt(ca.fechaCorte)} &nbsp; ${diasLabel(dC)}`);
+      }
+      if (ca.tieneEAD === "si") {
+        if (ca.eadReceipt) addRow(t("ead_receipt"), ca.eadReceipt, true);
+        if (ca.eadVence)   addRow(t("ead_vence"), fmt(ca.eadVence));
+      }
+      if (ca.estatusCaso) {
+        const estLabels = {
+          activo: lang==="es"?"Caso Activo":"Active Case",
+          aprobado: lang==="es"?"Aprobado":"Approved",
+          referido_eoir: lang==="es"?"Referido a Corte":"Referred to Court",
+          denegado: lang==="es"?"Denegado":"Denied",
+        };
+        addRow(t("estatus"), estLabels[ca.estatusCaso] || ca.estatusCaso);
+      }
+    }
+
+    if (ca.sistema === "eoir") {
+      if (ca.alienNum)   addRow(t("alien"), fmtAlien(ca.alienNum), true);
+      if (ca.corte)      addRow(t("corte"), ca.corte);
+      if (ca.juez)       addRow(t("juez"), ca.juez);
+      if (ca.fechaCorte) {
+        const dC = getDias(ca.fechaCorte);
+        addRow(t("fecha_corte"), `${fmt(ca.fechaCorte)} &nbsp; ${diasLabel(dC)}`);
+      }
+    }
+
+    if (ca.sistema === "foia") {
+      if (ca.foiaTracking) addRow(t("foia_tracking"), ca.foiaTracking, true);
+      if (ca.foiaEstado)   addRow(t("foia_estado"), ca.foiaEstado);
+    }
+
+    // Badge de fecha principal
+    let fechaBadge = "";
+    if (fechaPrincipal) {
+      fechaBadge = `
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding:10px 14px;border-radius:8px;background:${st.bg};border:1px solid ${st.border}">
+          <div style="font-size:18px;font-weight:800;color:${st.color}">${fmt(fechaPrincipal)}</div>
+          <div>
+            <span style="background:${st.color};color:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700">${st.label}</span>
+            <div style="font-size:11px;color:${st.color};margin-top:4px;text-align:right">${diasLabel(dias)}</div>
+          </div>
+        </div>`;
+    }
+
+    casosEl.innerHTML += `
+      <div style="background:#fff;border-radius:14px;border:1px solid ${sys.border};border-top:4px solid ${sys.color};padding:18px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="background:${sys.bg};color:${sys.color};border:1px solid ${sys.border};border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700">${sys.label}</span>
+          <span style="font-size:13px;color:#374151;font-weight:600">${ca.tipoCaso||""}</span>
+        </div>
+        ${fechaBadge}
+        <div>${rows.join("")}</div>
+        ${clockHTML}
+      </div>`;
+  });
+
+  if ((c.casos||[]).length === 0) {
+    casosEl.innerHTML = `<div style="text-align:center;padding:30px;color:#94A3B8;font-size:14px">No hay casos registrados aún.</div>`;
+  }
+}
+
+window.setLang = function(l) {
+  lang = l;
+  document.getElementById("btn-es").style.fontWeight = l==="es" ? "700" : "400";
+  document.getElementById("btn-en").style.fontWeight = l==="en" ? "700" : "400";
+  document.getElementById("btn-es").style.background = l==="es" ? "#1E3A5F" : "transparent";
+  document.getElementById("btn-en").style.background = l==="en" ? "#1E3A5F" : "transparent";
+  document.getElementById("btn-es").style.color = l==="es" ? "#fff" : "#A8C4E0";
+  document.getElementById("btn-en").style.color = l==="en" ? "#fff" : "#A8C4E0";
+  document.getElementById("page-title").textContent  = T[l].title;
+  document.getElementById("label-footer").textContent = T[l].footer;
+
+  // Re-renderizar si ya cargó
+  const main = document.getElementById("main");
+  if (main.style.display !== "none") {
+    // Forzar re-render obteniendo los datos del DOM
+    const snap = window._clientData;
+    if (snap) render(snap);
+  }
+};
+
+window._origLoad = load;
+const _origRender = render;
+window._render = _origRender;
+
+// Guardar datos para re-render al cambiar idioma
+const _origRenderWrap = function(c) {
+  window._clientData = c;
+  _origRender(c);
+};
+
+load().then(() => {}).catch(() => {});
+
+// Override render para guardar datos
+window.addEventListener("DOMContentLoaded", () => {
+  // ya cargado por module
+});
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh;}
+.header{background:linear-gradient(135deg,#0F172A 0%,#1E3A5F 100%);padding:20px 20px 24px;}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.logo{color:#fff;font-size:16px;font-weight:700;}
+.lang-switch{display:flex;border:1px solid rgba(255,255,255,0.2);border-radius:8px;overflow:hidden;}
+.lang-switch button{padding:6px 14px;border:none;cursor:pointer;font-size:12px;font-weight:400;transition:all 0.2s;color:#A8C4E0;background:transparent;}
+.greeting{color:#A8C4E0;font-size:13px;}
+.client-name{color:#fff;font-size:22px;font-weight:800;margin-top:2px;}
+.info-bar{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;}
+.info-chip{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 12px;}
+.info-chip-label{font-size:10px;color:#A8C4E0;text-transform:uppercase;letter-spacing:0.04em;}
+.info-chip-val{font-size:13px;color:#fff;font-weight:600;font-family:monospace;}
+.container{max-width:560px;margin:0 auto;padding:20px 16px 60px;}
+.section-label{font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;}
+.loading{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:12px;color:#64748B;}
+.error-screen{display:none;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:12px;text-align:center;padding:20px;}
+.footer{text-align:center;padding:20px;font-size:12px;color:#94A3B8;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo" id="office-name">ImmigPath</div>
+    <div class="lang-switch">
+      <button id="btn-es" onclick="setLang('es')" style="background:#1E3A5F;color:#fff;font-weight:700">ES</button>
+      <button id="btn-en" onclick="setLang('en')" style="color:#A8C4E0">EN</button>
+    </div>
+  </div>
+  <div class="greeting" id="label-greeting">Hola,</div>
+  <div class="client-name" id="client-name2">—</div>
+  <div class="info-bar">
+    <div class="info-chip">
+      <div class="info-chip-label" id="label-country">País de origen</div>
+      <div class="info-chip-val" id="val-country">—</div>
+    </div>
+    <div class="info-chip">
+      <div class="info-chip-label" id="label-alien">Número Alien</div>
+      <div class="info-chip-val" id="val-alien">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading">
+  <div style="font-size:32px">⏳</div>
+  <div>Cargando tu caso...</div>
+</div>
+
+<div class="error-screen" id="error">
+  <div style="font-size:48px">🔒</div>
+  <div style="font-size:18px;font-weight:700;color:#0F172A">Link no válido</div>
+  <div style="font-size:14px;color:#64748B;max-width:280px">Este link no existe o ya no está disponible. Contacta a tu oficina.</div>
+</div>
+
+<div id="main" style="display:none">
+  <div class="container">
+    <div class="section-label" id="label-cases">Mis Casos</div>
+    <div id="casos-container"></div>
+  </div>
+</div>
+
+<div class="footer">
+  <div id="office-footer">ImmigPath</div>
+  <div id="label-footer">Para preguntas contacta tu oficina</div>
+</div>
+
+<script type="module">
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const apps = getApps();
+if (!apps.length) return;
+</script>
+</body>
+</html>
