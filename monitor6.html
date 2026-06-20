@@ -353,7 +353,10 @@ function App(){
   },[clientes]);
 
   const generatePDF=()=>{
-    const{jsPDF}=window.jspdf;const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    const jspdfLib=window.jspdf||window.jsPDF;
+    if(!jspdfLib){showToastFn("Error cargando PDF. Recarga la página.","error");return;}
+    const jsPDF=jspdfLib.jsPDF||jspdfLib;
+    const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
     const datos=filtered;if(!datos.length){showToastFn("Sin casos","error");return;}
     pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,297,22,"F");pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(14);pdfdoc.setFont("helvetica","bold");
     const officeName=officeData?.name||"Monitor de Inmigración";
@@ -810,8 +813,10 @@ function App(){
       });
 
       const generarPDFCobros=()=>{
-        const{jsPDF}=window.jspdf;
-        const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+        const jspdfLib2=window.jspdf||window.jsPDF;
+        if(!jspdfLib2){showToastFn("Error cargando PDF","error");return;}
+        const jsPDF2=jspdfLib2.jsPDF||jspdfLib2;
+        const pdfdoc=new jsPDF2({orientation:"landscape",unit:"mm",format:"a4"});
         pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,297,22,"F");
         pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(14);pdfdoc.setFont("helvetica","bold");
         pdfdoc.text("Reporte de Cobros — "+officeName,14,10);
