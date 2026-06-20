@@ -299,13 +299,13 @@ const descargarReciboPDF=async(pago)=>{
   const pdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
   const W=210; const M=18;
   pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,30,"F");
-  if(officeLogo){try{pdoc.addImage(officeLogo,"PNG",M,4,22,22);}catch(e){}}
-  const lOff2=officeLogo?26:M;
-  pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
-  pdoc.text("Recibo de Pago",lOff2,13);
-  pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
-  pdoc.text(officeData?.name||"ImmigPath",lOff2,20);
-  pdoc.text("Ref: "+(pago.refNum||"—"),lOff2,26);
+  if(officeLogo){try{pdoc.addImage(officeLogo,"PNG",M,3,16,16);}catch(e){}}
+  const lOff2=M+(officeLogo?20:0);
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(13); pdoc.setFont("helvetica","bold");
+  pdoc.text("Recibo de Pago",lOff2,10);
+  pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
+  pdoc.text(officeData?.name||"ImmigPath",lOff2,17);
+  pdoc.text("Ref: "+(pago.refNum||"—"),lOff2,23);
   pdoc.setTextColor(203,216,232); pdoc.setFontSize(8);
   pdoc.text(new Date(pago.fecha).toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),W-M,20,{align:"right"});
   let y=42;
@@ -396,13 +396,14 @@ const generarReciboPDF=async(pago)=>{
   const W=210; const M=18;
   // Header
   pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,30,"F");
-  if(officeLogo){try{pdoc.addImage(officeLogo,"PNG",M,4,22,22);}catch(e){}}
-  const lOff=officeLogo?26:M;
-  pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
-  pdoc.text("Recibo de Pago",lOff,13);
-  pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
-  pdoc.text(officeData?.name||"ImmigPath",lOff,20);
-  pdoc.text("Ref: "+pago.refNum,lOff,26);
+  // Logo pequeño esquina superior izquierda
+  if(officeLogo){try{pdoc.addImage(officeLogo,"PNG",M,3,16,16);}catch(e){}}
+  const lOff=M+(officeLogo?20:0);
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(13); pdoc.setFont("helvetica","bold");
+  pdoc.text("Recibo de Pago",lOff,10);
+  pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
+  pdoc.text(officeData?.name||"ImmigPath",lOff,17);
+  pdoc.text("Ref: "+pago.refNum,lOff,23);
   // Fecha derecha
   pdoc.setTextColor(203,216,232); pdoc.setFontSize(8);
   pdoc.text(new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),W-M,20,{align:"right"});
