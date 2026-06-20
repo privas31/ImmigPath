@@ -187,8 +187,8 @@
         <div class="stats-grid">
           <div class="stat-card"><div class="stat-label">Oficinas Activas</div><div class="stat-value" id="stat-offices">—</div><div class="stat-sub" id="stat-offices-sub"></div></div>
           <div class="stat-card"><div class="stat-label">Total Clientes</div><div class="stat-value" id="stat-clients">—</div></div>
-          <div class="stat-card"><div class="stat-label">Casos Activos</div><div class="stat-value" id="stat-cases">—</div></div>
-          <div class="stat-card"><div class="stat-label">Ingresos del Mes</div><div class="stat-value" id="stat-revenue">—</div></div>
+          <div class="stat-card"><div class="stat-label">MRR (Lo que cobras)</div><div class="stat-value" id="stat-revenue" style="color:var(--accent2)">—</div></div>
+          <div class="stat-card"><div class="stat-label">Ganancia Neta Est.</div><div class="stat-value" id="stat-profit" style="color:var(--green)">—</div><div class="stat-sub">despues de Firebase</div></div>
         </div>
         <div id="office-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:24px"></div>
 
@@ -284,11 +284,14 @@
         </div>
         <div class="form-group">
           <label class="form-label">Plan</label>
-          <select class="form-input" id="new-office-plan">
-            <option value="basic">Básico — $49/mes</option>
-            <option value="professional" selected>Profesional — $99/mes</option>
-            <option value="enterprise">Empresarial — $199/mes</option>
+          <select class="form-input" id="new-office-plan" onchange="updatePlanModules(this.value)">
+            <option value="basic">Basico — $199/mes (Inmigracion)</option>
+            <option value="professional" selected>Profesional — $467/mes (Inmigracion + Notaria + 1TB)</option>
+            <option value="premium">Premium — $647/mes (Todo + Automatizaciones)</option>
           </select>
+          <div id="plan-desc" style="font-size:11px;color:var(--text2);margin-top:6px;padding:8px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
+            Incluye: Inmigracion, Portal del cliente, Formulario de intake, Notaria, Storage 1TB
+          </div>
         </div>
       </div>
       <div class="form-group">
@@ -391,6 +394,25 @@ window.previewLogo = function() {
   }
 };
 
+window.updatePlanModules = function(plan) {
+  const descs = {
+    basic: 'Incluye: Inmigracion, Portal del cliente, Formulario de intake',
+    professional: 'Incluye: Inmigracion, Notaria, Storage 1TB, Portal del cliente, Formulario de intake',
+    premium: 'Incluye: Todo lo del Profesional + Notificaciones automaticas, WhatsApp, Reportes semanales'
+  };
+  const modules = {
+    basic: ['immigration'],
+    professional: ['immigration','notary'],
+    premium: ['immigration','notary','taxes','insurance']
+  };
+  const desc = document.getElementById('plan-desc');
+  if(desc) desc.textContent = descs[plan] || '';
+  // Auto-seleccionar modulos segun el plan
+  const modMap = {immigration:'mod-imm', notary:'mod-not', taxes:'mod-tax', insurance:'mod-ins'};
+  Object.values(modMap).forEach(id => { const el=document.getElementById(id); if(el) el.checked=false; });
+  (modules[plan]||[]).forEach(m => { const el=document.getElementById(modMap[m]); if(el) el.checked=true; });
+};
+
 window.saveBranding = async function() {
   const logoUrl = document.getElementById('brand-logo').value.trim();
   const name = document.getElementById('brand-name').value.trim() || 'ImmigPath';
@@ -452,7 +474,15 @@ async function loadDashboard() {
     officesCache.forEach(o => { clients += (o.stats?.totalClients||0); cases += (o.stats?.activeCases||0); });
     document.getElementById('stat-clients').textContent = clients;
     document.getElementById('stat-cases').textContent = cases;
-    document.getElementById('stat-revenue').textContent = '$' + (active.length * 99).toLocaleString();
+    const planPrices = {basic:199, professional:467, premium:647};
+    const planCosts = {basic:30, professional:51, premium:91};
+    const activeOffices = officesCache.filter(o=>o.isActive);
+    const totalRevenue = activeOffices.reduce((s,o)=>s+(planPrices[o.plan]||199),0);
+    const totalCost = activeOffices.reduce((s,o)=>s+(planCosts[o.plan]||30),0);
+    const totalProfit = totalRevenue - totalCost;
+    document.getElementById('stat-revenue').textContent = '$' + totalRevenue.toLocaleString();
+    const profitEl = document.getElementById('stat-profit');
+    if(profitEl) profitEl.textContent = '$' + totalProfit.toLocaleString();
     renderOfficesTable(officesCache);
     renderOfficesFullTable(officesCache);
   } catch(err) { showToast('Error: ' + err.message, 'error'); }
@@ -603,9 +633,10 @@ function renderOfficesFullTable(offices) {
 function renderModulePills(modules) {
   const map = {immigration:'mod-imm',taxes:'mod-tax',insurance:'mod-ins',notary:'mod-not'};
   const labels = {immigration:'Imm',taxes:'Tax',insurance:'Seg',notary:'Not'};
+  const planLabels = {basic:'$199',professional:'$467',premium:'$647'};
   return modules.map(m => `<span class="mod ${map[m]||''}">${labels[m]||m}</span>`).join('');
 }
-function getPlanBadge(plan) { return {basic:'badge-gray',professional:'badge-purple',enterprise:'badge-yellow'}[plan]||'badge-gray'; }
+function getPlanBadge(plan) { return {basic:'badge-gray',professional:'badge-purple',premium:'badge-yellow'}[plan]||'badge-gray'; }
 
 // ── Editar módulos de una oficina ─────────────────────────────────────────────
 window.editOfficeModules = function(officeId) {
