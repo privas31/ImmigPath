@@ -1187,8 +1187,8 @@ const loadTeam=async()=>{
           )}
           <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"14px",marginTop:16}}>
             <div style={{fontSize:12,fontWeight:700,color:"#1D4ED8",marginBottom:6}}>Link del formulario</div>
-            <div style={{background:"#fff",border:"1px solid #BFDBFE",borderRadius:7,padding:"8px 12px",fontFamily:"monospace",fontSize:12,color:"#1D4ED8",wordBreak:"break-all"}}>{window.location.origin+"/formulario.html"}</div>
-            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/formulario.html");showToastFn("Link copiado");}} style={{marginTop:8,background:"#1E40AF",color:"#fff",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>Copiar link</button>
+            <div style={{background:"#fff",border:"1px solid #BFDBFE",borderRadius:7,padding:"8px 12px",fontFamily:"monospace",fontSize:12,color:"#1D4ED8",wordBreak:"break-all"}}>{window.location.origin+"/formulario.html?o="+(officeData?.id||userData?.officeId||"")}</div>
+            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/formulario.html?o="+(officeData?.id||userData?.officeId||""));showToastFn("Link copiado");}} style={{marginTop:8,background:"#1E40AF",color:"#fff",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>Copiar link</button>
           </div>
         </div>
       </div>
