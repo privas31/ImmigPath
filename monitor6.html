@@ -166,6 +166,7 @@ function App(){
   const[showDashboard,setShowDashboard]=useState(false);
   const[showNomina,setShowNomina]=useState(false);
   const[tarifasNomina,setTarifasNomina]=useState({});
+  const[showPagosReporte,setShowPagosReporte]=useState(false);
   const[borradores,setBorradores]=useState([]);const[showBorradores,setShowBorradores]=useState(false);
   const[borradoresLoading,setBorradoresLoading]=useState(false);const[borradoresPendientes,setBorradoresPendientes]=useState(0);
 
@@ -400,6 +401,7 @@ function App(){
               {(stats.alertas.length>0||stats.vencidos.length>0)&&<span style={{position:"absolute",top:-6,right:-6,background:"#EF4444",color:"#fff",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{stats.alertas.length+stats.vencidos.length}</span>}
             </button>
             {isAdmin&&<button onClick={()=>setShowNomina(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>💰 Nómina</button>}
+            {isAdmin&&<button onClick={()=>setShowPagosReporte(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📊 Cobros</button>}
             {isAdmin&&<button onClick={()=>setShowTeam(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>👥 Equipo</button>}
             {isAdmin&&<button onClick={()=>setShowAddUser(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔐 Usuarios</button>}
             {isAdmin&&<button onClick={()=>setShowPDF(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 PDF</button>}
@@ -782,6 +784,142 @@ function App(){
         </div>
       </div>
     </div>)}
+
+    {/* MODAL REPORTE DE COBROS */}
+    {showPagosReporte&&isAdmin&&(()=>{
+      const totalCobrar=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalProcesos(ca.procesos||[]),s),0);
+      const totalCobrado=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalPagado(ca.procesos||[]),s),0);
+      const pendiente=totalCobrar-totalCobrado;
+      const pctGeneral=getPct(totalCobrar,totalCobrado);
+
+      // Clientes con saldo pendiente
+      const clientesPendientes=clientes.filter(c=>{
+        const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+        const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        return t>0&&p<t;
+      }).sort((a,b)=>{
+        const sa=(a.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0)-(a.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        const sb=(b.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0)-(b.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        return sb-sa;
+      });
+
+      const clientesPagados=clientes.filter(c=>{
+        const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+        const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        return t>0&&p>=t;
+      });
+
+      const generarPDFCobros=()=>{
+        const{jsPDF}=window.jspdf;
+        const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+        pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,297,22,"F");
+        pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(14);pdfdoc.setFont("helvetica","bold");
+        pdfdoc.text("Reporte de Cobros — "+officeName,14,10);
+        pdfdoc.setFontSize(9);pdfdoc.setFont("helvetica","normal");
+        pdfdoc.text(`${new Date().toLocaleString("es-US")}   |   Total: ${fmtMoney(totalCobrar)}   |   Cobrado: ${fmtMoney(totalCobrado)}   |   Pendiente: ${fmtMoney(pendiente)}`,14,17);
+        const rows=clientes.filter(c=>(c.casos||[]).some(ca=>(ca.procesos||[]).length>0)).map(c=>{
+          const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+          const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+          const pct=getPct(t,p);
+          const procesos=(c.casos||[]).flatMap(ca=>ca.procesos||[]).map(p=>p.nombre).filter(Boolean).join(", ");
+          return[c.nombre||"—",c.encargada||"—",procesos,fmtMoney(t),fmtMoney(p),fmtMoney(t-p),pct!==null?`${pct}%`:"—",pct>=100?"✅ Pagado":pct>0?"⏳ Parcial":"❌ Pendiente"];
+        });
+        pdfdoc.autoTable({startY:26,head:[["Cliente","Encargada","Procesos","Total","Cobrado","Saldo","%","Estado"]],body:rows,styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[30,64,175],textColor:255,fontStyle:"bold"},columnStyles:{0:{cellWidth:35},1:{cellWidth:25},2:{cellWidth:60},3:{cellWidth:22},4:{cellWidth:22},5:{cellWidth:22},6:{cellWidth:12},7:{cellWidth:20}},alternateRowStyles:{fillColor:[248,250,252]},margin:{left:4,right:4}});
+        const pc=pdfdoc.internal.getNumberOfPages();
+        for(let i=1;i<=pc;i++){pdfdoc.setPage(i);pdfdoc.setFontSize(7);pdfdoc.setTextColor(150,150,150);pdfdoc.text(`Pág ${i} de ${pc}  |  Confidencial`,4,pdfdoc.internal.pageSize.height-4);}
+        pdfdoc.save(`cobros-${new Date().toISOString().slice(0,10)}.pdf`);
+      };
+
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16,overflowY:"auto"}}>
+          <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:800,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div>
+                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>📊 Reporte de Cobros</h2>
+                <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>{officeName} — {new Date().toLocaleDateString("es-US",{month:"long",year:"numeric"})}</p>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={generarPDFCobros} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>📥 Descargar PDF</button>
+                <button onClick={()=>setShowPagosReporte(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar ✕</button>
+              </div>
+            </div>
+
+            {/* Resumen general */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:16}}>
+              <div style={{background:"#EFF6FF",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #BFDBFE"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Total Facturado</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(totalCobrar)}</div>
+              </div>
+              <div style={{background:"#F0FDF4",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #BBF7D0"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Total Cobrado</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#16A34A"}}>{fmtMoney(totalCobrado)}</div>
+              </div>
+              <div style={{background:"#FEF2F2",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #FECACA"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Pendiente</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#DC2626"}}>{fmtMoney(pendiente)}</div>
+              </div>
+              <div style={{background:"#FFFBEB",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #FDE68A"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>% Cobrado</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#D97706"}}>{pctGeneral||0}%</div>
+                <div style={{background:"#E2E8F0",borderRadius:20,height:4,marginTop:4}}><div style={{height:"100%",borderRadius:20,background:pagoColor(pctGeneral),width:`${pctGeneral||0}%`}}/></div>
+              </div>
+            </div>
+
+            {/* Clientes con saldo pendiente */}
+            {clientesPendientes.length>0&&<div style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:12,border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#DC2626",marginBottom:12}}>⏳ Clientes con saldo pendiente ({clientesPendientes.length})</div>
+              <table style={{width:"100%",borderCollapse:"collapse"}}>
+                <thead>
+                  <tr style={{background:"#FEF2F2"}}>
+                    {["Cliente","Encargada","Total","Cobrado","Saldo","%"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:11,fontWeight:600,color:"#374151",textTransform:"uppercase"}}>{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {clientesPendientes.map(c=>{
+                    const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                    const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                    const pct=getPct(t,p);
+                    const pc=pagoColor(pct);
+                    return(
+                      <tr key={c.id} style={{borderBottom:"1px solid #FEF2F2"}}>
+                        <td style={{padding:"8px 12px",fontSize:13,fontWeight:500}}>{c.nombre}</td>
+                        <td style={{padding:"8px 12px",fontSize:12,color:"#7C3AED"}}>{c.encargada||"—"}</td>
+                        <td style={{padding:"8px 12px",fontSize:13}}>{fmtMoney(t)}</td>
+                        <td style={{padding:"8px 12px",fontSize:13,color:"#16A34A",fontWeight:600}}>{fmtMoney(p)}</td>
+                        <td style={{padding:"8px 12px",fontSize:13,color:"#DC2626",fontWeight:700}}>{fmtMoney(t-p)}</td>
+                        <td style={{padding:"8px 12px"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <div style={{background:"#E2E8F0",borderRadius:20,height:6,width:60,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`}}/></div>
+                            <span style={{fontSize:11,fontWeight:700,color:pc}}>{pct||0}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>}
+
+            {/* Clientes pagados */}
+            {clientesPagados.length>0&&<div style={{background:"#fff",borderRadius:12,padding:"16px",border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#16A34A",marginBottom:12}}>✅ Clientes con pago completo ({clientesPagados.length})</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
+                {clientesPagados.map(c=>{
+                  const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                  return(
+                    <div key={c.id} style={{background:"#F0FDF4",borderRadius:8,padding:"10px 12px",border:"1px solid #BBF7D0"}}>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
+                      <div style={{fontSize:11,color:"#7C3AED"}}>{c.encargada||"—"}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:"#16A34A",marginTop:4}}>✅ {fmtMoney(t)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>}
+          </div>
+        </div>
+      );
+    })()}
 
     {/* MODAL NÓMINA */}
     {showNomina&&isAdmin&&(()=>{
