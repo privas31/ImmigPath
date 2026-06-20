@@ -228,6 +228,10 @@ function App(){
   const[loadingPagos,setLoadingPagos]=useState({});
   const[configSaving,setConfigSaving]=useState(false);
   const[tarifasNomina,setTarifasNomina]=useState({});
+  const[nominaPeriodoInicio,setNominaPeriodoInicio]=useState(()=>{
+    const d=new Date();d.setDate(d.getDate()-7);return d.toISOString().split("T")[0];
+  });
+  const[nominaPeriodoFin,setNominaPeriodoFin]=useState(()=>new Date().toISOString().split("T")[0]);
   const[showPagosReporte,setShowPagosReporte]=useState(false);
   const[borradores,setBorradores]=useState([]);const[showBorradores,setShowBorradores]=useState(false);const[borradorExpanded,setBorradorExpanded]=useState({});
   const[borradoresLoading,setBorradoresLoading]=useState(false);const[borradoresPendientes,setBorradoresPendientes]=useState(0);
@@ -1436,15 +1440,25 @@ const loadTeam=async()=>{
 
     
     {showNomina&&isAdmin&&(()=>{
-      // Calculate nomina data
+      const inicio = new Date(nominaPeriodoInicio+"T00:00:00");
+      const fin = new Date(nominaPeriodoFin+"T23:59:59");
+
+      // Filtrar clientes registrados en el periodo seleccionado
+      const clientesPeriodo = clientes.filter(c=>{
+        if(!c.createdAt) return false;
+        const fecha = new Date(c.createdAt);
+        return fecha >= inicio && fecha <= fin;
+      });
+
       const empleadas = [...new Set(clientes.map(c=>c.encargada).filter(Boolean))];
+
       const TARIFAS_DEFAULT = {
         "Asilo (I-589)": 100,
         "Permiso de trabajo (I-765)": 50,
         "Ajuste de estatus (I-485)": 150,
         "Peticion familiar (I-130)": 100,
         "Naturalizacion (N-400)": 80,
-        "Cancelacion de deportación": 150,
+        "Cancelacion de deportacion": 150,
         "FOIA": 40,
         "Consultoria": 30,
         "Advance Parole (I-131)": 60,
@@ -1452,182 +1466,127 @@ const loadTeam=async()=>{
         "Otro": 50,
       };
 
-      const nominaData = empleadas.map(emp => {
-        const clientesEmp = clientes.filter(c => c.encargada === emp);
+      // Calcular nómina por empleada — SOLO casos del período
+      const nominaData = empleadas.map(emp=>{
+        const clientesEmp = clientesPeriodo.filter(c=>c.encargada===emp);
         const procesos = {};
-        clientesEmp.forEach(c => {
-          (c.casos||[]).forEach(ca => {
-            (ca.procesos||[]).forEach(p => {
-              if(p.nombre) {
-                if(!procesos[p.nombre]) procesos[p.nombre] = {cantidad:0, pagado:0};
+        clientesEmp.forEach(c=>{
+          (c.casos||[]).forEach(ca=>{
+            (ca.procesos||[]).forEach(p=>{
+              if(p.nombre){
+                if(!procesos[p.nombre]) procesos[p.nombre]={cantidad:0,pagado:0};
                 procesos[p.nombre].cantidad++;
                 procesos[p.nombre].pagado += parseMoney(p.pagado);
               }
             });
           });
         });
-        const totalNomina = Object.entries(procesos).reduce((sum,[nombre,data]) => {
-          const tarifa = tarifasNomina[nombre] !== undefined ? tarifasNomina[nombre] : (TARIFAS_DEFAULT[nombre]||50);
+        const totalNomina = Object.entries(procesos).reduce((sum,[nombre,data])=>{
+          const tarifa = tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
           return sum + (tarifa * data.cantidad);
         }, 0);
         return {emp, clientes:clientesEmp.length, procesos, totalNomina};
       });
 
+      const totalGeneral = nominaData.reduce((s,d)=>s+d.totalNomina, 0);
+
       return(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16,overflowY:"auto"}}>
-          <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:760,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
+          <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:780,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
+
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
               <div>
-                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>💰 Reporte de Nomina</h2>
-                <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>{officeName} — {new Date().toLocaleDateString("es-US",{month:"long",year:"numeric"})}</p>
+                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>Nomina — {officeName}</h2>
+                <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>Solo casos registrados en el periodo seleccionado</p>
               </div>
               <div style={{display:"flex",gap:8}}>
                 <button onClick={()=>{
                   const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
-                  if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
+                  if(!jsPDF2){showToastFn("Error PDF","error");return;}
                   const pdfdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
                   const W=210; const margin=14;
-                  const empleadas2=[...new Set(clientes.map(c=>c.encargada).filter(Boolean))];
-                  const TARIFAS_DEFAULT2={"Asilo (I-589)":100,"Permiso de trabajo (I-765)":50,"Ajuste de estatus (I-485)":150,"Peticion familiar (I-130)":100,"Naturalizacion (N-400)":80,"Cancelacion de deportacion":150,"FOIA":40,"Consultoria":30,"Advance Parole (I-131)":60,"Renovar Green Card (I-90)":80,"Otro":50};
-
-                  //  HEADER azul marino 
-                  pdfdoc.setFillColor(30,58,95);
-                  pdfdoc.rect(0,0,W,28,"F");
-                  pdfdoc.setTextColor(255,255,255);
-                  pdfdoc.setFontSize(13);
-                  pdfdoc.setFont("helvetica","bold");
-                  const officeNamePDF=(officeData?.name||"Oficina").split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("");
-                  pdfdoc.text("Reporte de Nomina — "+officeNamePDF, margin, 11);
-                  pdfdoc.setFontSize(8);
-                  pdfdoc.setFont("helvetica","normal");
-                  pdfdoc.setTextColor(168,196,224);
-                  const fechaStr=new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"});
-                  pdfdoc.text(fechaStr+" | "+user.email, margin, 19);
-                  // Badge "Confidencial"
-                  pdfdoc.setFillColor(255,255,255,0.15);
-                  pdfdoc.setDrawColor(255,255,255,0.3);
-                  pdfdoc.roundedRect(W-margin-28,5,26,8,2,2,"FD");
-                  pdfdoc.setTextColor(203,216,232);
-                  pdfdoc.setFontSize(7);
-                  pdfdoc.text("Confidencial", W-margin-27, 10.5);
-
-                  //  EMPLEADAS 
+                  pdfdoc.setFillColor(30,58,95);pdfdoc.rect(0,0,W,28,"F");
+                  pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(13);pdfdoc.setFont("helvetica","bold");
+                  const onPDF=(officeData?.name||"Oficina").split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("");
+                  pdfdoc.text("Nomina — "+onPDF,margin,11);
+                  pdfdoc.setFontSize(8);pdfdoc.setFont("helvetica","normal");pdfdoc.setTextColor(168,196,224);
+                  pdfdoc.text("Periodo: "+nominaPeriodoInicio+" al "+nominaPeriodoFin+" | "+user.email,margin,19);
                   let yPos=36;
                   let grandTotal=0;
-
-                  empleadas2.forEach((emp,empIdx)=>{
-                    const clientesEmp=clientes.filter(c=>c.encargada===emp);
-                    const procesos={};
-                    clientesEmp.forEach(c=>{
-                      (c.casos||[]).forEach(ca=>{
-                        (ca.procesos||[]).forEach(p=>{
-                          if(p.nombre){
-                            const key=p.nombre.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim();
-                            if(!key)return;
-                            if(!procesos[key])procesos[key]={cantidad:0};
-                            procesos[key].cantidad++;
-                          }
-                        });
-                      });
+                  nominaData.forEach((nd,empIdx)=>{
+                    const empRows=Object.entries(nd.procesos).map(([nombre,data])=>{
+                      const keyClean=nombre.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim();
+                      const tarifa=tarifasNomina[keyClean]!==undefined?tarifasNomina[keyClean]:(TARIFAS_DEFAULT[nombre]||50);
+                      return[keyClean,String(data.cantidad),"$"+tarifa.toFixed(2),"$"+(tarifa*data.cantidad).toFixed(2)];
                     });
-
-                    const empRows=Object.entries(procesos).map(([nombre,data])=>{
-                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim()===nombre)||nombre;
-                      const tarifa=tarifasNomina[keyOrig]!==undefined?tarifasNomina[keyOrig]:(TARIFAS_DEFAULT2[keyOrig]||50);
-                      return[nombre,String(data.cantidad),"$"+tarifa.toFixed(2),"$"+(tarifa*data.cantidad).toFixed(2)];
-                    });
-                    const totalEmp=Object.entries(procesos).reduce((s,[nombre,data])=>{
-                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim()===nombre)||nombre;
-                      const tarifa=tarifasNomina[keyOrig]!==undefined?tarifasNomina[keyOrig]:(TARIFAS_DEFAULT2[keyOrig]||50);
-                      return s+(tarifa*data.cantidad);
-                    },0);
+                    const totalEmp=nd.totalNomina;
                     grandTotal+=totalEmp;
-
-                    const empName=emp.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("");
-
-                    // Card header de la empleada
-                    pdfdoc.setFillColor(241,245,249);
-                    pdfdoc.setDrawColor(226,232,240);
-                    pdfdoc.roundedRect(margin, yPos, W-margin*2, 12, 2, 2, "FD");
-                    pdfdoc.setTextColor(30,58,95);
-                    pdfdoc.setFontSize(10);
-                    pdfdoc.setFont("helvetica","bold");
-                    pdfdoc.text(empName, margin+4, yPos+7);
-                    pdfdoc.setFontSize(8);
-                    pdfdoc.setFont("helvetica","normal");
-                    pdfdoc.setTextColor(100,116,139);
-                    pdfdoc.text(clientesEmp.length+" cliente"+(clientesEmp.length!==1?"s":"")+" asignado"+(clientesEmp.length!==1?"s":""), margin+4, yPos+11.5);
-                    // Total a la derecha
-                    pdfdoc.setTextColor(30,58,95);
-                    pdfdoc.setFontSize(11);
-                    pdfdoc.setFont("helvetica","bold");
-                    const totalStr="$"+totalEmp.toFixed(2);
-                    pdfdoc.text(totalStr, W-margin-4, yPos+7, {align:"right"});
+                    const empName=nd.emp.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("");
+                    pdfdoc.setFillColor(241,245,249);pdfdoc.setDrawColor(226,232,240);
+                    pdfdoc.roundedRect(margin,yPos,W-margin*2,12,2,2,"FD");
+                    pdfdoc.setTextColor(30,58,95);pdfdoc.setFontSize(10);pdfdoc.setFont("helvetica","bold");
+                    pdfdoc.text(empName,margin+4,yPos+7);
+                    pdfdoc.setFontSize(8);pdfdoc.setFont("helvetica","normal");pdfdoc.setTextColor(100,116,139);
+                    pdfdoc.text(nd.clientes+" caso"+(nd.clientes!==1?"s":"")+" en el periodo",margin+4,yPos+11.5);
+                    pdfdoc.setTextColor(30,58,95);pdfdoc.setFontSize(11);pdfdoc.setFont("helvetica","bold");
+                    pdfdoc.text("$"+totalEmp.toFixed(2),W-margin-4,yPos+7,{align:"right"});
                     yPos+=14;
-
-                    // Tabla de procesos
                     pdfdoc.autoTable({
-                      startY: yPos,
+                      startY:yPos,
                       head:[["Proceso","Casos","Tarifa","Subtotal"]],
-                      body: empRows.length>0 ? empRows : [["Sin procesos registrados","—","—","—"]],
-                      styles:{fontSize:8.5,cellPadding:[3,4],overflow:"linebreak",valign:"middle",textColor:[30,41,59]},
+                      body:empRows.length>0?empRows:[["Sin casos en este periodo","—","—","—"]],
+                      styles:{fontSize:8.5,cellPadding:[3,4]},
                       headStyles:{fillColor:[248,250,252],textColor:[100,116,139],fontStyle:"normal",fontSize:8,lineWidth:0.1,lineColor:[226,232,240]},
-                      alternateRowStyles:{fillColor:[248,250,252]},
-                      columnStyles:{
-                        0:{cellWidth:90,textColor:[30,41,59]},
-                        1:{cellWidth:18,halign:"center"},
-                        2:{cellWidth:28,halign:"right"},
-                        3:{cellWidth:28,halign:"right",fontStyle:"bold",textColor:[30,58,95]}
-                      },
-                      foot:[[{content:"Total nomina: $"+totalEmp.toFixed(2),colSpan:4,styles:{halign:"right",fillColor:[241,245,249],textColor:[30,58,95],fontStyle:"bold",fontSize:9,lineWidth:0.1,lineColor:[226,232,240]}}]],
+                      columnStyles:{0:{cellWidth:90},1:{cellWidth:18,halign:"center"},2:{cellWidth:28,halign:"right"},3:{cellWidth:28,halign:"right",fontStyle:"bold",textColor:[30,58,95]}},
+                      foot:[[{content:"Total: $"+totalEmp.toFixed(2),colSpan:4,styles:{halign:"right",fillColor:[241,245,249],textColor:[30,58,95],fontStyle:"bold",fontSize:9}}]],
                       margin:{left:margin,right:margin},
-                      tableLineColor:[226,232,240],
-                      tableLineWidth:0.1,
                     });
                     yPos=pdfdoc.lastAutoTable.finalY+10;
-
-                    // Nueva pgina si hace falta
-                    if(yPos>260 && empIdx<empleadas2.length-1){pdfdoc.addPage();yPos=20;}
+                    if(yPos>260&&empIdx<nominaData.length-1){pdfdoc.addPage();yPos=20;}
                   });
-
-                  //  TOTAL GENERAL 
                   if(yPos>260){pdfdoc.addPage();yPos=20;}
-                  pdfdoc.setFillColor(30,58,95);
-                  pdfdoc.roundedRect(margin, yPos, W-margin*2, 14, 3, 3, "F");
-                  pdfdoc.setTextColor(168,196,224);
-                  pdfdoc.setFontSize(8);
-                  pdfdoc.setFont("helvetica","normal");
-                  pdfdoc.text("TOTAL GENERAL DE NOMINA", margin+6, yPos+6);
-                  pdfdoc.setTextColor(255,255,255);
-                  pdfdoc.setFontSize(13);
-                  pdfdoc.setFont("helvetica","bold");
-                  pdfdoc.text("$"+grandTotal.toFixed(2), W-margin-4, yPos+10, {align:"right"});
-                  yPos+=22;
-
-                  //  FOOTER 
+                  pdfdoc.setFillColor(30,58,95);pdfdoc.roundedRect(margin,yPos,W-margin*2,14,3,3,"F");
+                  pdfdoc.setTextColor(168,196,224);pdfdoc.setFontSize(8);pdfdoc.setFont("helvetica","normal");
+                  pdfdoc.text("TOTAL GENERAL DE NOMINA",margin+6,yPos+6);
+                  pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(13);pdfdoc.setFont("helvetica","bold");
+                  pdfdoc.text("$"+grandTotal.toFixed(2),W-margin-4,yPos+10,{align:"right"});
                   const totalPages=pdfdoc.internal.getNumberOfPages();
                   for(let i=1;i<=totalPages;i++){
-                    pdfdoc.setPage(i);
-                    pdfdoc.setFontSize(7);
-                    pdfdoc.setTextColor(148,163,184);
-                    pdfdoc.setFont("helvetica","normal");
+                    pdfdoc.setPage(i);pdfdoc.setFontSize(7);pdfdoc.setTextColor(148,163,184);pdfdoc.setFont("helvetica","normal");
                     const pageH=pdfdoc.internal.pageSize.height;
-                    pdfdoc.setDrawColor(226,232,240);
-                    pdfdoc.setLineWidth(0.3);
-                    pdfdoc.line(margin, pageH-10, W-margin, pageH-10);
-                    pdfdoc.text("CONFIDENCIAL — Solo para uso interno  |  "+officeNamePDF+"  |  Pag "+i+" de "+totalPages, margin, pageH-5);
+                    pdfdoc.setDrawColor(226,232,240);pdfdoc.setLineWidth(0.3);pdfdoc.line(margin,pageH-10,W-margin,pageH-10);
+                    pdfdoc.text("CONFIDENCIAL | "+onPDF+" | Pag "+i+" de "+totalPages,margin,pageH-5);
                   }
-
-                  pdfdoc.save("nomina-"+new Date().toISOString().slice(0,10)+".pdf");
+                  pdfdoc.save("nomina-"+nominaPeriodoInicio+"-al-"+nominaPeriodoFin+".pdf");
                   showToastFn("PDF de nomina descargado");
-                }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Descargar PDF Nomina</button>
-                <button onClick={()=>setShowNomina(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar ✕</button>
+                }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Descargar PDF</button>
+                <button onClick={()=>setShowNomina(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar</button>
               </div>
             </div>
 
-            
+            {/* Selector de período */}
             <div style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:16,border:"1px solid #E2E8F0"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>⚙️ Tarifas por proceso (editable)</div>
+              <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>Periodo de calculo</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto auto",gap:10,alignItems:"end"}}>
+                <div>
+                  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#64748B",marginBottom:4,textTransform:"uppercase"}}>Desde</label>
+                  <input type="date" value={nominaPeriodoInicio} onChange={e=>setNominaPeriodoInicio(e.target.value)} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
+                </div>
+                <div>
+                  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#64748B",marginBottom:4,textTransform:"uppercase"}}>Hasta</label>
+                  <input type="date" value={nominaPeriodoFin} onChange={e=>setNominaPeriodoFin(e.target.value)} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
+                </div>
+                <button onClick={()=>{const d=new Date();setNominaPeriodoFin(d.toISOString().split("T")[0]);d.setDate(d.getDate()-7);setNominaPeriodoInicio(d.toISOString().split("T")[0]);}} style={{padding:"8px 14px",borderRadius:8,border:"1px solid #E2E8F0",background:"#F8FAFC",fontSize:12,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Esta semana</button>
+                <button onClick={()=>{const d=new Date();setNominaPeriodoFin(d.toISOString().split("T")[0]);d.setDate(1);setNominaPeriodoInicio(d.toISOString().split("T")[0]);}} style={{padding:"8px 14px",borderRadius:8,border:"1px solid #E2E8F0",background:"#F8FAFC",fontSize:12,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Este mes</button>
+              </div>
+              <div style={{marginTop:10,fontSize:12,color:"#64748B",background:"#F0FDF4",borderRadius:8,padding:"8px 12px",border:"1px solid #BBF7D0"}}>
+                {clientesPeriodo.length} caso{clientesPeriodo.length!==1?"s":""} registrado{clientesPeriodo.length!==1?"s":""} en este periodo — Total nomina: <strong style={{color:"#16A34A"}}>{fmtMoney(totalGeneral)}</strong>
+              </div>
+            </div>
+
+            {/* Tarifas */}
+            <div style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:16,border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>Tarifas por proceso (editable)</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:8}}>
                 {Object.entries(TARIFAS_DEFAULT).map(([nombre,defVal])=>(
                   <div key={nombre} style={{display:"flex",alignItems:"center",gap:8,background:"#F8FAFC",borderRadius:8,padding:"6px 10px",border:"1px solid #E2E8F0"}}>
@@ -1641,55 +1600,55 @@ const loadTeam=async()=>{
               </div>
             </div>
 
-            
+            {/* Nómina por empleada */}
             {empleadas.length===0?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}>No hay empleadas con clientes asignados</div>:
             nominaData.map(({emp,clientes:numClientes,procesos,totalNomina})=>(
               <div key={emp} style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:12,border:"1px solid #E2E8F0"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                   <div>
                     <div style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>👩 {emp}</div>
-                    <div style={{fontSize:12,color:"#64748B"}}>{numClientes} cliente{numClientes!==1?"s":""} asignado{numClientes!==1?"s":""}</div>
+                    <div style={{fontSize:12,color:"#64748B"}}>{numClientes} caso{numClientes!==1?"s":""} en el periodo seleccionado</div>
                   </div>
                   <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase"}}>Total nómina</div>
+                    <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase"}}>Total nomina</div>
                     <div style={{fontSize:22,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(totalNomina)}</div>
                   </div>
                 </div>
-                {Object.keys(procesos).length>0&&(
+                {Object.keys(procesos).length>0?(
                   <div style={{background:"#F8FAFC",borderRadius:8,padding:"10px 12px",border:"1px solid #E2E8F0"}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#374151",marginBottom:8,textTransform:"uppercase"}}>Desglose por proceso</div>
                     {Object.entries(procesos).map(([nombre,data])=>{
-                      const tarifa = tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
+                      const tarifa=tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
                       return(
                         <div key={nombre} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px dashed #E2E8F0"}}>
                           <span style={{fontSize:13,color:"#374151"}}>{nombre}</span>
                           <div style={{display:"flex",gap:16,alignItems:"center"}}>
-                            <span style={{fontSize:12,color:"#64748B"}}>{data.cantidad} × {fmtMoney(tarifa)}</span>
+                            <span style={{fontSize:12,color:"#64748B"}}>{data.cantidad} x {fmtMoney(tarifa)}</span>
                             <span style={{fontSize:13,fontWeight:700,color:"#1E40AF"}}>{fmtMoney(tarifa*data.cantidad)}</span>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                )}
-                {Object.keys(procesos).length===0&&<div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"8px 0"}}>Sin procesos registrados aún</div>}
+                ):<div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"8px 0"}}>Sin casos en este periodo</div>}
               </div>
             ))}
 
-            
+            {/* Total general */}
             {nominaData.length>0&&<div style={{background:"#1E293B",borderRadius:12,padding:"16px",border:"1px solid #334155"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div style={{fontSize:14,fontWeight:700,color:"#F1F5F9"}}>💰 Total nómina de la oficina</div>
-                <div style={{fontSize:24,fontWeight:800,color:"#34D399"}}>{fmtMoney(nominaData.reduce((s,d)=>s+d.totalNomina,0))}</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:"#F1F5F9"}}>Total nomina del periodo</div>
+                  <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{nominaPeriodoInicio} al {nominaPeriodoFin}</div>
+                </div>
+                <div style={{fontSize:24,fontWeight:800,color:"#34D399"}}>{fmtMoney(totalGeneral)}</div>
               </div>
             </div>}
+
           </div>
         </div>
       );
     })()}
 
-    
-    
     {showPagosConfig&&isAdmin&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:480,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
