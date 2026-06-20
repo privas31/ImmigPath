@@ -3,12 +3,20 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Monitor de Casos — ImmigPath</title>
+  <title>Monitor de Casos — ImmigPath v20260620062621</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script>
+    // Normalizar namespace de jsPDF inmediatamente (antes que autotable intente registrarse)
+    (function() {
+      if (typeof window.jspdf !== "undefined" && window.jspdf.jsPDF) {
+        window.jsPDF = window.jspdf.jsPDF;
+      }
+    })();
+  </script>
+  <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -36,7 +44,7 @@
 <script type="text/babel">
 const { useState, useEffect, useCallback } = React;
 
-// ── Configuración ─────────────────────────────────────────────────────────────
+//  Configuracin 
 const SISTEMAS = {
   uscis: { label:"USCIS", icon:"🏛", color:"#0369A1", bg:"#F0F9FF", border:"#BAE6FD",
     tiposCaso:["I-485 Ajuste de estatus","I-130 Petición familiar","I-765 Permiso de trabajo","I-131 Advance Parole","N-400 Naturalización","I-589 Asilo","I-90 Renovar Green Card","Otro"] },
@@ -56,7 +64,7 @@ const STATUS_CONFIG = {
   pendiente:{label:"Pendiente",color:"#6B7280",bg:"#F9FAFB",border:"#E5E7EB",icon:"⚪"},
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 function getStatus(f){if(!f)return"pendiente";const h=new Date();h.setHours(0,0,0,0);const d=Math.round((new Date(f+"T00:00:00")-h)/86400000);if(d<0)return"vencido";if(d===0)return"hoy";if(d<=3)return"urgente";if(d<=14)return"proximo";return"ok";}
 function getDias(f){if(!f)return null;const h=new Date();h.setHours(0,0,0,0);return Math.round((new Date(f+"T00:00:00")-h)/86400000);}
 function fmt(f){if(!f)return"—";const[y,m,d]=f.split("-");return`${m}/${d}/${y}`;}
@@ -79,13 +87,13 @@ function getFlag(p){return FLAG_MAP[p]||"🌍";}
 const emptyCaso={sistema:"uscis",tipoCaso:"",receiptNum:"",alienNum:"",corte:"",juez:"",fechaCorte:"",fechaHuellas:"",tipoCita:"",tieneEAD:"",eadReceipt:"",eadVence:"",eadRenovado:"",fechaAsilo:"",estatusReloj:"",estatusCaso:"",origenCaso:"",foiaTracking:"",foiaEstado:"",foiaRespuesta:"",procesos:[],nota:""};
 const emptyCliente={nombre:"",paisOrigen:"",alienNum:"",telefono:"",email:"",encargada:"",casos:[],nota:""};
 
-// ── Pequeños componentes ──────────────────────────────────────────────────────
+//  Pequeos componentes 
 function Field({label,value,onChange,type="text",placeholder="",mono=false}){
   return(<div style={{marginBottom:11}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>{label}</label><input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,outline:"none",fontFamily:mono?"monospace":"inherit"}}/></div>);
 }
 function Badge({cfg,label}){return<span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:600,whiteSpace:"nowrap"}}>{cfg.icon} {label}</span>;}
 
-// ── Editor de procesos de pago ────────────────────────────────────────────────
+//  Editor de procesos de pago 
 function ProcesosEditor({procesos,onChange}){
   const add=()=>onChange([...procesos,{nombre:"",precio:"",pagado:"",notas:"",id:Date.now()}]);
   const upd=(i,f,v)=>{const n=[...procesos];n[i]={...n[i],[f]:v};onChange(n);};
@@ -121,7 +129,7 @@ function ProcesosEditor({procesos,onChange}){
   </div>);
 }
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
+//  LOGIN 
 function LoginScreen({onLogin}){
   const[email,setEmail]=useState("");const[pw,setPw]=useState("");const[err,setErr]=useState("");const[loading,setLoading]=useState(false);
   const login=async()=>{if(!email||!pw){setErr("Ingresa tu email y contraseña");return;}setLoading(true);setErr("");
@@ -150,7 +158,7 @@ function LoginScreen({onLogin}){
     </div></div>);
 }
 
-// ── MAIN APP ──────────────────────────────────────────────────────────────────
+//  MAIN APP 
 function App(){
   const[user,setUser]=useState(null);const[userData,setUserData]=useState(null);const[officeData,setOfficeData]=useState(null);
   const[authLoading,setAuthLoading]=useState(true);
@@ -164,7 +172,21 @@ function App(){
   const[showAddUser,setShowAddUser]=useState(false);const[newUserEmail,setNewUserEmail]=useState("");const[newUserPass,setNewUserPass]=useState("");const[addUserMsg,setAddUserMsg]=useState("");
   const[equipo,setEquipo]=useState([]);const[showTeam,setShowTeam]=useState(false);const[newMember,setNewMember]=useState("");
   const[showDashboard,setShowDashboard]=useState(false);
-  const[borradores,setBorradores]=useState([]);const[showBorradores,setShowBorradores]=useState(false);
+  const[showNomina,setShowNomina]=useState(false);
+  const[showPagosConfig,setShowPagosConfig]=useState(false);
+  const[showCobrar,setShowCobrar]=useState(false);
+  const[cobrarCliente,setCobrarCliente]=useState(null);
+  const[cobrarMonto,setCobrarMonto]=useState("");
+  const[cobrarConcepto,setCobrarConcepto]=useState("");
+  const[cobrarMetodo,setCobrarMetodo]=useState("zelle");
+  const[cobrarSaving,setCobrarSaving]=useState(false);
+  const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:""});
+  const[pagosPorCliente,setPagosPorCliente]=useState({});
+  const[loadingPagos,setLoadingPagos]=useState({});
+  const[configSaving,setConfigSaving]=useState(false);
+  const[tarifasNomina,setTarifasNomina]=useState({});
+  const[showPagosReporte,setShowPagosReporte]=useState(false);
+  const[borradores,setBorradores]=useState([]);const[showBorradores,setShowBorradores]=useState(false);const[borradorExpanded,setBorradorExpanded]=useState({});
   const[borradoresLoading,setBorradoresLoading]=useState(false);const[borradoresPendientes,setBorradoresPendientes]=useState(0);
 
   useEffect(()=>{
@@ -189,7 +211,7 @@ function App(){
     });
   },[]);
 
-  useEffect(()=>{if(!user||!officeData)return;loadCases();loadTeam();loadBorradores();},[user,officeData]);
+  useEffect(()=>{if(!user||!officeData)return;loadCases();loadTeam();loadBorradores();loadPagosConfig();},[user,officeData]);
 
   const handleLogin=(u,ud,od)=>{setUser(u);setUserData(ud);setOfficeData(od);};
 
@@ -198,7 +220,7 @@ function App(){
     try{
       const{db,collection,getDocs,query,where,orderBy}=window._firebase;
       const officeId=officeData?.id||userData?.officeId;
-      // ═══ MULTI-OFFICE: filter by officeId ═══
+      //  MULTI-OFFICE: filter by officeId 
       let q;
       if(officeId){
         q=query(collection(db,"clientes"),where("officeId","==",officeId),orderBy("createdAt","desc"));
@@ -220,7 +242,167 @@ function App(){
     setLoading(false);
   };
 
-  const loadTeam=async()=>{
+  const cargarPagosCliente=async(clienteId)=>{
+  if(pagosPorCliente[clienteId]||loadingPagos[clienteId]) return;
+  setLoadingPagos(prev=>({...prev,[clienteId]:true}));
+  try{
+    const{db,collection,query,where,orderBy,getDocs}=window._firebase;
+    const q=query(collection(db,"pagos"),where("clienteId","==",clienteId),orderBy("fecha","desc"));
+    const snap=await getDocs(q);
+    const pagos=snap.docs.map(d=>({id:d.id,...d.data()}));
+    setPagosPorCliente(prev=>({...prev,[clienteId]:pagos}));
+  }catch(e){
+    setPagosPorCliente(prev=>({...prev,[clienteId]:[]}));
+  }
+  setLoadingPagos(prev=>({...prev,[clienteId]:false}));
+};
+
+const descargarReciboPDF=async(pago)=>{
+  const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+  if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
+  const pdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
+  const W=210; const M=18;
+  pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,30,"F");
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
+  pdoc.text("Recibo de Pago",M,13);
+  pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
+  pdoc.text(officeData?.name||"ImmigPath",M,20);
+  pdoc.text("Ref: "+(pago.refNum||"—"),M,26);
+  pdoc.setTextColor(203,216,232); pdoc.setFontSize(8);
+  pdoc.text(new Date(pago.fecha).toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),W-M,20,{align:"right"});
+  let y=42;
+  const addSec=(t2)=>{
+    pdoc.setFillColor(241,245,249); pdoc.rect(M,y,W-M*2,7,"F");
+    pdoc.setTextColor(30,58,95); pdoc.setFontSize(8); pdoc.setFont("helvetica","bold");
+    pdoc.text(t2,M+3,y+5); y+=10;
+  };
+  const addRow2=(label,val)=>{
+    pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(M,y+6,W-M,y+6);
+    pdoc.setTextColor(100,116,139); pdoc.setFontSize(8); pdoc.setFont("helvetica","normal");
+    pdoc.text(label,M+2,y+4);
+    pdoc.setTextColor(30,41,59); pdoc.setFont("helvetica","bold");
+    pdoc.text(String(val||"—"),W-M-2,y+4,{align:"right"});
+    pdoc.setFont("helvetica","normal"); y+=8;
+  };
+  addSec("INFORMACION DEL CLIENTE");
+  addRow2("Nombre",pago.nombreCliente||"—");
+  addSec("DETALLE DEL PAGO");
+  addRow2("Concepto",pago.concepto||"—");
+  addRow2("Metodo de pago",pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta");
+  addRow2("Fecha",new Date(pago.fecha).toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}));
+  addRow2("Registrado por",pago.registradoPor||"—");
+  y+=4;
+  pdoc.setFillColor(30,58,95); pdoc.roundedRect(M,y,W-M*2,16,3,3,"F");
+  pdoc.setTextColor(168,196,224); pdoc.setFontSize(9); pdoc.setFont("helvetica","normal");
+  pdoc.text("TOTAL PAGADO",M+6,y+7);
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
+  pdoc.text(fmtMoney(parseMoney(pago.monto)),W-M-4,y+11,{align:"right"});
+  y+=24;
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","italic");
+  pdoc.text("Este recibo es comprobante oficial de pago. Guardelo para sus registros.",M,y);
+  const pH=pdoc.internal.pageSize.height;
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(M,pH-10,W-M,pH-10);
+  pdoc.setFontSize(7); pdoc.setTextColor(148,163,184); pdoc.setFont("helvetica","normal");
+  pdoc.text("CONFIDENCIAL | "+(officeData?.name||"ImmigPath")+" | "+(pago.refNum||"—"),M,pH-5);
+  pdoc.save("recibo-"+(pago.refNum||"pago")+".pdf");
+  showToastFn("Recibo descargado ✓");
+};
+
+const loadPagosConfig=async()=>{
+  try{
+    const{db,doc,getDoc}=window._firebase;
+    const officeId=officeData?.id||userData?.officeId||"default";
+    const snap=await getDoc(doc(db,"config",`pagos_${officeId}`));
+    if(snap.exists()) setPagosConfig(snap.data());
+  }catch(e){}
+};
+
+const savePagosConfig=async(cfg)=>{
+  setConfigSaving(true);
+  try{
+    const{db,doc,setDoc}=window._firebase;
+    const officeId=officeData?.id||userData?.officeId||"default";
+    await setDoc(doc(db,"config",`pagos_${officeId}`),cfg);
+    setPagosConfig(cfg);
+    showToastFn("Configuracion guardada ✓");
+  }catch(e){showToastFn("Error al guardar","error");}
+  setConfigSaving(false);
+};
+
+const registrarPago=async(clienteId,pago)=>{
+  try{
+    const{db,collection,addDoc}=window._firebase;
+    const officeId=officeData?.id||userData?.officeId||"";
+    await addDoc(collection(db,"pagos"),{
+      clienteId, officeId,
+      monto:parseMoney(pago.monto),
+      concepto:pago.concepto,
+      metodo:pago.metodo,
+      fecha:new Date().toISOString(),
+      registradoPor:window._firebase.auth.currentUser?.email||"",
+      refNum:"REC-"+Date.now().toString(36).toUpperCase(),
+      nombreCliente:pago.nombreCliente,
+    });
+  }catch(e){console.error(e);}
+};
+
+const generarReciboPDF=async(pago)=>{
+  const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+  if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
+  const pdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
+  const W=210; const M=18;
+  // Header
+  pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,30,"F");
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
+  pdoc.text("Recibo de Pago",M,13);
+  pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
+  pdoc.text(officeData?.name||"ImmigPath",M,20);
+  pdoc.text("Ref: "+pago.refNum,M,26);
+  // Fecha derecha
+  pdoc.setTextColor(203,216,232); pdoc.setFontSize(8);
+  pdoc.text(new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),W-M,20,{align:"right"});
+  // Cuerpo
+  let y=42;
+  const addSec=(title)=>{
+    pdoc.setFillColor(241,245,249); pdoc.rect(M,y,W-M*2,7,"F");
+    pdoc.setTextColor(30,58,95); pdoc.setFontSize(8); pdoc.setFont("helvetica","bold");
+    pdoc.text(title,M+3,y+5); y+=10;
+  };
+  const addRow=(label,val,bold=false)=>{
+    pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(M,y+6,W-M,y+6);
+    pdoc.setTextColor(100,116,139); pdoc.setFontSize(8); pdoc.setFont("helvetica","normal");
+    pdoc.text(label,M+2,y+4);
+    pdoc.setTextColor(30,41,59); if(bold)pdoc.setFont("helvetica","bold");
+    pdoc.text(String(val),W-M-2,y+4,{align:"right"});
+    pdoc.setFont("helvetica","normal"); y+=8;
+  };
+  addSec("INFORMACION DEL CLIENTE");
+  addRow("Nombre",pago.nombreCliente);
+  addSec("DETALLE DEL PAGO");
+  addRow("Concepto",pago.concepto);
+  addRow("Metodo de pago",pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta");
+  addRow("Fecha",new Date().toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}));
+  y+=4;
+  // Total box
+  pdoc.setFillColor(30,58,95); pdoc.roundedRect(M,y,W-M*2,16,3,3,"F");
+  pdoc.setTextColor(168,196,224); pdoc.setFontSize(9); pdoc.setFont("helvetica","normal");
+  pdoc.text("TOTAL PAGADO",M+6,y+7);
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
+  pdoc.text(fmtMoney(parseMoney(pago.monto)),W-M-4,y+11,{align:"right"});
+  y+=24;
+  // Nota
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","italic");
+  pdoc.text("Este recibo es comprobante oficial de pago. Guardelo para sus registros.",M,y);
+  // Footer
+  const pH=pdoc.internal.pageSize.height;
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(M,pH-10,W-M,pH-10);
+  pdoc.setFontSize(7); pdoc.setTextColor(148,163,184); pdoc.setFont("helvetica","normal");
+  pdoc.text("CONFIDENCIAL | "+(officeData?.name||"ImmigPath")+" | "+pago.refNum,M,pH-5);
+  pdoc.save("recibo-"+pago.refNum+".pdf");
+  showToastFn("Recibo descargado ✓");
+};
+
+const loadTeam=async()=>{
     try{
       const{db,doc,getDoc}=window._firebase;
       const officeId=officeData?.id||userData?.officeId||"default";
@@ -308,9 +490,10 @@ function App(){
         setClientes(prev=>prev.map(c=>c.id===editId?{...c,...formCliente,officeId}:c));
         showToastFn("Cliente actualizado ✓");
       }else{
-        // ═══ MULTI-OFFICE: always save officeId ═══
-        const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,createdAt:new Date().toISOString(),createdBy:user.email});
-        setClientes(prev=>[{id:ref.id,...formCliente,officeId,createdAt:new Date().toISOString()},...prev]);
+        //  MULTI-OFFICE: always save officeId 
+        const encargadaAuto = formCliente.encargada || currentUser?.displayName || userData?.displayName || user.email;
+        const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString(),createdBy:user.email});
+        setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString()},...prev]);
         showToastFn("Cliente agregado ✓");
       }
     }catch(e){showToastFn("Error al guardar","error");}
@@ -349,32 +532,153 @@ function App(){
   },[clientes]);
 
   const generatePDF=()=>{
-    const{jsPDF}=window.jspdf;const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
-    const datos=filtered;if(!datos.length){showToastFn("Sin casos","error");return;}
-    pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,297,22,"F");pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(14);pdfdoc.setFont("helvetica","bold");
-    const officeName=officeData?.name||"Monitor de Inmigración";
-    pdfdoc.text(officeName,14,10);pdfdoc.setFontSize(9);pdfdoc.setFont("helvetica","normal");pdfdoc.text(`${new Date().toLocaleString("es-MX")}   |   ${datos.length} clientes   |   ${user.email}`,14,17);
-    const sLabel={vencido:"VENCIDA",hoy:"HOY",urgente:"URGENTE",proximo:"PROXIMA",ok:"AL DIA",pendiente:"PENDIENTE"};const sColor={vencido:[220,38,38],hoy:[234,88,12],urgente:[217,119,6],proximo:[37,99,235],ok:[22,163,74],pendiente:[107,114,128]};
-    const rows=[];
-    datos.forEach(c=>{
-      const st=getStatusCliente(c);const pf=getProximaFecha(c);const dias=pf?getDias(pf):null;
-      const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-      const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
-      const pct=getPct(totalP,pagadoP);
-      const sistemas=(c.casos||[]).map(ca=>(SISTEMAS[ca.sistema]?.label||ca.sistema)+" "+(ca.tipoCaso||"")).join(" | ");
-      rows.push({row:[c.nombre||"—",c.paisOrigen||"—",fmtA(c.alienNum)||"—",sistemas,pf?fmt(pf):"—",dias===null?"—":dias<0?`Hace ${Math.abs(dias)}d`:dias===0?"HOY":`En ${dias}d`,sLabel[st]||"—",c.encargada||"—",totalP?fmtMoney(totalP):"—",pagadoP?fmtMoney(pagadoP):"—",pct!==null?`${pct}%`:"—"],status:st});
-    });
-    pdfdoc.autoTable({startY:26,head:[["Nombre","País","A#","Sistemas / Casos","Próx. fecha","Tiempo","Estado","Encargada","Total","Pagado","%"]],body:rows.map(r=>r.row),styles:{fontSize:7,cellPadding:2,overflow:"linebreak",valign:"middle"},headStyles:{fillColor:[30,64,175],textColor:255,fontStyle:"bold",fontSize:7.5},columnStyles:{0:{cellWidth:28},1:{cellWidth:16},2:{cellWidth:18},3:{cellWidth:50},4:{cellWidth:18},5:{cellWidth:13},6:{cellWidth:14},7:{cellWidth:20},8:{cellWidth:16},9:{cellWidth:16},10:{cellWidth:10}},alternateRowStyles:{fillColor:[248,250,252]},
-    didParseCell:(data)=>{if(data.section==="body"&&data.column.index===6){const r=rows[data.row.index];if(r){const[rv,gv,bv]=sColor[r.status]||[107,114,128];data.cell.styles.textColor=[rv,gv,bv];data.cell.styles.fontStyle="bold";}}},margin:{left:4,right:4}});
-    const pc=pdfdoc.internal.getNumberOfPages();for(let i=1;i<=pc;i++){pdfdoc.setPage(i);pdfdoc.setFontSize(7);pdfdoc.setTextColor(150,150,150);pdfdoc.text(`Pag ${i} de ${pc}  |  Confidencial`,4,pdfdoc.internal.pageSize.height-4);}
-    pdfdoc.save(`reporte-${new Date().toISOString().slice(0,10)}.pdf`);setShowPDF(false);showToastFn(`PDF: ${datos.length} clientes ✓`);
+    const jsPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+    if(!jsPDF){showToastFn("Error cargando PDF. Recarga la pagina.","error");return;}
+    const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    const datos=filtered;
+    if(!datos.length){showToastFn("Sin casos para exportar","error");return;}
+
+                  //  Helper: limpiar texto para jsPDF 
+                  const cleanTxt = s => { if(!s) return ""; let r=""; for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);if(c>=32&&c<=126)r+=s[i];} return r.trim(); };
+                  const W2 = 297; const M = 10;
+
+                  //  HEADER 
+                  // Banda superior azul marino
+                  pdfdoc.setFillColor(30,58,95);
+                  pdfdoc.rect(0,0,W2,26,"F");
+                  // Nombre oficina
+                  pdfdoc.setTextColor(255,255,255);
+                  pdfdoc.setFontSize(12);
+                  pdfdoc.setFont("helvetica","bold");
+                  pdfdoc.text(cleanTxt(officeData?.name||"Monitor de Inmigracion"), M, 10);
+                  // Subtitulo
+                  pdfdoc.setFontSize(7.5);
+                  pdfdoc.setFont("helvetica","normal");
+                  pdfdoc.setTextColor(168,196,224);
+                  const fechaPDF = new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"});
+                  pdfdoc.text(fechaPDF + "   |   " + datos.length + " clientes   |   " + cleanTxt(user.email), M, 17);
+                  // Badge Confidencial derecha
+                  pdfdoc.setFillColor(255,255,255);
+                  pdfdoc.setFillColor(255,255,255,0.12);
+                  pdfdoc.setDrawColor(255,255,255,0.25);
+                  pdfdoc.roundedRect(W2-M-30, 7, 28, 7, 1.5, 1.5, "FD");
+                  pdfdoc.setTextColor(203,216,232);
+                  pdfdoc.setFontSize(6.5);
+                  pdfdoc.text("Confidencial", W2-M-29, 12);
+
+                  //  TABLA 
+                  // (estado removido del PDF  no se muestra)
+
+                  const rows3=[];
+                  datos.forEach(c=>{
+                    const st=getStatusCliente(c);
+                    const pf=getProximaFecha(c);
+                    const dias=pf?getDias(pf):null;
+                    const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                    const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                    const pct=getPct(totalP,pagadoP);
+                    // Sistemas: texto limpio deduplicado, separado por "  "
+                    const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"A.P.","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
+                    const sistemasUnicos=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()).filter(Boolean))];
+                    const tiposUnicos=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
+                    const sistemasStr=[...sistemasUnicos,...tiposUnicos].join(" · ");
+                    // Tiempo legible
+                    let tiempoStr="—";
+                    if(dias!==null){
+                      if(dias<0) tiempoStr="Hace "+Math.abs(dias)+"d";
+                      else if(dias===0) tiempoStr="Hoy";
+                      else tiempoStr="+"+dias+"d";
+                    }
+                    // Fecha de ingreso del cliente al sistema
+                    const fechaIngreso=c.createdAt?new Date(c.createdAt).toLocaleDateString("en-US",{month:"2-digit",day:"2-digit",year:"numeric"}):"—";
+                    // Pais en una sola linea (max 12 chars)
+                    const paisStr=cleanTxt(c.paisOrigen)||"—";
+                    // Alien num sin guiones partidos
+                    const alienStr=fmtA(c.alienNum)||"—";
+                    rows3.push({
+                      row:[
+                        cleanTxt(c.nombre)||"—",
+                        paisStr,
+                        alienStr,
+                        sistemasStr,
+                        fechaIngreso,
+                        cleanTxt(c.encargada)||"—",
+                        totalP?fmtMoney(totalP):"—",
+                        pagadoP?fmtMoney(pagadoP):"—",
+                      ],
+                      status:st
+                    });
+                  });
+
+                  pdfdoc.autoTable({
+                    startY: 30,
+                    head:[["Nombre","Pais","Num. Alien","Sistemas","Ingreso","Encargada","Total","Pagado"]],
+                    body: rows3.map(r=>r.row),
+                    styles:{
+                      fontSize: 7.5,
+                      cellPadding: [3,4],
+                      overflow: "linebreak",
+                      valign: "middle",
+                      textColor: [30,41,59],
+                      lineColor: [226,232,240],
+                      lineWidth: 0.1
+                    },
+                    headStyles:{
+                      fillColor: [30,58,95],
+                      textColor: [255,255,255],
+                      fontStyle: "bold",
+                      fontSize: 7.5,
+                      cellPadding: [4,4],
+                      lineWidth: 0
+                    },
+                    alternateRowStyles:{
+                      fillColor: [248,250,252]
+                    },
+                    columnStyles:{
+                      0:{cellWidth:40, fontStyle:"bold"},
+                      1:{cellWidth:22},
+                      2:{cellWidth:26, fontSize:7.5},
+                      3:{cellWidth:68},
+                      4:{cellWidth:22, halign:"center"},
+                      5:{cellWidth:32},
+                      6:{cellWidth:22, halign:"right"},
+                      7:{cellWidth:22, halign:"right"},
+                    },
+                    didParseCell:(data)=>{
+                      if(data.section==="body" && data.column.index===0){
+                        data.cell.styles.textColor=[30,58,95];
+                        data.cell.styles.fontStyle="bold";
+                      }
+                    },
+                    margin:{left:M, right:M},
+                    tableLineColor:[226,232,240],
+                    tableLineWidth:0.1
+                  });
+
+                  //  FOOTER 
+                  const pcPDF=pdfdoc.internal.getNumberOfPages();
+                  for(let i=1;i<=pcPDF;i++){
+                    pdfdoc.setPage(i);
+                    const pH=pdfdoc.internal.pageSize.height;
+                    pdfdoc.setDrawColor(226,232,240);
+                    pdfdoc.setLineWidth(0.3);
+                    pdfdoc.line(M, pH-8, W2-M, pH-8);
+                    pdfdoc.setFontSize(6.5);
+                    pdfdoc.setTextColor(148,163,184);
+                    pdfdoc.setFont("helvetica","normal");
+                    pdfdoc.text("CONFIDENCIAL — Solo para uso interno  |  "+cleanTxt(officeData?.name||"ImmigPath")+"  |  Pag "+i+" de "+pcPDF, M, pH-3.5);
+                  }
+
+    pdfdoc.save("reporte-"+new Date().toISOString().slice(0,10)+".pdf");
+    setShowPDF(false);
+    showToastFn("PDF: "+datos.length+" clientes");
   };
 
   if(authLoading)return<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontSize:16,color:"#6B7280"}}>⚖️ Cargando...</div>;
   if(!user||!officeData)return<LoginScreen onLogin={handleLogin}/>;
 
   const officeName=officeData?.name||"Mi Oficina";
-  // ═══ PERMISOS POR ROL ═══
+  //  PERMISOS POR ROL 
   const isAdmin = userData?.role==="office_admin" || userData?.role==="superadmin";
 
   return(<div style={{fontFamily:"'Segoe UI',Inter,sans-serif",minHeight:"100vh",background:"#F1F5F9"}}>
@@ -396,6 +700,9 @@ function App(){
               📊 Dashboard
               {(stats.alertas.length>0||stats.vencidos.length>0)&&<span style={{position:"absolute",top:-6,right:-6,background:"#EF4444",color:"#fff",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{stats.alertas.length+stats.vencidos.length}</span>}
             </button>
+            {isAdmin&&<button onClick={()=>setShowNomina(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>💰 Nómina</button>}
+            {isAdmin&&<button onClick={()=>setShowPagosConfig(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>⚙️ Pagos</button>}
+            {isAdmin&&<button onClick={()=>setShowPagosReporte(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📊 Cobros</button>}
             {isAdmin&&<button onClick={()=>setShowTeam(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>👥 Equipo</button>}
             {isAdmin&&<button onClick={()=>setShowAddUser(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔐 Usuarios</button>}
             {isAdmin&&<button onClick={()=>setShowPDF(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 PDF</button>}
@@ -448,7 +755,7 @@ function App(){
             const casoTab=activeCasoTab[c.id]||0;
             return(
               <div key={c.id} style={{background:"#fff",borderRadius:12,border:`1px solid ${scfg.border}`,borderLeft:`4px solid ${scfg.color}`,boxShadow:"0 1px 4px rgba(0,0,0,0.05)",overflow:"hidden"}}>
-                <div style={{padding:"13px 16px",display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",cursor:"pointer"}} onClick={()=>setExpandedId(exp?null:c.id)}>
+                <div style={{padding:"13px 16px",display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",cursor:"pointer"}} onClick={()=>{const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}}>
                   <div style={{flex:1,minWidth:180}}>
                     <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
                       <span style={{fontWeight:700,fontSize:15,color:"#0F172A"}}>{c.nombre}</span>
@@ -476,6 +783,8 @@ function App(){
                   </div>
                   <div style={{display:"flex",gap:6}}>
                     <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>✏️</button>
+                    <button title="Copiar link del cliente" onClick={e=>{e.stopPropagation();const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>{prompt("Copia este link:",link);});}} style={{background:"#EFF6FF",color:"#1D4ED8",border:"1px solid #BFDBFE",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔗</button>
+                {isAdmin&&<button title="Cobrar cliente" onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{background:"#F0FDF4",color:"#16A34A",border:"1px solid #BBF7D0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}}>💳</button>}
                     {isAdmin&&<button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);}} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>🗑</button>}
                   </div>
                   <span style={{color:"#CBD5E1",fontSize:12}}>{exp?"▲":"▼"}</span>
@@ -499,8 +808,43 @@ function App(){
                             {ca.alienNum&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Número Alien</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600}}>{fmtA(ca.alienNum)}</div></div>}
                             {ca.sistema==="eoir"&&ca.corte&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Corte</div><div style={{fontSize:13,fontWeight:500}}>🏛️ {ca.corte}</div></div>}
                             {ca.sistema==="eoir"&&ca.juez&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Juez</div><div style={{fontSize:13,fontWeight:500}}>👨‍⚖️ {ca.juez}</div></div>}
+
+                            {/* Estatus del caso USCIS */}
+                            {ca.sistema==="uscis"&&ca.estatusCaso&&<div style={{gridColumn:"1/-1"}}><div style={{display:"inline-block",padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:700,background:ca.estatusCaso==="activo"?"#F0FDF4":ca.estatusCaso==="referido_eoir"?"#F5F3FF":ca.estatusCaso==="aprobado"?"#F0F9FF":"#FEF2F2",color:ca.estatusCaso==="activo"?"#16A34A":ca.estatusCaso==="referido_eoir"?"#7C3AED":ca.estatusCaso==="aprobado"?"#0369A1":"#DC2626",border:`1px solid ${ca.estatusCaso==="activo"?"#BBF7D0":ca.estatusCaso==="referido_eoir"?"#DDD6FE":ca.estatusCaso==="aprobado"?"#BAE6FD":"#FECACA"}`}}>{ca.estatusCaso==="activo"?"✅ Caso Activo":ca.estatusCaso==="referido_eoir"?"🔒 Cerrado — Referido a EOIR":ca.estatusCaso==="aprobado"?"🔒 Cerrado — Aprobado":"🔒 Cerrado — Denegado"}</div></div>}
+
+                            {/* Reloj de Asilo */}
+                            {(ca.sistema==="uscis"&&(ca.tipoCaso||"").includes("I-589")||ca.sistema==="eoir"&&(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&ca.fechaAsilo&&(()=>{
+                              const inicio=new Date(ca.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);
+                              const diasReloj=Math.floor((hoy-inicio)/86400000);const pctReloj=Math.min(100,Math.round((diasReloj/180)*100));
+                              const colorReloj=diasReloj>=180?"#16A34A":diasReloj>=120?"#D97706":"#2563EB";
+                              return(
+                                <div style={{gridColumn:"1/-1",background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:10,padding:"12px 14px"}}>
+                                  <div style={{fontSize:12,fontWeight:700,color:"#A5B4FC",marginBottom:8}}>⏱️ Reloj de Asilo</div>
+                                  <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:8}}>
+                                    <div style={{textAlign:"center"}}>
+                                      <div style={{fontSize:32,fontWeight:800,color:colorReloj,lineHeight:1}}>{diasReloj}</div>
+                                      <div style={{fontSize:11,color:"#A5B4FC"}}>días transcurridos</div>
+                                    </div>
+                                    <div style={{flex:1}}>
+                                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                                        <span style={{fontSize:11,color:"#A5B4FC"}}>Presentado: {fmt(ca.fechaAsilo)}</span>
+                                        <span style={{fontSize:11,color:"#A5B4FC"}}>Meta: 180 días</span>
+                                      </div>
+                                      <div style={{background:"#312E81",borderRadius:20,height:10,overflow:"hidden"}}>
+                                        <div style={{height:"100%",borderRadius:20,background:colorReloj,width:`${pctReloj}%`}}/>
+                                      </div>
+                                      <div style={{fontSize:11,color:colorReloj,fontWeight:700,marginTop:4}}>
+                                        {diasReloj>=180?`✅ Elegible para EAD — lleva ${diasReloj} días`:`⏳ Faltan ${180-diasReloj} días para aplicar al EAD`}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
+                            {/* Fecha principal destacada */}
                             {ca.fechaCorte&&ca.sistema!=="foia"&&(()=>{
-                              const label=ca.sistema==="eoir"?"📅 Fecha de corte":(ca.tipoCaso||"").includes("I-589")?"🎤 Fecha de entrevista":"📅 Fecha de cita";
+                              const label=ca.sistema==="eoir"?"📅 Fecha de corte":(ca.tipoCaso||"").includes("I-589")?(ca.tipoCita==="huellas"?"🫆 Biometrics":"🎤 Fecha de entrevista"):"📅 Fecha de cita";
                               return(
                                 <div style={{gridColumn:"1/-1",background:scfgCaso.bg,border:`2px solid ${scfgCaso.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                                   <div><div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600,marginBottom:4}}>{label}</div><div style={{fontSize:28,fontWeight:800,color:scfgCaso.color,lineHeight:1}}>{fmt(ca.fechaCorte)}</div></div>
@@ -513,14 +857,34 @@ function App(){
                                 </div>
                               );
                             })()}
+
+                            {/* Fecha huellas biometrics */}
+                            {ca.fechaHuellas&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>🫆 Biometrics</div><div style={{fontSize:13,fontWeight:600}}>{fmt(ca.fechaHuellas)}</div></div>}
+
+                            {/* FOIA fields */}
                             {ca.sistema==="foia"&&ca.foiaTracking&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Tracking #</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600,color:"#0891B2"}}>{ca.foiaTracking}</div></div>}
-                            {ca.sistema==="foia"&&ca.foiaEstado&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Estado FOIA</div><div style={{fontSize:13,fontWeight:600}}>{ca.foiaEstado}</div></div>}
+                            {ca.sistema==="foia"&&ca.foiaEstado&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Estado FOIA</div><div style={{fontSize:13,fontWeight:600,color:ca.foiaEstado==="Respuesta recibida"?"#16A34A":"#D97706"}}>{ca.foiaEstado==="Respuesta recibida"?"✅":ca.foiaEstado==="En proceso"?"⏳":"📤"} {ca.foiaEstado}</div></div>}
+                            {ca.sistema==="foia"&&ca.foiaRespuesta&&<div style={{gridColumn:"1/-1"}}><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Respuesta FOIA</div><div style={{fontSize:13,color:"#475569",fontStyle:"italic"}}>📝 {ca.foiaRespuesta}</div></div>}
+
+                            {/* EAD — I-765 */}
+                            {(ca.tipoCaso||"").includes("I-765")&&ca.tieneEAD&&<div style={{gridColumn:"1/-1",background:ca.tieneEAD==="si"?"#F0FDF4":"#FEF2F2",border:`1px solid ${ca.tieneEAD==="si"?"#BBF7D0":"#FECACA"}`,borderRadius:8,padding:"9px 12px"}}>
+                              <div style={{fontSize:12,fontWeight:700,color:ca.tieneEAD==="si"?"#15803D":"#DC2626",marginBottom:ca.eadVence?6:0}}>{ca.tieneEAD==="si"?"✅ Tiene EAD":"❌ Sin EAD — Puede aplicar"}</div>
+                              {ca.eadVence&&<div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+                                <div><div style={{fontSize:10,color:"#6B7280",textTransform:"uppercase"}}>{ca.tieneEAD==="si"?"Vence":"Puede aplicar el"}</div><div style={{fontSize:13,fontWeight:700,color:ca.tieneEAD==="si"&&getDias(ca.eadVence)!==null&&getDias(ca.eadVence)<=30?"#DC2626":"#15803D"}}>{fmt(ca.eadVence)}{ca.tieneEAD==="si"&&getDias(ca.eadVence)!==null&&getDias(ca.eadVence)<=30&&" ⚠️"}</div></div>
+                                {ca.tieneEAD==="si"&&ca.eadRenovado&&<div><div style={{fontSize:10,color:"#6B7280",textTransform:"uppercase"}}>Renovación</div><div style={{fontSize:12,fontWeight:600,color:ca.eadRenovado==="si"?"#15803D":"#D97706"}}>{ca.eadRenovado==="si"?"✅ Renovado":"⏳ Pendiente renovar"}</div></div>}
+                              </div>}
+                            </div>}
+
                             {ca.nota&&<div style={{gridColumn:"1/-1"}}><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Notas</div><div style={{fontSize:13,color:"#475569",fontStyle:"italic"}}>📝 {ca.nota}</div></div>}
                           </div>
+
+                          {/* Links */}
                           <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
                             {ca.sistema==="eoir"&&ca.alienNum&&<a href={eoirUrl(ca.alienNum)} target="_blank" rel="noreferrer" style={{background:"#7C3AED",color:"#fff",borderRadius:7,padding:"6px 12px",fontSize:12,textDecoration:"none",fontWeight:600}}>⚖️ Ver en EOIR →</a>}
                             {ca.sistema==="uscis"&&ca.receiptNum&&<a href={uscisUrl(ca.receiptNum)} target="_blank" rel="noreferrer" style={{background:"#0369A1",color:"#fff",borderRadius:7,padding:"6px 12px",fontSize:12,textDecoration:"none",fontWeight:600}}>🏛 Ver en USCIS →</a>}
                           </div>
+
+                          {/* Pagos — solo Admin */}
                           {isAdmin&&(ca.procesos||[]).length>0&&(()=>{
                             const totalC=getTotalProcesos(ca.procesos||[]);const pagadoC=getTotalPagado(ca.procesos||[]);const pctC=getPct(totalC,pagadoC);const pcC=pagoColor(pctC);
                             return(
@@ -544,10 +908,38 @@ function App(){
                         </div>
                       );
                     })()}
+                    {exp&&(c.casos||[]).length===0&&<div style={{padding:"16px",textAlign:"center",color:"#94A3B8",fontSize:13,borderTop:"1px solid #F1F5F9"}}>Sin casos registrados.</div>}
                   </div>
                 )}
-                {exp&&(c.casos||[]).length===0&&<div style={{padding:"16px",textAlign:"center",color:"#94A3B8",fontSize:13,borderTop:"1px solid #F1F5F9"}}>Sin casos registrados.</div>}
               </div>
+              {exp&&<div style={{borderTop:"1px solid #E2E8F0",background:"#F8FAFC",padding:"14px 16px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                  <span style={{fontSize:12,fontWeight:700,color:"#0F172A"}}>🧾 Historial de Recibos</span>
+                  {pagosPorCliente[c.id]&&pagosPorCliente[c.id].length>0&&
+                    <span style={{background:"#1E3A5F",color:"#fff",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>{pagosPorCliente[c.id].length}</span>
+                  }
+                </div>
+                {loadingPagos[c.id]&&<div style={{fontSize:12,color:"#94A3B8",padding:"6px 0"}}>Cargando pagos...</div>}
+                {pagosPorCliente[c.id]&&pagosPorCliente[c.id].length===0&&!loadingPagos[c.id]&&
+                  <div style={{fontSize:12,color:"#94A3B8",fontStyle:"italic"}}>Sin pagos registrados aun.</div>
+                }
+                {(pagosPorCliente[c.id]||[]).map(pago=>(
+                  <div key={pago.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{pago.concepto||"—"}</div>
+                      <div style={{fontSize:11,color:"#64748B",marginTop:3,display:"flex",gap:8,flexWrap:"wrap"}}>
+                        <span>{new Date(pago.fecha).toLocaleDateString("es-US",{day:"2-digit",month:"short",year:"numeric"})}</span>
+                        <span style={{background:pago.metodo==="zelle"?"#F0FDF4":"#EFF6FF",color:pago.metodo==="zelle"?"#16A34A":"#2563EB",border:`1px solid ${pago.metodo==="zelle"?"#BBF7D0":"#BFDBFE"}`,borderRadius:20,padding:"1px 7px",fontSize:10,fontWeight:600}}>{pago.metodo==="zelle"?"Zelle":"Stripe"}</span>
+                        <span style={{color:"#CBD5E1"}}>Ref: {pago.refNum||"—"}</span>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{fontSize:15,fontWeight:800,color:"#16A34A"}}>{fmtMoney(parseMoney(pago.monto))}</div>
+                      <button onClick={()=>descargarReciboPDF(pago)} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>📄 Recibo</button>
+                    </div>
+                  </div>
+                ))}
+              </div>}
             );
           })}
         </div>
@@ -575,12 +967,12 @@ function App(){
               <Field label="📱 Teléfono" value={formCliente.telefono||""} onChange={v=>setFormCliente(p=>({...p,telefono:v}))} placeholder="(407) 555-1234" type="tel"/>
               <Field label="📧 Email" value={formCliente.email||""} onChange={v=>setFormCliente(p=>({...p,email:v}))} placeholder="cliente@email.com" type="email"/>
             </div>
-            <div style={{marginBottom:11}}>
+            {isAdmin&&<div style={{marginBottom:11}}>
               <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>👩 Encargada</label>
               <select value={formCliente.encargada} onChange={e=>setFormCliente(p=>({...p,encargada:e.target.value}))} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,background:"#fff",cursor:"pointer"}}>
                 <option value="">Sin asignar</option>{equipo.map(m=><option key={m} value={m}>{m}</option>)}
               </select>
-            </div>
+            </div>}
             <div>
               <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>Notas generales</label>
               <textarea value={formCliente.nota} onChange={e=>setFormCliente(p=>({...p,nota:e.target.value}))} placeholder="Observaciones del cliente..." rows={2} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,resize:"vertical",outline:"none"}}/>
@@ -613,14 +1005,136 @@ function App(){
             <div style={{display:"grid",gap:12}}>
               {borradores.map(b=>(
                 <div key={b.id} style={{background:"#F8FAFC",borderRadius:10,border:"1px solid #E2E8F0",padding:"16px",borderLeft:"4px solid #2563EB"}}>
+                  {/* Header con toggle */}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8,marginBottom:10}}>
                     <div>
                       <span style={{fontWeight:700,fontSize:15,color:"#0F172A"}}>{b.nombre||"Sin nombre"} </span>
                       <span style={{background:"#EFF6FF",color:"#2563EB",border:"1px solid #BFDBFE",borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:600}}>{b.tipoFormulario}</span>
                     </div>
-                    <div style={{fontSize:11,color:"#94A3B8"}}>{new Date(b.fechaEnvio).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"})}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{fontSize:11,color:"#94A3B8"}}>{new Date(b.fechaEnvio).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"})}</div>
+                      <button onClick={()=>setBorradorExpanded(prev=>({...prev,[b.id]:!prev[b.id]}))} style={{background:"#EFF6FF",color:"#2563EB",border:"1px solid #BFDBFE",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>
+                        {borradorExpanded[b.id]?"▲ Ocultar":"▼ Ver detalles"}
+                      </button>
+                    </div>
                   </div>
+                  {/* Detalles expandibles */}
+                  {borradorExpanded[b.id]&&<div style={{background:"#fff",borderRadius:8,border:"1px solid #E2E8F0",padding:"14px",marginBottom:12,fontSize:12}}>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 16px"}}>
+                      {[
+                        ["Telefono",b.telefono],["Email",b.email],
+                        ["Pais de origen",b.paisOrigen],["Num. Alien",b.alienNum],
+                        ["Estatus migratorio",b.estatusMigratorio],["Fecha entrada EE.UU.",b.fechaEntrada],
+                        ["Como entro",b.formaEntrada],["Orden deportacion",b.ordenDeportacion],
+                        ["Detenido ICE/CBP",b.detenidoICE],["Proceso EOIR",b.procesoEOIR],
+                        ["Fecha audiencia",b.fechaAudiencia],["Estado civil",b.estadoCivil],
+                        ["Tiene hijos",b.tieneHijos],["Familiares en EE.UU.",b.familiaUS],
+                      ].filter(([,v])=>v).map(([label,val])=>(
+                        <div key={label}>
+                          <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10,letterSpacing:"0.04em"}}>{label}: </span>
+                          <span style={{color:"#1E293B"}}>{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {b.tiposAyuda&&b.tiposAyuda.length>0&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
+                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10,letterSpacing:"0.04em"}}>Ayuda requerida: </span>
+                      <span style={{color:"#1E3A5F",fontWeight:600}}>{b.tiposAyuda.join(" · ")}</span>
+                    </div>}
+                    {b.situacion&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
+                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10,letterSpacing:"0.04em"}}>Situacion: </span>
+                      <span style={{color:"#374151",fontStyle:"italic"}}>{b.situacion}</span>
+                    </div>}
+                    {b.historialPrevio&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
+                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10,letterSpacing:"0.04em"}}>Historial previo: </span>
+                      <span style={{color:"#374151",fontStyle:"italic"}}>{b.historialPrevio}</span>
+                    </div>}
+                  </div>}
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button onClick={()=>{
+                      // PDF del formulario de intake
+                      const jsPDFb=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+                      if(!jsPDFb){showToastFn("Error cargando PDF","error");return;}
+                      const pdoc=new jsPDFb({orientation:"portrait",unit:"mm",format:"a4"});
+                      const W=210; const M=14;
+                      // Header
+                      pdoc.setFillColor(30,58,95);pdoc.rect(0,0,W,26,"F");
+                      pdoc.setTextColor(255,255,255);pdoc.setFontSize(13);pdoc.setFont("helvetica","bold");
+                      pdoc.text("Formulario de Intake — "+(officeData?.name||"ImmigPath"),M,11);
+                      pdoc.setFontSize(8);pdoc.setFont("helvetica","normal");pdoc.setTextColor(168,196,224);
+                      pdoc.text("Recibido: "+new Date(b.fechaEnvio).toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"})+"  |  Ref: "+(b.refNum||"—"),M,19);
+                      pdoc.setFillColor(255,255,255,0.12);pdoc.setDrawColor(255,255,255,0.25);
+                      pdoc.roundedRect(W-M-28,7,26,8,1.5,1.5,"FD");
+                      pdoc.setTextColor(203,216,232);pdoc.setFontSize(7);pdoc.text("Confidencial",W-M-27,12.5);
+                      // Secciones
+                      const sections=[
+                        {title:"DATOS PERSONALES",rows:[
+                          ["Nombre completo",b.nombre||"—"],
+                          ["Fecha de nacimiento",b.fechaNacimiento||"—"],
+                          ["Pais de origen",b.paisOrigen||"—"],
+                          ["Telefono",b.telefono||"—"],
+                          ["Email",b.email||"—"],
+                          ["Numero Alien (A#)",b.alienNum||"—"],
+                          ["Idioma preferido",b.idioma||"—"],
+                          ["Direccion",b.direccion||"—"],
+                        ]},
+                        {title:"HISTORIAL MIGRATORIO",rows:[
+                          ["Estatus migratorio actual",b.estatusMigratorio||"—"],
+                          ["Fecha de entrada a EE.UU.",b.fechaEntrada||"—"],
+                          ["Como entro al pais",b.formaEntrada||"—"],
+                          ["Orden de deportacion",b.ordenDeportacion||"—"],
+                          ["Detenido por ICE/CBP",b.detenidoICE||"—"],
+                          ["Proceso en corte EOIR",b.procesoEOIR||"—"],
+                          ["Fecha audiencia",b.fechaAudiencia||"—"],
+                          ["Historial previo",b.historialPrevio||"—"],
+                        ]},
+                        {title:"FAMILIA",rows:[
+                          ["Estado civil",b.estadoCivil||"—"],
+                          ["Tiene hijos",b.tieneHijos||"—"],
+                          ["Detalles de hijos",b.hijosInfo||"—"],
+                          ["Familiares en EE.UU.",b.familiaUS||"—"],
+                          ["Quienes",b.familiaUSInfo||"—"],
+                        ]},
+                        {title:"TIPO DE AYUDA REQUERIDA",rows:[
+                          ["Servicios solicitados",(b.tiposAyuda||[]).join(", ")||"—"],
+                          ["Descripcion de la situacion",b.situacion||"—"],
+                        ]},
+                      ];
+                      let y=32;
+                      sections.forEach(sec=>{
+                        // Titulo de seccion
+                        pdoc.setFillColor(241,245,249);
+                        pdoc.rect(M,y,W-M*2,7,"F");
+                        pdoc.setTextColor(30,58,95);pdoc.setFontSize(8);pdoc.setFont("helvetica","bold");
+                        pdoc.text(sec.title,M+3,y+5);
+                        y+=9;
+                        // Filas
+                        sec.rows.forEach(([label,val])=>{
+                          if(!val||val==="—")return;
+                          const valStr=String(val).substring(0,120);
+                          const lines=pdoc.splitTextToSize(valStr,W-M*2-42);
+                          const rowH=Math.max(7,lines.length*5);
+                          if(y+rowH>280){pdoc.addPage();y=20;}
+                          pdoc.setDrawColor(226,232,240);pdoc.setLineWidth(0.2);
+                          pdoc.line(M,y+rowH,W-M,y+rowH);
+                          pdoc.setTextColor(100,116,139);pdoc.setFontSize(7.5);pdoc.setFont("helvetica","normal");
+                          pdoc.text(label,M+2,y+5);
+                          pdoc.setTextColor(30,41,59);pdoc.setFontSize(8);pdoc.setFont("helvetica","bold");
+                          pdoc.text(lines,M+42,y+5);
+                          y+=rowH;
+                        });
+                        y+=4;
+                      });
+                      // Footer
+                      const totalPgs=pdoc.internal.getNumberOfPages();
+                      for(let i=1;i<=totalPgs;i++){
+                        pdoc.setPage(i);const pH=pdoc.internal.pageSize.height;
+                        pdoc.setDrawColor(226,232,240);pdoc.setLineWidth(0.3);pdoc.line(M,pH-8,W-M,pH-8);
+                        pdoc.setFontSize(7);pdoc.setTextColor(148,163,184);pdoc.setFont("helvetica","normal");
+                        pdoc.text("CONFIDENCIAL — Solo para uso interno  |  "+(officeData?.name||"ImmigPath")+"  |  Pag "+i+" de "+totalPgs,M,pH-3.5);
+                      }
+                      pdoc.save("intake-"+(b.nombre||"formulario").replace(/\s/g,"-")+".pdf");
+                      showToastFn("PDF descargado");
+                    }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:7,padding:"8px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 Ver PDF</button>
                     <button onClick={()=>activarBorrador(b)} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"8px 16px",fontSize:12,cursor:"pointer",fontWeight:600}}>✅ Activar como cliente</button>
                     <button onClick={()=>rechazarBorrador(b.id)} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"8px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>🗑 Eliminar</button>
                   </div>
@@ -630,8 +1144,8 @@ function App(){
           )}
           <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"14px",marginTop:16}}>
             <div style={{fontSize:12,fontWeight:700,color:"#1D4ED8",marginBottom:6}}>🔗 Link del formulario</div>
-            <div style={{background:"#fff",border:"1px solid #BFDBFE",borderRadius:7,padding:"8px 12px",fontFamily:"monospace",fontSize:12,color:"#1D4ED8",wordBreak:"break-all"}}>{window.location.origin.replace("monitor","")+"formulario.html"}</div>
-            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin.replace("monitor","")+"/formulario.html");showToastFn("Link copiado ✓");}} style={{marginTop:8,background:"#1E40AF",color:"#fff",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>📋 Copiar link</button>
+            <div style={{background:"#fff",border:"1px solid #BFDBFE",borderRadius:7,padding:"8px 12px",fontFamily:"monospace",fontSize:12,color:"#1D4ED8",wordBreak:"break-all"}}>{window.location.origin+"/formulario.html"}</div>
+            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/formulario.html");showToastFn("Link copiado ✓");}} style={{marginTop:8,background:"#1E40AF",color:"#fff",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>📋 Copiar link</button>
           </div>
         </div>
       </div>
@@ -687,16 +1201,214 @@ function App(){
     </div>)}
 
     {/* MODAL PDF */}
-    {showPDF&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-      <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:420,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
-        <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>📄 Descargar PDF</h2>
-        <div style={{background:"#F8FAFC",borderRadius:8,padding:"9px 13px",marginBottom:16,fontSize:13,color:"#475569"}}>📋 <strong>{filtered.length}</strong> clientes en el reporte</div>
-        <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-          <button onClick={()=>setShowPDF(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
-          <button onClick={generatePDF} style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>📥 Generar PDF</button>
+    {showPDF&&(()=>{
+      // Calcular clientes segn filtros del modal PDF
+      const pdfClientes = clientes.filter(c => {
+        const st = getStatusCliente(c);
+        if(pdfOpts.sistema !== "todos" && !(c.casos||[]).some(ca => ca.sistema === pdfOpts.sistema)) return false;
+        if(pdfOpts.estado !== "todos" && st !== pdfOpts.estado) return false;
+        return true;
+      });
+      const BtnSistema = ({val, label, icon}) => {
+        const active = pdfOpts.sistema === val;
+        const colors = {uscis:{c:"#0369A1",bg:"#F0F9FF",b:"#BAE6FD"}, eoir:{c:"#7C3AED",bg:"#F5F3FF",b:"#DDD6FE"}, foia:{c:"#0891B2",bg:"#ECFEFF",b:"#A5F3FC"}, todos:{c:"#1E40AF",bg:"#EFF6FF",b:"#BFDBFE"}};
+        const clr = colors[val] || colors.todos;
+        return <button onClick={()=>setPdfOpts(p=>({...p,sistema:val}))} style={{padding:"8px 14px",borderRadius:8,border:active?`2px solid ${clr.c}`:"1px solid #E2E8F0",background:active?clr.bg:"#F8FAFC",color:active?clr.c:"#64748B",fontWeight:active?700:400,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>{icon} {label}</button>;
+      };
+      const BtnEstado = ({val, label, icon, color}) => {
+        const active = pdfOpts.estado === val;
+        return <button onClick={()=>setPdfOpts(p=>({...p,estado:val}))} style={{padding:"8px 14px",borderRadius:8,border:active?"2px solid "+color:"1px solid #E2E8F0",background:active?"#F1F5F9":"#F8FAFC",color:active?color:"#64748B",fontWeight:active?700:400,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>{icon&&<span style={{width:10,height:10,borderRadius:"50%",background:color,display:"inline-block"}}/>} {label}</button>;
+      };
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+          <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+              <span style={{fontSize:22}}>📄</span>
+              <h2 style={{margin:0,fontSize:18,fontWeight:800,color:"#0F172A"}}>Descargar PDF</h2>
+            </div>
+            <p style={{fontSize:13,color:"#64748B",margin:"0 0 20px"}}>Elige qué clientes incluir</p>
+
+            {/* FILTRO SISTEMA */}
+            <div style={{marginBottom:18}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>SISTEMA</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <BtnSistema val="todos" label="Todos" icon="🗂"/>
+                <BtnSistema val="eoir"  label="EOIR"  icon="⚖️"/>
+                <BtnSistema val="uscis" label="USCIS" icon="🏛"/>
+                <BtnSistema val="foia"  label="FOIA"  icon="📂"/>
+              </div>
+            </div>
+
+            {/* FILTRO ESTADO */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>ESTADO</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <BtnEstado val="todos"    label="Todos"    color="#1E40AF"/>
+                <BtnEstado val="vencido"  label="Vencidas" icon="●" color="#DC2626"/>
+                <BtnEstado val="urgente"  label="Urgentes" icon="●" color="#D97706"/>
+                <BtnEstado val="hoy"      label="Hoy"      icon="●" color="#EA580C"/>
+                <BtnEstado val="proximo"  label="Próximas" icon="●" color="#2563EB"/>
+                <BtnEstado val="ok"       label="Al día"   icon="●" color="#16A34A"/>
+              </div>
+            </div>
+
+            {/* CONTADOR */}
+            <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:13,color:"#475569",display:"flex",alignItems:"center",gap:8}}>
+              📋 <strong style={{color:"#0F172A"}}>{pdfClientes.length} cliente{pdfClientes.length!==1?"s":""}</strong> en el reporte
+            </div>
+
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowPDF(false);setPdfOpts({sistema:"todos",estado:"todos"});}} style={{padding:"10px 22px",borderRadius:9,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer",fontWeight:500}}>Cancelar</button>
+              <button onClick={()=>{
+                // Generar PDF con los clientes filtrados del modal
+                const jsPDF=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+                if(!jsPDF){showToastFn("Error cargando PDF. Recarga la pagina.","error");return;}
+                const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+                const datos=pdfClientes;
+                if(!datos.length){showToastFn("Sin clientes para este filtro","error");return;}
+
+                  //  Helper: limpiar texto para jsPDF 
+                  const cleanTxt = s => { if(!s) return ""; let r=""; for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);if(c>=32&&c<=126)r+=s[i];} return r.trim(); };
+                  const W2 = 297; const M = 10;
+
+                  //  HEADER 
+                  // Banda superior azul marino
+                  pdfdoc.setFillColor(30,58,95);
+                  pdfdoc.rect(0,0,W2,26,"F");
+                  // Nombre oficina
+                  pdfdoc.setTextColor(255,255,255);
+                  pdfdoc.setFontSize(12);
+                  pdfdoc.setFont("helvetica","bold");
+                  pdfdoc.text(cleanTxt(officeData?.name||"Monitor de Inmigracion"), M, 10);
+                  // Subtitulo
+                  pdfdoc.setFontSize(7.5);
+                  pdfdoc.setFont("helvetica","normal");
+                  pdfdoc.setTextColor(168,196,224);
+                  const fechaPDF = new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"});
+                  pdfdoc.text(fechaPDF + "   |   " + datos.length + " clientes   |   " + cleanTxt(user.email), M, 17);
+                  // Badge Confidencial derecha
+                  pdfdoc.setFillColor(255,255,255);
+                  pdfdoc.setFillColor(255,255,255,0.12);
+                  pdfdoc.setDrawColor(255,255,255,0.25);
+                  pdfdoc.roundedRect(W2-M-30, 7, 28, 7, 1.5, 1.5, "FD");
+                  pdfdoc.setTextColor(203,216,232);
+                  pdfdoc.setFontSize(6.5);
+                  pdfdoc.text("Confidencial", W2-M-29, 12);
+
+                  //  TABLA 
+                  // (estado removido del PDF  no se muestra)
+
+                  const rows3=[];
+                  datos.forEach(c=>{
+                    const st=getStatusCliente(c);
+                    const pf=getProximaFecha(c);
+                    const dias=pf?getDias(pf):null;
+                    const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                    const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                    const pct=getPct(totalP,pagadoP);
+                    // Sistemas: texto limpio deduplicado, separado por "  "
+                    const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"A.P.","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
+                    const sistemasUnicos=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()).filter(Boolean))];
+                    const tiposUnicos=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
+                    const sistemasStr=[...sistemasUnicos,...tiposUnicos].join(" · ");
+                    // Tiempo legible
+                    let tiempoStr="—";
+                    if(dias!==null){
+                      if(dias<0) tiempoStr="Hace "+Math.abs(dias)+"d";
+                      else if(dias===0) tiempoStr="Hoy";
+                      else tiempoStr="+"+dias+"d";
+                    }
+                    // Fecha de ingreso del cliente al sistema
+                    const fechaIngreso=c.createdAt?new Date(c.createdAt).toLocaleDateString("en-US",{month:"2-digit",day:"2-digit",year:"numeric"}):"—";
+                    // Pais en una sola linea (max 12 chars)
+                    const paisStr=cleanTxt(c.paisOrigen)||"—";
+                    // Alien num sin guiones partidos
+                    const alienStr=fmtA(c.alienNum)||"—";
+                    rows3.push({
+                      row:[
+                        cleanTxt(c.nombre)||"—",
+                        paisStr,
+                        alienStr,
+                        sistemasStr,
+                        fechaIngreso,
+                        cleanTxt(c.encargada)||"—",
+                        totalP?fmtMoney(totalP):"—",
+                        pagadoP?fmtMoney(pagadoP):"—",
+                      ],
+                      status:st
+                    });
+                  });
+
+                  pdfdoc.autoTable({
+                    startY: 30,
+                    head:[["Nombre","Pais","Num. Alien","Sistemas","Ingreso","Encargada","Total","Pagado"]],
+                    body: rows3.map(r=>r.row),
+                    styles:{
+                      fontSize: 7.5,
+                      cellPadding: [3,4],
+                      overflow: "linebreak",
+                      valign: "middle",
+                      textColor: [30,41,59],
+                      lineColor: [226,232,240],
+                      lineWidth: 0.1
+                    },
+                    headStyles:{
+                      fillColor: [30,58,95],
+                      textColor: [255,255,255],
+                      fontStyle: "bold",
+                      fontSize: 7.5,
+                      cellPadding: [4,4],
+                      lineWidth: 0
+                    },
+                    alternateRowStyles:{
+                      fillColor: [248,250,252]
+                    },
+                    columnStyles:{
+                      0:{cellWidth:40, fontStyle:"bold"},
+                      1:{cellWidth:22},
+                      2:{cellWidth:26, fontSize:7.5},
+                      3:{cellWidth:68},
+                      4:{cellWidth:22, halign:"center"},
+                      5:{cellWidth:32},
+                      6:{cellWidth:22, halign:"right"},
+                      7:{cellWidth:22, halign:"right"},
+                    },
+                    didParseCell:(data)=>{
+                      if(data.section==="body" && data.column.index===0){
+                        data.cell.styles.textColor=[30,58,95];
+                        data.cell.styles.fontStyle="bold";
+                      }
+                    },
+                    margin:{left:M, right:M},
+                    tableLineColor:[226,232,240],
+                    tableLineWidth:0.1
+                  });
+
+                  //  FOOTER 
+                  const pcPDF=pdfdoc.internal.getNumberOfPages();
+                  for(let i=1;i<=pcPDF;i++){
+                    pdfdoc.setPage(i);
+                    const pH=pdfdoc.internal.pageSize.height;
+                    pdfdoc.setDrawColor(226,232,240);
+                    pdfdoc.setLineWidth(0.3);
+                    pdfdoc.line(M, pH-8, W2-M, pH-8);
+                    pdfdoc.setFontSize(6.5);
+                    pdfdoc.setTextColor(148,163,184);
+                    pdfdoc.setFont("helvetica","normal");
+                    pdfdoc.text("CONFIDENCIAL — Solo para uso interno  |  "+cleanTxt(officeData?.name||"ImmigPath")+"  |  Pag "+i+" de "+pcPDF, M, pH-3.5);
+                  }
+
+                pdfdoc.save("reporte-"+new Date().toISOString().slice(0,10)+".pdf");
+                setShowPDF(false);setPdfOpts({sistema:"todos",estado:"todos"});
+                showToastFn("PDF: "+datos.length+" clientes");
+              }} disabled={pdfClientes.length===0} style={{padding:"10px 22px",borderRadius:9,border:"none",background:pdfClientes.length===0?"#E5E7EB":"#1E40AF",color:pdfClientes.length===0?"#9CA3AF":"#fff",fontSize:14,fontWeight:700,cursor:pdfClientes.length===0?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:7}}>
+                📥 Generar PDF
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>)}
+      );
+    })()}
 
     {/* MODAL USUARIOS */}
     {showAddUser&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
@@ -724,13 +1436,518 @@ function App(){
       </div>
     </div>)}
 
+    {/* MODAL REPORTE DE COBROS */}
+    {showPagosReporte&&isAdmin&&(()=>{
+      const totalCobrar=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalProcesos(ca.procesos||[]),s),0);
+      const totalCobrado=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalPagado(ca.procesos||[]),s),0);
+      const pendiente=totalCobrar-totalCobrado;
+      const pctGeneral=getPct(totalCobrar,totalCobrado);
+
+      // Clientes con saldo pendiente
+      const clientesPendientes=clientes.filter(c=>{
+        const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+        const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        return t>0&&p<t;
+      }).sort((a,b)=>{
+        const sa=(a.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0)-(a.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        const sb=(b.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0)-(b.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        return sb-sa;
+      });
+
+      const clientesPagados=clientes.filter(c=>{
+        const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+        const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        return t>0&&p>=t;
+      });
+
+      const generarPDFCobros=()=>{
+        const jsPDF2 = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+        if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
+        const pdfdoc=new jsPDF2({orientation:"landscape",unit:"mm",format:"a4"});
+        pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,297,22,"F");
+        pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(14);pdfdoc.setFont("helvetica","bold");
+        pdfdoc.text("Reporte de Cobros — "+officeName,14,10);
+        pdfdoc.setFontSize(9);pdfdoc.setFont("helvetica","normal");
+        pdfdoc.text(`${new Date().toLocaleString("es-US")}   |   Total: ${fmtMoney(totalCobrar)}   |   Cobrado: ${fmtMoney(totalCobrado)}   |   Pendiente: ${fmtMoney(pendiente)}`,14,17);
+        const rows=clientes.filter(c=>(c.casos||[]).some(ca=>(ca.procesos||[]).length>0)).map(c=>{
+          const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+          const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+          const pct=getPct(t,p);
+          const procesos=(c.casos||[]).flatMap(ca=>ca.procesos||[]).map(p=>p.nombre).filter(Boolean).join(", ");
+          return[c.nombre||"—",c.encargada||"—",procesos,fmtMoney(t),fmtMoney(p),fmtMoney(t-p),pct!==null?`${pct}%`:"—",pct>=100?"✅ Pagado":pct>0?"⏳ Parcial":"❌ Pendiente"];
+        });
+        pdfdoc.autoTable({startY:26,head:[["Cliente","Encargada","Procesos","Total","Cobrado","Saldo","%","Estado"]],body:rows,styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[30,64,175],textColor:255,fontStyle:"bold"},columnStyles:{0:{cellWidth:35},1:{cellWidth:25},2:{cellWidth:60},3:{cellWidth:22},4:{cellWidth:22},5:{cellWidth:22},6:{cellWidth:12},7:{cellWidth:20}},alternateRowStyles:{fillColor:[248,250,252]},margin:{left:4,right:4}});
+        const pc=pdfdoc.internal.getNumberOfPages();
+        for(let i=1;i<=pc;i++){pdfdoc.setPage(i);pdfdoc.setFontSize(7);pdfdoc.setTextColor(150,150,150);pdfdoc.text(`Pág ${i} de ${pc}  |  Confidencial`,4,pdfdoc.internal.pageSize.height-4);}
+        pdfdoc.save(`cobros-${new Date().toISOString().slice(0,10)}.pdf`);
+      };
+
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16,overflowY:"auto"}}>
+          <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:800,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div>
+                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>📊 Reporte de Cobros</h2>
+                <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>{officeName} — {new Date().toLocaleDateString("es-US",{month:"long",year:"numeric"})}</p>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={generarPDFCobros} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>📥 Descargar PDF</button>
+                <button onClick={()=>setShowPagosReporte(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar ✕</button>
+              </div>
+            </div>
+
+            {/* Resumen general */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:16}}>
+              <div style={{background:"#EFF6FF",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #BFDBFE"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Total Facturado</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(totalCobrar)}</div>
+              </div>
+              <div style={{background:"#F0FDF4",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #BBF7D0"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Total Cobrado</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#16A34A"}}>{fmtMoney(totalCobrado)}</div>
+              </div>
+              <div style={{background:"#FEF2F2",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #FECACA"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Pendiente</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#DC2626"}}>{fmtMoney(pendiente)}</div>
+              </div>
+              <div style={{background:"#FFFBEB",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #FDE68A"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>% Cobrado</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#D97706"}}>{pctGeneral||0}%</div>
+                <div style={{background:"#E2E8F0",borderRadius:20,height:4,marginTop:4}}><div style={{height:"100%",borderRadius:20,background:pagoColor(pctGeneral),width:`${pctGeneral||0}%`}}/></div>
+              </div>
+            </div>
+
+            {/* Clientes con saldo pendiente */}
+            {clientesPendientes.length>0&&<div style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:12,border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#DC2626",marginBottom:12}}>⏳ Clientes con saldo pendiente ({clientesPendientes.length})</div>
+              <table style={{width:"100%",borderCollapse:"collapse"}}>
+                <thead>
+                  <tr style={{background:"#FEF2F2"}}>
+                    {["Cliente","Encargada","Total","Cobrado","Saldo","%"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:11,fontWeight:600,color:"#374151",textTransform:"uppercase"}}>{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {clientesPendientes.map(c=>{
+                    const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                    const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                    const pct=getPct(t,p);
+                    const pc=pagoColor(pct);
+                    return(
+                      <tr key={c.id} style={{borderBottom:"1px solid #FEF2F2"}}>
+                        <td style={{padding:"8px 12px",fontSize:13,fontWeight:500}}>{c.nombre}</td>
+                        <td style={{padding:"8px 12px",fontSize:12,color:"#7C3AED"}}>{c.encargada||"—"}</td>
+                        <td style={{padding:"8px 12px",fontSize:13}}>{fmtMoney(t)}</td>
+                        <td style={{padding:"8px 12px",fontSize:13,color:"#16A34A",fontWeight:600}}>{fmtMoney(p)}</td>
+                        <td style={{padding:"8px 12px",fontSize:13,color:"#DC2626",fontWeight:700}}>{fmtMoney(t-p)}</td>
+                        <td style={{padding:"8px 12px"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <div style={{background:"#E2E8F0",borderRadius:20,height:6,width:60,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`}}/></div>
+                            <span style={{fontSize:11,fontWeight:700,color:pc}}>{pct||0}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>}
+
+            {/* Clientes pagados */}
+            {clientesPagados.length>0&&<div style={{background:"#fff",borderRadius:12,padding:"16px",border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#16A34A",marginBottom:12}}>✅ Clientes con pago completo ({clientesPagados.length})</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
+                {clientesPagados.map(c=>{
+                  const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                  return(
+                    <div key={c.id} style={{background:"#F0FDF4",borderRadius:8,padding:"10px 12px",border:"1px solid #BBF7D0"}}>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
+                      <div style={{fontSize:11,color:"#7C3AED"}}>{c.encargada||"—"}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:"#16A34A",marginTop:4}}>✅ {fmtMoney(t)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>}
+          </div>
+        </div>
+      );
+    })()}
+
+    {/* MODAL NÓMINA */}
+    {showNomina&&isAdmin&&(()=>{
+      // Calculate nomina data
+      const empleadas = [...new Set(clientes.map(c=>c.encargada).filter(Boolean))];
+      const TARIFAS_DEFAULT = {
+        "Asilo (I-589)": 100,
+        "Permiso de trabajo (I-765)": 50,
+        "Ajuste de estatus (I-485)": 150,
+        "Petición familiar (I-130)": 100,
+        "Naturalización (N-400)": 80,
+        "Cancelación de deportación": 150,
+        "FOIA": 40,
+        "Consultoría": 30,
+        "Advance Parole (I-131)": 60,
+        "Renovar Green Card (I-90)": 80,
+        "Otro": 50,
+      };
+
+      const nominaData = empleadas.map(emp => {
+        const clientesEmp = clientes.filter(c => c.encargada === emp);
+        const procesos = {};
+        clientesEmp.forEach(c => {
+          (c.casos||[]).forEach(ca => {
+            (ca.procesos||[]).forEach(p => {
+              if(p.nombre) {
+                if(!procesos[p.nombre]) procesos[p.nombre] = {cantidad:0, pagado:0};
+                procesos[p.nombre].cantidad++;
+                procesos[p.nombre].pagado += parseMoney(p.pagado);
+              }
+            });
+          });
+        });
+        const totalNomina = Object.entries(procesos).reduce((sum,[nombre,data]) => {
+          const tarifa = tarifasNomina[nombre] !== undefined ? tarifasNomina[nombre] : (TARIFAS_DEFAULT[nombre]||50);
+          return sum + (tarifa * data.cantidad);
+        }, 0);
+        return {emp, clientes:clientesEmp.length, procesos, totalNomina};
+      });
+
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16,overflowY:"auto"}}>
+          <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:760,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div>
+                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>💰 Reporte de Nómina</h2>
+                <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>{officeName} — {new Date().toLocaleDateString("es-US",{month:"long",year:"numeric"})}</p>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>{
+                  const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+                  if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
+                  const pdfdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
+                  const W=210; const margin=14;
+                  const empleadas2=[...new Set(clientes.map(c=>c.encargada).filter(Boolean))];
+                  const TARIFAS_DEFAULT2={"Asilo (I-589)":100,"Permiso de trabajo (I-765)":50,"Ajuste de estatus (I-485)":150,"Peticion familiar (I-130)":100,"Naturalizacion (N-400)":80,"Cancelacion de deportacion":150,"FOIA":40,"Consultoria":30,"Advance Parole (I-131)":60,"Renovar Green Card (I-90)":80,"Otro":50};
+
+                  //  HEADER azul marino 
+                  pdfdoc.setFillColor(30,58,95);
+                  pdfdoc.rect(0,0,W,28,"F");
+                  pdfdoc.setTextColor(255,255,255);
+                  pdfdoc.setFontSize(13);
+                  pdfdoc.setFont("helvetica","bold");
+                  const officeNamePDF=(officeData?.name||"Oficina").split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("");
+                  pdfdoc.text("Reporte de Nomina — "+officeNamePDF, margin, 11);
+                  pdfdoc.setFontSize(8);
+                  pdfdoc.setFont("helvetica","normal");
+                  pdfdoc.setTextColor(168,196,224);
+                  const fechaStr=new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"});
+                  pdfdoc.text(fechaStr+" | "+user.email, margin, 19);
+                  // Badge "Confidencial"
+                  pdfdoc.setFillColor(255,255,255,0.15);
+                  pdfdoc.setDrawColor(255,255,255,0.3);
+                  pdfdoc.roundedRect(W-margin-28,5,26,8,2,2,"FD");
+                  pdfdoc.setTextColor(203,216,232);
+                  pdfdoc.setFontSize(7);
+                  pdfdoc.text("Confidencial", W-margin-27, 10.5);
+
+                  //  EMPLEADAS 
+                  let yPos=36;
+                  let grandTotal=0;
+
+                  empleadas2.forEach((emp,empIdx)=>{
+                    const clientesEmp=clientes.filter(c=>c.encargada===emp);
+                    const procesos={};
+                    clientesEmp.forEach(c=>{
+                      (c.casos||[]).forEach(ca=>{
+                        (ca.procesos||[]).forEach(p=>{
+                          if(p.nombre){
+                            const key=p.nombre.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim();
+                            if(!key)return;
+                            if(!procesos[key])procesos[key]={cantidad:0};
+                            procesos[key].cantidad++;
+                          }
+                        });
+                      });
+                    });
+
+                    const empRows=Object.entries(procesos).map(([nombre,data])=>{
+                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim()===nombre)||nombre;
+                      const tarifa=tarifasNomina[keyOrig]!==undefined?tarifasNomina[keyOrig]:(TARIFAS_DEFAULT2[keyOrig]||50);
+                      return[nombre,String(data.cantidad),"$"+tarifa.toFixed(2),"$"+(tarifa*data.cantidad).toFixed(2)];
+                    });
+                    const totalEmp=Object.entries(procesos).reduce((s,[nombre,data])=>{
+                      const keyOrig=Object.keys(TARIFAS_DEFAULT2).find(k=>k.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim()===nombre)||nombre;
+                      const tarifa=tarifasNomina[keyOrig]!==undefined?tarifasNomina[keyOrig]:(TARIFAS_DEFAULT2[keyOrig]||50);
+                      return s+(tarifa*data.cantidad);
+                    },0);
+                    grandTotal+=totalEmp;
+
+                    const empName=emp.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("");
+
+                    // Card header de la empleada
+                    pdfdoc.setFillColor(241,245,249);
+                    pdfdoc.setDrawColor(226,232,240);
+                    pdfdoc.roundedRect(margin, yPos, W-margin*2, 12, 2, 2, "FD");
+                    pdfdoc.setTextColor(30,58,95);
+                    pdfdoc.setFontSize(10);
+                    pdfdoc.setFont("helvetica","bold");
+                    pdfdoc.text(empName, margin+4, yPos+7);
+                    pdfdoc.setFontSize(8);
+                    pdfdoc.setFont("helvetica","normal");
+                    pdfdoc.setTextColor(100,116,139);
+                    pdfdoc.text(clientesEmp.length+" cliente"+(clientesEmp.length!==1?"s":"")+" asignado"+(clientesEmp.length!==1?"s":""), margin+4, yPos+11.5);
+                    // Total a la derecha
+                    pdfdoc.setTextColor(30,58,95);
+                    pdfdoc.setFontSize(11);
+                    pdfdoc.setFont("helvetica","bold");
+                    const totalStr="$"+totalEmp.toFixed(2);
+                    pdfdoc.text(totalStr, W-margin-4, yPos+7, {align:"right"});
+                    yPos+=14;
+
+                    // Tabla de procesos
+                    pdfdoc.autoTable({
+                      startY: yPos,
+                      head:[["Proceso","Casos","Tarifa","Subtotal"]],
+                      body: empRows.length>0 ? empRows : [["Sin procesos registrados","—","—","—"]],
+                      styles:{fontSize:8.5,cellPadding:[3,4],overflow:"linebreak",valign:"middle",textColor:[30,41,59]},
+                      headStyles:{fillColor:[248,250,252],textColor:[100,116,139],fontStyle:"normal",fontSize:8,lineWidth:0.1,lineColor:[226,232,240]},
+                      alternateRowStyles:{fillColor:[248,250,252]},
+                      columnStyles:{
+                        0:{cellWidth:90,textColor:[30,41,59]},
+                        1:{cellWidth:18,halign:"center"},
+                        2:{cellWidth:28,halign:"right"},
+                        3:{cellWidth:28,halign:"right",fontStyle:"bold",textColor:[30,58,95]}
+                      },
+                      foot:[[{content:"Total nomina: $"+totalEmp.toFixed(2),colSpan:4,styles:{halign:"right",fillColor:[241,245,249],textColor:[30,58,95],fontStyle:"bold",fontSize:9,lineWidth:0.1,lineColor:[226,232,240]}}]],
+                      margin:{left:margin,right:margin},
+                      tableLineColor:[226,232,240],
+                      tableLineWidth:0.1,
+                    });
+                    yPos=pdfdoc.lastAutoTable.finalY+10;
+
+                    // Nueva pgina si hace falta
+                    if(yPos>260 && empIdx<empleadas2.length-1){pdfdoc.addPage();yPos=20;}
+                  });
+
+                  //  TOTAL GENERAL 
+                  if(yPos>260){pdfdoc.addPage();yPos=20;}
+                  pdfdoc.setFillColor(30,58,95);
+                  pdfdoc.roundedRect(margin, yPos, W-margin*2, 14, 3, 3, "F");
+                  pdfdoc.setTextColor(168,196,224);
+                  pdfdoc.setFontSize(8);
+                  pdfdoc.setFont("helvetica","normal");
+                  pdfdoc.text("TOTAL GENERAL DE NOMINA", margin+6, yPos+6);
+                  pdfdoc.setTextColor(255,255,255);
+                  pdfdoc.setFontSize(13);
+                  pdfdoc.setFont("helvetica","bold");
+                  pdfdoc.text("$"+grandTotal.toFixed(2), W-margin-4, yPos+10, {align:"right"});
+                  yPos+=22;
+
+                  //  FOOTER 
+                  const totalPages=pdfdoc.internal.getNumberOfPages();
+                  for(let i=1;i<=totalPages;i++){
+                    pdfdoc.setPage(i);
+                    pdfdoc.setFontSize(7);
+                    pdfdoc.setTextColor(148,163,184);
+                    pdfdoc.setFont("helvetica","normal");
+                    const pageH=pdfdoc.internal.pageSize.height;
+                    pdfdoc.setDrawColor(226,232,240);
+                    pdfdoc.setLineWidth(0.3);
+                    pdfdoc.line(margin, pageH-10, W-margin, pageH-10);
+                    pdfdoc.text("CONFIDENCIAL — Solo para uso interno  |  "+officeNamePDF+"  |  Pag "+i+" de "+totalPages, margin, pageH-5);
+                  }
+
+                  pdfdoc.save("nomina-"+new Date().toISOString().slice(0,10)+".pdf");
+                  showToastFn("PDF de nomina descargado");
+                }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Descargar PDF Nomina</button>
+                <button onClick={()=>setShowNomina(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar ✕</button>
+              </div>
+            </div>
+
+            {/* Tarifas configurables */}
+            <div style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:16,border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>⚙️ Tarifas por proceso (editable)</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:8}}>
+                {Object.entries(TARIFAS_DEFAULT).map(([nombre,defVal])=>(
+                  <div key={nombre} style={{display:"flex",alignItems:"center",gap:8,background:"#F8FAFC",borderRadius:8,padding:"6px 10px",border:"1px solid #E2E8F0"}}>
+                    <span style={{fontSize:12,flex:1,color:"#374151"}}>{nombre}</span>
+                    <span style={{fontSize:11,color:"#94A3B8"}}>$</span>
+                    <input type="number" value={tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:defVal}
+                      onChange={e=>setTarifasNomina(p=>({...p,[nombre]:parseFloat(e.target.value)||0}))}
+                      style={{width:60,padding:"3px 6px",borderRadius:6,border:"1px solid #D1D5DB",fontSize:12,textAlign:"right",outline:"none"}}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Nómina por empleada */}
+            {empleadas.length===0?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}>No hay empleadas con clientes asignados</div>:
+            nominaData.map(({emp,clientes:numClientes,procesos,totalNomina})=>(
+              <div key={emp} style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:12,border:"1px solid #E2E8F0"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <div>
+                    <div style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>👩 {emp}</div>
+                    <div style={{fontSize:12,color:"#64748B"}}>{numClientes} cliente{numClientes!==1?"s":""} asignado{numClientes!==1?"s":""}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase"}}>Total nómina</div>
+                    <div style={{fontSize:22,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(totalNomina)}</div>
+                  </div>
+                </div>
+                {Object.keys(procesos).length>0&&(
+                  <div style={{background:"#F8FAFC",borderRadius:8,padding:"10px 12px",border:"1px solid #E2E8F0"}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#374151",marginBottom:8,textTransform:"uppercase"}}>Desglose por proceso</div>
+                    {Object.entries(procesos).map(([nombre,data])=>{
+                      const tarifa = tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
+                      return(
+                        <div key={nombre} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px dashed #E2E8F0"}}>
+                          <span style={{fontSize:13,color:"#374151"}}>{nombre}</span>
+                          <div style={{display:"flex",gap:16,alignItems:"center"}}>
+                            <span style={{fontSize:12,color:"#64748B"}}>{data.cantidad} × {fmtMoney(tarifa)}</span>
+                            <span style={{fontSize:13,fontWeight:700,color:"#1E40AF"}}>{fmtMoney(tarifa*data.cantidad)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {Object.keys(procesos).length===0&&<div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"8px 0"}}>Sin procesos registrados aún</div>}
+              </div>
+            ))}
+
+            {/* Total general */}
+            {nominaData.length>0&&<div style={{background:"#1E293B",borderRadius:12,padding:"16px",border:"1px solid #334155"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#F1F5F9"}}>💰 Total nómina de la oficina</div>
+                <div style={{fontSize:24,fontWeight:800,color:"#34D399"}}>{fmtMoney(nominaData.reduce((s,d)=>s+d.totalNomina,0))}</div>
+              </div>
+            </div>}
+          </div>
+        </div>
+      );
+    })()}
+
     {/* TOAST */}
-    {toast&&<div style={{position:"fixed",bottom:24,right:24,background:toast.type==="error"?"#EF4444":"#0F172A",color:"#fff",padding:"11px 18px",borderRadius:10,fontSize:14,fontWeight:500,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",zIndex:200}}>{toast.msg}</div>}
+    {/* MODAL CONFIGURACION DE PAGOS */}
+    {showPagosConfig&&isAdmin&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:480,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+            <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>⚙️ Configuracion de Pagos</h2>
+            <button onClick={()=>setShowPagosConfig(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer"}}>✕</button>
+          </div>
+          {/* ZELLE */}
+          <div style={{background:"#F8FAFC",borderRadius:10,padding:"16px",marginBottom:14,border:"1px solid #E2E8F0"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>💚 Zelle</div>
+            <div style={{marginBottom:10}}>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Nombre en Zelle</label>
+              <input value={pagosConfig.zelleNombre||""} onChange={e=>setPagosConfig(p=>({...p,zelleNombre:e.target.value}))} placeholder="Ej. Maria Garcia" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            </div>
+            <div style={{marginBottom:10}}>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Email de Zelle</label>
+              <input value={pagosConfig.zelleEmail||""} onChange={e=>setPagosConfig(p=>({...p,zelleEmail:e.target.value}))} placeholder="oficina@email.com" type="email" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            </div>
+            <div>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Telefono de Zelle (opcional)</label>
+              <input value={pagosConfig.zelleTel||""} onChange={e=>setPagosConfig(p=>({...p,zelleTel:e.target.value}))} placeholder="(305) 555-1234" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            </div>
+          </div>
+          {/* STRIPE */}
+          <div style={{background:"#F8FAFC",borderRadius:10,padding:"16px",marginBottom:20,border:"1px solid #E2E8F0"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>💳 Stripe</div>
+            <div>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Link de pago de Stripe</label>
+              <input value={pagosConfig.stripeLink||""} onChange={e=>setPagosConfig(p=>({...p,stripeLink:e.target.value}))} placeholder="https://buy.stripe.com/..." style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+              <div style={{fontSize:11,color:"#94A3B8",marginTop:4}}>Crea tu link en dashboard.stripe.com → Payment Links</div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+            <button onClick={()=>setShowPagosConfig(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={()=>savePagosConfig(pagosConfig)} disabled={configSaving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:configSaving?"#E5E7EB":"#1E3A5F",color:configSaving?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:configSaving?"not-allowed":"pointer"}}>{configSaving?"Guardando...":"Guardar"}</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* MODAL COBRAR */}
+    {showCobrar&&cobrarCliente&&isAdmin&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>💳 Cobrar cliente</h2>
+            <button onClick={()=>setShowCobrar(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer"}}>✕</button>
+          </div>
+          <div style={{fontSize:13,color:"#64748B",marginBottom:18}}>👤 {cobrarCliente.nombre}</div>
+
+          {/* Monto */}
+          <div style={{marginBottom:12}}>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Monto a cobrar *</label>
+            <input type="number" value={cobrarMonto} onChange={e=>setCobrarMonto(e.target.value)} placeholder="0.00" style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:18,fontWeight:700,outline:"none",textAlign:"center"}}/>
+          </div>
+
+          {/* Concepto */}
+          <div style={{marginBottom:14}}>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Concepto *</label>
+            <input value={cobrarConcepto} onChange={e=>setCobrarConcepto(e.target.value)} placeholder="Ej. Asilo I-589 — primera cuota" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+          </div>
+
+          {/* Metodo */}
+          <div style={{marginBottom:18}}>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:8,textTransform:"uppercase"}}>Metodo de pago</label>
+            <div style={{display:"flex",gap:8}}>
+              {[["zelle","💚 Zelle"],["stripe","💳 Stripe/Tarjeta"]].map(([val,label])=>(
+                <button key={val} onClick={()=>setCobrarMetodo(val)} style={{flex:1,padding:"10px",borderRadius:8,border:cobrarMetodo===val?"2px solid #1E3A5F":"1px solid #E2E8F0",background:cobrarMetodo===val?"#EFF6FF":"#F8FAFC",color:cobrarMetodo===val?"#1E3A5F":"#64748B",fontWeight:cobrarMetodo===val?700:400,fontSize:13,cursor:"pointer"}}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Preview mensaje WhatsApp */}
+          {cobrarMonto&&cobrarConcepto&&(()=>{
+            const zelleInfo=cobrarMetodo==="zelle"?`Zelle: ${pagosConfig.zelleNombre||""}${pagosConfig.zelleEmail?" — "+pagosConfig.zelleEmail:""}${pagosConfig.zelleTel?" / "+pagosConfig.zelleTel:""}`:pagosConfig.stripeLink||"(configura tu link de Stripe)";
+            const msg=`Hola ${(cobrarCliente.nombre||"").split(" ")[0]}, le informamos que tiene un saldo pendiente:
+
+*Concepto:* ${cobrarConcepto}
+*Monto:* $${parseFloat(cobrarMonto||0).toFixed(2)}
+
+*Pagar via ${cobrarMetodo==="zelle"?"Zelle":"Stripe/Tarjeta"}:*
+${zelleInfo}
+
+Gracias — ${officeData?.name||"ImmigPath"}`;
+            return(
+              <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:"12px",marginBottom:16}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#15803D",marginBottom:6}}>📱 Vista previa del mensaje</div>
+                <div style={{fontSize:12,color:"#374151",whiteSpace:"pre-wrap",lineHeight:1.6}}>{msg}</div>
+                <button onClick={()=>{navigator.clipboard.writeText(msg).then(()=>showToastFn("Mensaje copiado ✓"));}} style={{marginTop:8,background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>📋 Copiar mensaje WhatsApp</button>
+              </div>
+            );
+          })()}
+
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+            <button onClick={()=>setShowCobrar(false)} style={{padding:"9px 18px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={async()=>{
+              if(!cobrarMonto||!cobrarConcepto){showToastFn("Completa monto y concepto","error");return;}
+              setCobrarSaving(true);
+              const refNum="REC-"+Date.now().toString(36).toUpperCase();
+              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum};
+              await registrarPago(cobrarCliente.id,pago);
+              await generarReciboPDF(pago);
+              setCobrarSaving(false);
+              setShowCobrar(false);
+              showToastFn("Pago registrado y recibo generado ✓");
+            }} disabled={cobrarSaving||!cobrarMonto||!cobrarConcepto} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(cobrarSaving||!cobrarMonto||!cobrarConcepto)?"#E5E7EB":"#1E3A5F",color:(cobrarSaving||!cobrarMonto||!cobrarConcepto)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(cobrarSaving||!cobrarMonto||!cobrarConcepto)?"not-allowed":"pointer"}}>
+              {cobrarSaving?"Procesando...":"✅ Registrar pago + Recibo PDF"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+        {toast&&<div style={{position:"fixed",bottom:24,right:24,background:toast.type==="error"?"#EF4444":"#0F172A",color:"#fff",padding:"11px 18px",borderRadius:10,fontSize:14,fontWeight:500,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",zIndex:200}}>{toast.msg}</div>}
   </div>);
 }
 
-// ── Editor de Caso simplificado ──────────────────────────────────────────────
-function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,...props}){
+//  Editor de Caso simplificado 
+function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
   const sys=SISTEMAS[caso.sistema]||SISTEMAS.uscis;
   return(<div style={{background:"#F8FAFC",border:`2px solid ${sys.border}`,borderRadius:10,padding:"14px",marginBottom:12}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
@@ -776,16 +1993,78 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,...props}){
       </div>
     )}
 
+    {/* ESTATUS DEL CASO USCIS — para todos los casos USCIS */}
+    {caso.sistema==="uscis"&&<div style={{marginBottom:10}}>
+      <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.04em"}}>📋 Estatus del caso USCIS</label>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+        {[
+          ["activo","✅ Activo","#16A34A","#F0FDF4","#BBF7D0"],
+          ["referido_eoir","🔒 Cerrado — Referido a EOIR","#7C3AED","#F5F3FF","#DDD6FE"],
+          ["aprobado","🔒 Cerrado — Aprobado","#0369A1","#F0F9FF","#BAE6FD"],
+          ["denegado","🔒 Cerrado — Denegado","#DC2626","#FEF2F2","#FECACA"],
+        ].map(([k,l,color,bg,border])=>(
+          <button key={k} onClick={()=>onChange({...caso,estatusCaso:k})}
+            style={{padding:"8px 8px",borderRadius:8,border:caso.estatusCaso===k?`2px solid ${color}`:`1px solid ${border}`,background:caso.estatusCaso===k?bg:"#fff",color:caso.estatusCaso===k?color:"#374151",fontWeight:caso.estatusCaso===k?700:400,fontSize:11,cursor:"pointer",textAlign:"center"}}>
+            {l}
+          </button>
+        ))}
+      </div>
+    </div>}
+
     {/* EOIR fecha de corte */}
     {caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de corte</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
 
-    {/* USCIS otros casos (no I-589) */}
+    {/* I-765 Permiso de trabajo — EAD */}
+    {caso.sistema==="uscis"&&(caso.tipoCaso||"").includes("I-765")&&<div style={{marginBottom:10}}>
+      <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:6,textTransform:"uppercase"}}>💼 Permiso de trabajo (EAD)</label>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
+        {[["si","✅ Sí tiene"],["no","❌ No tiene"]].map(([k,l])=>(
+          <button key={k} onClick={()=>onChange({...caso,tieneEAD:k,eadVence:"",eadRenovado:""})}
+            style={{padding:"7px",borderRadius:7,border:caso.tieneEAD===k?`2px solid ${k==="si"?"#16A34A":"#DC2626"}`:"1px solid #E2E8F0",background:caso.tieneEAD===k?(k==="si"?"#F0FDF4":"#FEF2F2"):"#fff",color:caso.tieneEAD===k?(k==="si"?"#15803D":"#DC2626"):"#374151",fontWeight:caso.tieneEAD===k?700:400,fontSize:12,cursor:"pointer"}}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {caso.tieneEAD==="si"&&<div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:"10px 12px",marginBottom:7}}>
+        <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase"}}>📅 Fecha de vencimiento del EAD</label>
+        <input type="date" value={caso.eadVence||""} onChange={e=>onChange({...caso,eadVence:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BBF7D0",fontSize:13,outline:"none",marginBottom:7}}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+          {[["si","✅ Renovado"],["no","⏳ Pendiente renovar"]].map(([k,l])=>(
+            <button key={k} onClick={()=>onChange({...caso,eadRenovado:k})}
+              style={{padding:"6px",borderRadius:7,border:caso.eadRenovado===k?`2px solid ${k==="si"?"#16A34A":"#D97706"}`:"1px solid #E2E8F0",background:caso.eadRenovado===k?(k==="si"?"#F0FDF4":"#FFFBEB"):"#fff",color:caso.eadRenovado===k?(k==="si"?"#15803D":"#D97706"):"#374151",fontWeight:caso.eadRenovado===k?700:400,fontSize:12,cursor:"pointer"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>}
+      {caso.tieneEAD==="no"&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"10px 12px",marginBottom:7}}>
+        <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase"}}>📅 Fecha en que puede aplicar al EAD</label>
+        <input type="date" value={caso.eadVence||""} onChange={e=>onChange({...caso,eadVence:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #FECACA",fontSize:13,outline:"none"}}/>
+      </div>}
+    </div>}
+
+    {/* USCIS otros casos (no I-589, no I-765) */}
     {caso.sistema==="uscis"&&!(caso.tipoCaso||"").includes("I-589")&&!(caso.tipoCaso||"").includes("I-765")&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de cita</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
 
     {/* FOIA */}
-    {caso.sistema==="foia"&&<><div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tracking FOIA</label><input value={caso.foiaTracking||""} onChange={e=>onChange({...caso,foiaTracking:e.target.value})} placeholder="NRC2024123456" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div><div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de envío</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div></>}
+    {caso.sistema==="foia"&&<>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+        <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tracking FOIA</label><input value={caso.foiaTracking||""} onChange={e=>onChange({...caso,foiaTracking:e.target.value})} placeholder="NRC2024123456" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>
+        <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Estado FOIA</label>
+          <select value={caso.foiaEstado||""} onChange={e=>onChange({...caso,foiaEstado:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,background:"#fff",cursor:"pointer"}}>
+            <option value="">Seleccionar...</option>
+            <option value="Enviado">📤 Enviado</option>
+            <option value="En proceso">⏳ En proceso</option>
+            <option value="Respuesta recibida">✅ Respuesta recibida</option>
+            <option value="Cerrado">🔒 Cerrado</option>
+          </select>
+        </div>
+      </div>
+      <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de envío</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
+      <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Respuesta / Notas FOIA</label><textarea value={caso.foiaRespuesta||""} onChange={e=>onChange({...caso,foiaRespuesta:e.target.value})} placeholder="Notas de la respuesta..." rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
+    </>}
     <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Notas del caso</label><textarea value={caso.nota||""} onChange={e=>onChange({...caso,nota:e.target.value})} placeholder="Observaciones..." rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
-    {props.isAdmin&&<ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>}
+    <ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>
   </div>);
 }
 
