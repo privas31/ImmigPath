@@ -181,6 +181,8 @@ function App(){
   const[cobrarMetodo,setCobrarMetodo]=useState("zelle");
   const[cobrarSaving,setCobrarSaving]=useState(false);
   const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:""});
+  const[pagosPorCliente,setPagosPorCliente]=useState({});
+  const[loadingPagos,setLoadingPagos]=useState({});
   const[configSaving,setConfigSaving]=useState(false);
   const[tarifasNomina,setTarifasNomina]=useState({});
   const[showPagosReporte,setShowPagosReporte]=useState(false);
@@ -240,7 +242,73 @@ function App(){
     setLoading(false);
   };
 
-  const loadPagosConfig=async()=>{
+  const cargarPagosCliente=async(clienteId)=>{
+  if(pagosPorCliente[clienteId]||loadingPagos[clienteId]) return;
+  setLoadingPagos(prev=>({...prev,[clienteId]:true}));
+  try{
+    const{db,collection,query,where,orderBy,getDocs}=window._firebase;
+    const q=query(collection(db,"pagos"),where("clienteId","==",clienteId),orderBy("fecha","desc"));
+    const snap=await getDocs(q);
+    const pagos=snap.docs.map(d=>({id:d.id,...d.data()}));
+    setPagosPorCliente(prev=>({...prev,[clienteId]:pagos}));
+  }catch(e){
+    setPagosPorCliente(prev=>({...prev,[clienteId]:[]}));
+  }
+  setLoadingPagos(prev=>({...prev,[clienteId]:false}));
+};
+
+const descargarReciboPDF=async(pago)=>{
+  const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+  if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
+  const pdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
+  const W=210; const M=18;
+  pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,30,"F");
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
+  pdoc.text("Recibo de Pago",M,13);
+  pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
+  pdoc.text(officeData?.name||"ImmigPath",M,20);
+  pdoc.text("Ref: "+(pago.refNum||"—"),M,26);
+  pdoc.setTextColor(203,216,232); pdoc.setFontSize(8);
+  pdoc.text(new Date(pago.fecha).toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),W-M,20,{align:"right"});
+  let y=42;
+  const addSec=(t2)=>{
+    pdoc.setFillColor(241,245,249); pdoc.rect(M,y,W-M*2,7,"F");
+    pdoc.setTextColor(30,58,95); pdoc.setFontSize(8); pdoc.setFont("helvetica","bold");
+    pdoc.text(t2,M+3,y+5); y+=10;
+  };
+  const addRow2=(label,val)=>{
+    pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(M,y+6,W-M,y+6);
+    pdoc.setTextColor(100,116,139); pdoc.setFontSize(8); pdoc.setFont("helvetica","normal");
+    pdoc.text(label,M+2,y+4);
+    pdoc.setTextColor(30,41,59); pdoc.setFont("helvetica","bold");
+    pdoc.text(String(val||"—"),W-M-2,y+4,{align:"right"});
+    pdoc.setFont("helvetica","normal"); y+=8;
+  };
+  addSec("INFORMACION DEL CLIENTE");
+  addRow2("Nombre",pago.nombreCliente||"—");
+  addSec("DETALLE DEL PAGO");
+  addRow2("Concepto",pago.concepto||"—");
+  addRow2("Metodo de pago",pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta");
+  addRow2("Fecha",new Date(pago.fecha).toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}));
+  addRow2("Registrado por",pago.registradoPor||"—");
+  y+=4;
+  pdoc.setFillColor(30,58,95); pdoc.roundedRect(M,y,W-M*2,16,3,3,"F");
+  pdoc.setTextColor(168,196,224); pdoc.setFontSize(9); pdoc.setFont("helvetica","normal");
+  pdoc.text("TOTAL PAGADO",M+6,y+7);
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
+  pdoc.text(fmtMoney(parseMoney(pago.monto)),W-M-4,y+11,{align:"right"});
+  y+=24;
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","italic");
+  pdoc.text("Este recibo es comprobante oficial de pago. Guardelo para sus registros.",M,y);
+  const pH=pdoc.internal.pageSize.height;
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(M,pH-10,W-M,pH-10);
+  pdoc.setFontSize(7); pdoc.setTextColor(148,163,184); pdoc.setFont("helvetica","normal");
+  pdoc.text("CONFIDENCIAL | "+(officeData?.name||"ImmigPath")+" | "+(pago.refNum||"—"),M,pH-5);
+  pdoc.save("recibo-"+(pago.refNum||"pago")+".pdf");
+  showToastFn("Recibo descargado ✓");
+};
+
+const loadPagosConfig=async()=>{
   try{
     const{db,doc,getDoc}=window._firebase;
     const officeId=officeData?.id||userData?.officeId||"default";
@@ -687,7 +755,7 @@ const loadTeam=async()=>{
             const casoTab=activeCasoTab[c.id]||0;
             return(
               <div key={c.id} style={{background:"#fff",borderRadius:12,border:`1px solid ${scfg.border}`,borderLeft:`4px solid ${scfg.color}`,boxShadow:"0 1px 4px rgba(0,0,0,0.05)",overflow:"hidden"}}>
-                <div style={{padding:"13px 16px",display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",cursor:"pointer"}} onClick={()=>setExpandedId(exp?null:c.id)}>
+                <div style={{padding:"13px 16px",display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",cursor:"pointer"}} onClick={()=>{const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}}>
                   <div style={{flex:1,minWidth:180}}>
                     <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
                       <span style={{fontWeight:700,fontSize:15,color:"#0F172A"}}>{c.nombre}</span>
@@ -844,6 +912,35 @@ const loadTeam=async()=>{
                   </div>
                 )}
               </div>
+              {/* HISTORIAL DE PAGOS */}
+              {exp&&<div style={{borderTop:"1px solid #E2E8F0",background:"#F8FAFC",padding:"14px 16px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                  <span style={{fontSize:12,fontWeight:700,color:"#0F172A"}}>🧾 Historial de Recibos</span>
+                  {pagosPorCliente[c.id]&&pagosPorCliente[c.id].length>0&&
+                    <span style={{background:"#1E3A5F",color:"#fff",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>{pagosPorCliente[c.id].length}</span>
+                  }
+                </div>
+                {loadingPagos[c.id]&&<div style={{fontSize:12,color:"#94A3B8",padding:"6px 0"}}>Cargando pagos...</div>}
+                {pagosPorCliente[c.id]&&pagosPorCliente[c.id].length===0&&!loadingPagos[c.id]&&
+                  <div style={{fontSize:12,color:"#94A3B8",fontStyle:"italic"}}>Sin pagos registrados aun.</div>
+                }
+                {(pagosPorCliente[c.id]||[]).map(pago=>(
+                  <div key={pago.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{pago.concepto||"—"}</div>
+                      <div style={{fontSize:11,color:"#64748B",marginTop:3,display:"flex",gap:8,flexWrap:"wrap"}}>
+                        <span>{new Date(pago.fecha).toLocaleDateString("es-US",{day:"2-digit",month:"short",year:"numeric"})}</span>
+                        <span style={{background:pago.metodo==="zelle"?"#F0FDF4":"#EFF6FF",color:pago.metodo==="zelle"?"#16A34A":"#2563EB",border:`1px solid ${pago.metodo==="zelle"?"#BBF7D0":"#BFDBFE"}`,borderRadius:20,padding:"1px 7px",fontSize:10,fontWeight:600}}>{pago.metodo==="zelle"?"Zelle":"Stripe"}</span>
+                        <span style={{color:"#CBD5E1"}}>Ref: {pago.refNum||"—"}</span>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{fontSize:15,fontWeight:800,color:"#16A34A"}}>{fmtMoney(parseMoney(pago.monto))}</div>
+                      <button onClick={()=>descargarReciboPDF(pago)} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>📄 Recibo</button>
+                    </div>
+                  </div>
+                ))}
+              </div>}
             );
           })}
         </div>
