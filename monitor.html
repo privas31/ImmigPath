@@ -175,7 +175,7 @@ function App(){
   const[showNomina,setShowNomina]=useState(false);
   const[tarifasNomina,setTarifasNomina]=useState({});
   const[showPagosReporte,setShowPagosReporte]=useState(false);
-  const[borradores,setBorradores]=useState([]);const[showBorradores,setShowBorradores]=useState(false);
+  const[borradores,setBorradores]=useState([]);const[showBorradores,setShowBorradores]=useState(false);const[borradorExpanded,setBorradorExpanded]=useState({});
   const[borradoresLoading,setBorradoresLoading]=useState(false);const[borradoresPendientes,setBorradoresPendientes]=useState(0);
 
   useEffect(()=>{
@@ -803,14 +803,136 @@ function App(){
             <div style={{display:"grid",gap:12}}>
               {borradores.map(b=>(
                 <div key={b.id} style={{background:"#F8FAFC",borderRadius:10,border:"1px solid #E2E8F0",padding:"16px",borderLeft:"4px solid #2563EB"}}>
+                  {/* Header con toggle */}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8,marginBottom:10}}>
                     <div>
                       <span style={{fontWeight:700,fontSize:15,color:"#0F172A"}}>{b.nombre||"Sin nombre"} </span>
                       <span style={{background:"#EFF6FF",color:"#2563EB",border:"1px solid #BFDBFE",borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:600}}>{b.tipoFormulario}</span>
                     </div>
-                    <div style={{fontSize:11,color:"#94A3B8"}}>{new Date(b.fechaEnvio).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"})}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{fontSize:11,color:"#94A3B8"}}>{new Date(b.fechaEnvio).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"})}</div>
+                      <button onClick={()=>setBorradorExpanded(prev=>({...prev,[b.id]:!prev[b.id]}))} style={{background:"#EFF6FF",color:"#2563EB",border:"1px solid #BFDBFE",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>
+                        {borradorExpanded[b.id]?"▲ Ocultar":"▼ Ver detalles"}
+                      </button>
+                    </div>
                   </div>
+                  {/* Detalles expandibles */}
+                  {borradorExpanded[b.id]&&<div style={{background:"#fff",borderRadius:8,border:"1px solid #E2E8F0",padding:"14px",marginBottom:12,fontSize:12}}>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 16px"}}>
+                      {[
+                        ["Telefono",b.telefono],["Email",b.email],
+                        ["Pais de origen",b.paisOrigen],["Num. Alien",b.alienNum],
+                        ["Estatus migratorio",b.estatusMigratorio],["Fecha entrada EE.UU.",b.fechaEntrada],
+                        ["Como entro",b.formaEntrada],["Orden deportacion",b.ordenDeportacion],
+                        ["Detenido ICE/CBP",b.detenidoICE],["Proceso EOIR",b.procesoEOIR],
+                        ["Fecha audiencia",b.fechaAudiencia],["Estado civil",b.estadoCivil],
+                        ["Tiene hijos",b.tieneHijos],["Familiares en EE.UU.",b.familiaUS],
+                      ].filter(([,v])=>v).map(([label,val])=>(
+                        <div key={label}>
+                          <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10,letterSpacing:"0.04em"}}>{label}: </span>
+                          <span style={{color:"#1E293B"}}>{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {b.tiposAyuda&&b.tiposAyuda.length>0&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
+                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10,letterSpacing:"0.04em"}}>Ayuda requerida: </span>
+                      <span style={{color:"#1E3A5F",fontWeight:600}}>{b.tiposAyuda.join(" · ")}</span>
+                    </div>}
+                    {b.situacion&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
+                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10,letterSpacing:"0.04em"}}>Situacion: </span>
+                      <span style={{color:"#374151",fontStyle:"italic"}}>{b.situacion}</span>
+                    </div>}
+                    {b.historialPrevio&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
+                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10,letterSpacing:"0.04em"}}>Historial previo: </span>
+                      <span style={{color:"#374151",fontStyle:"italic"}}>{b.historialPrevio}</span>
+                    </div>}
+                  </div>}
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button onClick={()=>{
+                      // PDF del formulario de intake
+                      const jsPDFb=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+                      if(!jsPDFb){showToastFn("Error cargando PDF","error");return;}
+                      const pdoc=new jsPDFb({orientation:"portrait",unit:"mm",format:"a4"});
+                      const W=210; const M=14;
+                      // Header
+                      pdoc.setFillColor(30,58,95);pdoc.rect(0,0,W,26,"F");
+                      pdoc.setTextColor(255,255,255);pdoc.setFontSize(13);pdoc.setFont("helvetica","bold");
+                      pdoc.text("Formulario de Intake — "+(officeData?.name||"ImmigPath"),M,11);
+                      pdoc.setFontSize(8);pdoc.setFont("helvetica","normal");pdoc.setTextColor(168,196,224);
+                      pdoc.text("Recibido: "+new Date(b.fechaEnvio).toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"})+"  |  Ref: "+(b.refNum||"—"),M,19);
+                      pdoc.setFillColor(255,255,255,0.12);pdoc.setDrawColor(255,255,255,0.25);
+                      pdoc.roundedRect(W-M-28,7,26,8,1.5,1.5,"FD");
+                      pdoc.setTextColor(203,216,232);pdoc.setFontSize(7);pdoc.text("Confidencial",W-M-27,12.5);
+                      // Secciones
+                      const sections=[
+                        {title:"DATOS PERSONALES",rows:[
+                          ["Nombre completo",b.nombre||"—"],
+                          ["Fecha de nacimiento",b.fechaNacimiento||"—"],
+                          ["Pais de origen",b.paisOrigen||"—"],
+                          ["Telefono",b.telefono||"—"],
+                          ["Email",b.email||"—"],
+                          ["Numero Alien (A#)",b.alienNum||"—"],
+                          ["Idioma preferido",b.idioma||"—"],
+                          ["Direccion",b.direccion||"—"],
+                        ]},
+                        {title:"HISTORIAL MIGRATORIO",rows:[
+                          ["Estatus migratorio actual",b.estatusMigratorio||"—"],
+                          ["Fecha de entrada a EE.UU.",b.fechaEntrada||"—"],
+                          ["Como entro al pais",b.formaEntrada||"—"],
+                          ["Orden de deportacion",b.ordenDeportacion||"—"],
+                          ["Detenido por ICE/CBP",b.detenidoICE||"—"],
+                          ["Proceso en corte EOIR",b.procesoEOIR||"—"],
+                          ["Fecha audiencia",b.fechaAudiencia||"—"],
+                          ["Historial previo",b.historialPrevio||"—"],
+                        ]},
+                        {title:"FAMILIA",rows:[
+                          ["Estado civil",b.estadoCivil||"—"],
+                          ["Tiene hijos",b.tieneHijos||"—"],
+                          ["Detalles de hijos",b.hijosInfo||"—"],
+                          ["Familiares en EE.UU.",b.familiaUS||"—"],
+                          ["Quienes",b.familiaUSInfo||"—"],
+                        ]},
+                        {title:"TIPO DE AYUDA REQUERIDA",rows:[
+                          ["Servicios solicitados",(b.tiposAyuda||[]).join(", ")||"—"],
+                          ["Descripcion de la situacion",b.situacion||"—"],
+                        ]},
+                      ];
+                      let y=32;
+                      sections.forEach(sec=>{
+                        // Titulo de seccion
+                        pdoc.setFillColor(241,245,249);
+                        pdoc.rect(M,y,W-M*2,7,"F");
+                        pdoc.setTextColor(30,58,95);pdoc.setFontSize(8);pdoc.setFont("helvetica","bold");
+                        pdoc.text(sec.title,M+3,y+5);
+                        y+=9;
+                        // Filas
+                        sec.rows.forEach(([label,val])=>{
+                          if(!val||val==="—")return;
+                          const valStr=String(val).substring(0,120);
+                          const lines=pdoc.splitTextToSize(valStr,W-M*2-42);
+                          const rowH=Math.max(7,lines.length*5);
+                          if(y+rowH>280){pdoc.addPage();y=20;}
+                          pdoc.setDrawColor(226,232,240);pdoc.setLineWidth(0.2);
+                          pdoc.line(M,y+rowH,W-M,y+rowH);
+                          pdoc.setTextColor(100,116,139);pdoc.setFontSize(7.5);pdoc.setFont("helvetica","normal");
+                          pdoc.text(label,M+2,y+5);
+                          pdoc.setTextColor(30,41,59);pdoc.setFontSize(8);pdoc.setFont("helvetica","bold");
+                          pdoc.text(lines,M+42,y+5);
+                          y+=rowH;
+                        });
+                        y+=4;
+                      });
+                      // Footer
+                      const totalPgs=pdoc.internal.getNumberOfPages();
+                      for(let i=1;i<=totalPgs;i++){
+                        pdoc.setPage(i);const pH=pdoc.internal.pageSize.height;
+                        pdoc.setDrawColor(226,232,240);pdoc.setLineWidth(0.3);pdoc.line(M,pH-8,W-M,pH-8);
+                        pdoc.setFontSize(7);pdoc.setTextColor(148,163,184);pdoc.setFont("helvetica","normal");
+                        pdoc.text("CONFIDENCIAL — Solo para uso interno  |  "+(officeData?.name||"ImmigPath")+"  |  Pag "+i+" de "+totalPgs,M,pH-3.5);
+                      }
+                      pdoc.save("intake-"+(b.nombre||"formulario").replace(/\s/g,"-")+".pdf");
+                      showToastFn("PDF descargado");
+                    }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:7,padding:"8px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 Ver PDF</button>
                     <button onClick={()=>activarBorrador(b)} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"8px 16px",fontSize:12,cursor:"pointer",fontWeight:600}}>✅ Activar como cliente</button>
                     <button onClick={()=>rechazarBorrador(b.id)} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"8px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>🗑 Eliminar</button>
                   </div>
