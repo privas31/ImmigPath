@@ -305,7 +305,31 @@
       </div>
       <div class="form-group">
         <label class="form-label">Password inicial del Admin *</label>
-        <input class="form-input" id="new-office-pass" type="password" placeholder="Mínimo 8 caracteres">
+        <input class="form-input" id="new-office-pass" type="password" placeholder="Minimo 8 caracteres">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo de acceso</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="module-toggle" onclick="setAccessType('demo')" id="toggle-demo" style="border:2px solid var(--accent);background:rgba(99,102,241,0.1)">
+            <input type="radio" name="access-type" id="type-demo" value="demo" checked>
+            <label for="type-demo" style="cursor:pointer">
+              <div style="font-weight:600;font-size:13px">Demo gratuito</div>
+              <div style="font-size:11px;color:var(--text2)">15 dias de prueba</div>
+            </label>
+          </div>
+          <div class="module-toggle" onclick="setAccessType('active')" id="toggle-active">
+            <input type="radio" name="access-type" id="type-active" value="active">
+            <label for="type-active" style="cursor:pointer">
+              <div style="font-weight:600;font-size:13px">Cliente activo</div>
+              <div style="font-size:11px;color:var(--text2)">Acceso completo pagado</div>
+            </label>
+          </div>
+        </div>
+        <div id="demo-date-container" style="margin-top:10px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:8px;padding:10px">
+          <label class="form-label" style="margin-bottom:4px">Demo vence el</label>
+          <input class="form-input" id="new-office-demo-end" type="date" style="margin:0">
+          <div style="font-size:11px;color:var(--text2);margin-top:4px">Por defecto: 15 dias desde hoy</div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -391,6 +415,40 @@ window.previewLogo = function() {
     preview.style.display = 'flex';
   } else {
     preview.style.display = 'none';
+  }
+};
+
+// Configurar fecha de demo por defecto (15 dias)
+(function() {
+  const setDefaultDemoDate = () => {
+    const el = document.getElementById('new-office-demo-end');
+    if (el) {
+      const d = new Date();
+      d.setDate(d.getDate() + 15);
+      el.value = d.toISOString().split('T')[0];
+    }
+  };
+  setTimeout(setDefaultDemoDate, 500);
+})();
+
+window.setAccessType = function(type) {
+  document.getElementById('type-demo').checked = type === 'demo';
+  document.getElementById('type-active').checked = type === 'active';
+  const demoToggle = document.getElementById('toggle-demo');
+  const activeToggle = document.getElementById('toggle-active');
+  const demoDate = document.getElementById('demo-date-container');
+  if (type === 'demo') {
+    demoToggle.style.border = '2px solid var(--accent)';
+    demoToggle.style.background = 'rgba(99,102,241,0.1)';
+    activeToggle.style.border = '1px solid var(--border)';
+    activeToggle.style.background = 'none';
+    if (demoDate) demoDate.style.display = 'block';
+  } else {
+    activeToggle.style.border = '2px solid var(--green)';
+    activeToggle.style.background = 'rgba(16,185,129,0.1)';
+    demoToggle.style.border = '1px solid var(--border)';
+    demoToggle.style.background = 'none';
+    if (demoDate) demoDate.style.display = 'none';
   }
 };
 
@@ -526,7 +584,16 @@ function renderOfficeCards(offices) {
           <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.name}</div>
           <div style="font-size:11px;color:var(--text2)">${o.ownerName||''}</div>
         </div>
-        <span class="badge ${o.isActive?'badge-green':'badge-red'}" style="font-size:10px">${o.isActive?'Activa':'Inactiva'}</span>
+        ${(()=>{
+          if(!o.isActive) return '<span class="badge badge-red" style="font-size:10px">Inactiva</span>';
+          if(o.isDemo && o.demoEndsAt) {
+            const dias = Math.ceil((new Date(o.demoEndsAt) - new Date()) / 86400000);
+            if(dias < 0) return '<span class="badge badge-red" style="font-size:10px">Demo vencido</span>';
+            if(dias <= 3) return '<span class="badge badge-yellow" style="font-size:10px">Demo: '+dias+'d</span>';
+            return '<span class="badge badge-purple" style="font-size:10px">Demo: '+dias+'d</span>';
+          }
+          return '<span class="badge badge-green" style="font-size:10px">Activa</span>';
+        })()}
       </div>
       <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">${renderModulePills(o.enabledModules||[])}</div>
       <div id="card-stats-${o.id}" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -581,7 +648,16 @@ function renderOfficesTable(offices) {
       <td id="stats-${o.id}" style="font-size:12px;color:var(--text2)">
         <span style="color:var(--accent2);font-weight:600">${o.stats?.totalClients||0}</span> clientes
       </td>
-      <td><span class="badge ${o.isActive?'badge-green':'badge-red'}">${o.isActive?'● Activa':'○ Inactiva'}</span></td>
+      <td>${(()=>{
+          if(!o.isActive) return '<span class="badge badge-red">○ Inactiva</span>';
+          if(o.isDemo && o.demoEndsAt) {
+            const dias = Math.ceil((new Date(o.demoEndsAt) - new Date()) / 86400000);
+            if(dias < 0) return '<span class="badge badge-red">Demo vencido</span>';
+            if(dias <= 3) return '<span class="badge badge-yellow">⚠ Demo: '+dias+'d</span>';
+            return '<span class="badge badge-purple">Demo: '+dias+' dias</span>';
+          }
+          return '<span class="badge badge-green">● Activa</span>';
+        })()}</td>
       <td>
         <div class="actions">
           <button class="action-btn" onclick="window.open('/app.html?o=${o.id}','_blank')" title="Entrar al monitor de esta oficina" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
@@ -621,7 +697,16 @@ function renderOfficesFullTable(offices) {
       <td style="color:var(--text2)">${o.email||'—'}</td>
       <td><span class="badge ${getPlanBadge(o.plan)}">${o.plan}</span></td>
       <td><div class="modules">${renderModulePills(o.enabledModules||[])}</div></td>
-      <td><span class="badge ${o.isActive?'badge-green':'badge-red'}">${o.isActive?'Activa':'Inactiva'}</span></td>
+      <td>${(()=>{
+        if(!o.isActive) return '<span class="badge badge-red">Inactiva</span>';
+        if(o.isDemo && o.demoEndsAt) {
+          const dias = Math.ceil((new Date(o.demoEndsAt) - new Date()) / 86400000);
+          if(dias < 0) return '<span class="badge badge-red">Demo vencido</span>';
+          if(dias <= 3) return '<span class="badge badge-yellow">Demo: '+dias+'d</span>';
+          return '<span class="badge badge-purple">Demo: '+dias+' dias</span>';
+        }
+        return '<span class="badge badge-green">Activa</span>';
+      })()}</td>
       <td>
         <button class="action-btn" onclick="window.open('/app.html?o=${o.id}','_blank')" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
         <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
@@ -685,10 +770,15 @@ window.createOffice = async function() {
   try {
     const userCred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid = userCred.user.uid;
+    const isDemo = document.getElementById('type-demo')?.checked !== false && document.getElementById('type-active')?.checked !== true;
+    const demoEnd = document.getElementById('new-office-demo-end')?.value || '';
     const officeRef = await addDoc(collection(db,'offices'), {
       name, ownerName:owner, email, phone, plan, isActive:true,
       enabledModules:modules,
       stats:{totalClients:0,activeCases:0,totalCases:0},
+      isDemo: isDemo,
+      demoEndsAt: isDemo ? demoEnd : null,
+      accessType: isDemo ? 'demo' : 'active',
       createdAt:serverTimestamp(), createdBy:currentUser.uid,
     });
     await setDoc(doc(db,'users',uid), {
