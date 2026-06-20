@@ -7,8 +7,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script>
+    // Normalizar namespace de jsPDF inmediatamente (antes que autotable intente registrarse)
+    (function() {
+      if (typeof window.jspdf !== "undefined" && window.jspdf.jsPDF) {
+        window.jsPDF = window.jspdf.jsPDF;
+      }
+    })();
+  </script>
+  <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -164,6 +172,9 @@ function App(){
   const[showAddUser,setShowAddUser]=useState(false);const[newUserEmail,setNewUserEmail]=useState("");const[newUserPass,setNewUserPass]=useState("");const[addUserMsg,setAddUserMsg]=useState("");
   const[equipo,setEquipo]=useState([]);const[showTeam,setShowTeam]=useState(false);const[newMember,setNewMember]=useState("");
   const[showDashboard,setShowDashboard]=useState(false);
+  const[showNomina,setShowNomina]=useState(false);
+  const[tarifasNomina,setTarifasNomina]=useState({});
+  const[showPagosReporte,setShowPagosReporte]=useState(false);
   const[borradores,setBorradores]=useState([]);const[showBorradores,setShowBorradores]=useState(false);
   const[borradoresLoading,setBorradoresLoading]=useState(false);const[borradoresPendientes,setBorradoresPendientes]=useState(0);
 
@@ -309,8 +320,9 @@ function App(){
         showToastFn("Cliente actualizado ✓");
       }else{
         // ═══ MULTI-OFFICE: always save officeId ═══
-        const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,createdAt:new Date().toISOString(),createdBy:user.email});
-        setClientes(prev=>[{id:ref.id,...formCliente,officeId,createdAt:new Date().toISOString()},...prev]);
+        const encargadaAuto = formCliente.encargada || currentUser?.displayName || userData?.displayName || user.email;
+        const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString(),createdBy:user.email});
+        setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString()},...prev]);
         showToastFn("Cliente agregado ✓");
       }
     }catch(e){showToastFn("Error al guardar","error");}
@@ -349,7 +361,9 @@ function App(){
   },[clientes]);
 
   const generatePDF=()=>{
-    const{jsPDF}=window.jspdf;const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    const jsPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+    if(!jsPDF){showToastFn("Error cargando PDF. Recarga la página.","error");return;}
+    const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
     const datos=filtered;if(!datos.length){showToastFn("Sin casos","error");return;}
     pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,297,22,"F");pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(14);pdfdoc.setFont("helvetica","bold");
     const officeName=officeData?.name||"Monitor de Inmigración";
@@ -396,6 +410,8 @@ function App(){
               📊 Dashboard
               {(stats.alertas.length>0||stats.vencidos.length>0)&&<span style={{position:"absolute",top:-6,right:-6,background:"#EF4444",color:"#fff",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{stats.alertas.length+stats.vencidos.length}</span>}
             </button>
+            {isAdmin&&<button onClick={()=>setShowNomina(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>💰 Nómina</button>}
+            {isAdmin&&<button onClick={()=>setShowPagosReporte(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📊 Cobros</button>}
             {isAdmin&&<button onClick={()=>setShowTeam(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>👥 Equipo</button>}
             {isAdmin&&<button onClick={()=>setShowAddUser(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔐 Usuarios</button>}
             {isAdmin&&<button onClick={()=>setShowPDF(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 PDF</button>}
@@ -499,8 +515,43 @@ function App(){
                             {ca.alienNum&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Número Alien</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600}}>{fmtA(ca.alienNum)}</div></div>}
                             {ca.sistema==="eoir"&&ca.corte&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Corte</div><div style={{fontSize:13,fontWeight:500}}>🏛️ {ca.corte}</div></div>}
                             {ca.sistema==="eoir"&&ca.juez&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Juez</div><div style={{fontSize:13,fontWeight:500}}>👨‍⚖️ {ca.juez}</div></div>}
+
+                            {/* Estatus del caso USCIS */}
+                            {ca.sistema==="uscis"&&ca.estatusCaso&&<div style={{gridColumn:"1/-1"}}><div style={{display:"inline-block",padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:700,background:ca.estatusCaso==="activo"?"#F0FDF4":ca.estatusCaso==="referido_eoir"?"#F5F3FF":ca.estatusCaso==="aprobado"?"#F0F9FF":"#FEF2F2",color:ca.estatusCaso==="activo"?"#16A34A":ca.estatusCaso==="referido_eoir"?"#7C3AED":ca.estatusCaso==="aprobado"?"#0369A1":"#DC2626",border:`1px solid ${ca.estatusCaso==="activo"?"#BBF7D0":ca.estatusCaso==="referido_eoir"?"#DDD6FE":ca.estatusCaso==="aprobado"?"#BAE6FD":"#FECACA"}`}}>{ca.estatusCaso==="activo"?"✅ Caso Activo":ca.estatusCaso==="referido_eoir"?"🔒 Cerrado — Referido a EOIR":ca.estatusCaso==="aprobado"?"🔒 Cerrado — Aprobado":"🔒 Cerrado — Denegado"}</div></div>}
+
+                            {/* Reloj de Asilo */}
+                            {(ca.sistema==="uscis"&&(ca.tipoCaso||"").includes("I-589")||ca.sistema==="eoir"&&(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&ca.fechaAsilo&&(()=>{
+                              const inicio=new Date(ca.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);
+                              const diasReloj=Math.floor((hoy-inicio)/86400000);const pctReloj=Math.min(100,Math.round((diasReloj/180)*100));
+                              const colorReloj=diasReloj>=180?"#16A34A":diasReloj>=120?"#D97706":"#2563EB";
+                              return(
+                                <div style={{gridColumn:"1/-1",background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:10,padding:"12px 14px"}}>
+                                  <div style={{fontSize:12,fontWeight:700,color:"#A5B4FC",marginBottom:8}}>⏱️ Reloj de Asilo</div>
+                                  <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:8}}>
+                                    <div style={{textAlign:"center"}}>
+                                      <div style={{fontSize:32,fontWeight:800,color:colorReloj,lineHeight:1}}>{diasReloj}</div>
+                                      <div style={{fontSize:11,color:"#A5B4FC"}}>días transcurridos</div>
+                                    </div>
+                                    <div style={{flex:1}}>
+                                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                                        <span style={{fontSize:11,color:"#A5B4FC"}}>Presentado: {fmt(ca.fechaAsilo)}</span>
+                                        <span style={{fontSize:11,color:"#A5B4FC"}}>Meta: 180 días</span>
+                                      </div>
+                                      <div style={{background:"#312E81",borderRadius:20,height:10,overflow:"hidden"}}>
+                                        <div style={{height:"100%",borderRadius:20,background:colorReloj,width:`${pctReloj}%`}}/>
+                                      </div>
+                                      <div style={{fontSize:11,color:colorReloj,fontWeight:700,marginTop:4}}>
+                                        {diasReloj>=180?`✅ Elegible para EAD — lleva ${diasReloj} días`:`⏳ Faltan ${180-diasReloj} días para aplicar al EAD`}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
+                            {/* Fecha principal destacada */}
                             {ca.fechaCorte&&ca.sistema!=="foia"&&(()=>{
-                              const label=ca.sistema==="eoir"?"📅 Fecha de corte":(ca.tipoCaso||"").includes("I-589")?"🎤 Fecha de entrevista":"📅 Fecha de cita";
+                              const label=ca.sistema==="eoir"?"📅 Fecha de corte":(ca.tipoCaso||"").includes("I-589")?(ca.tipoCita==="huellas"?"🫆 Biometrics":"🎤 Fecha de entrevista"):"📅 Fecha de cita";
                               return(
                                 <div style={{gridColumn:"1/-1",background:scfgCaso.bg,border:`2px solid ${scfgCaso.border}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                                   <div><div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600,marginBottom:4}}>{label}</div><div style={{fontSize:28,fontWeight:800,color:scfgCaso.color,lineHeight:1}}>{fmt(ca.fechaCorte)}</div></div>
@@ -513,14 +564,34 @@ function App(){
                                 </div>
                               );
                             })()}
+
+                            {/* Fecha huellas biometrics */}
+                            {ca.fechaHuellas&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>🫆 Biometrics</div><div style={{fontSize:13,fontWeight:600}}>{fmt(ca.fechaHuellas)}</div></div>}
+
+                            {/* FOIA fields */}
                             {ca.sistema==="foia"&&ca.foiaTracking&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Tracking #</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600,color:"#0891B2"}}>{ca.foiaTracking}</div></div>}
-                            {ca.sistema==="foia"&&ca.foiaEstado&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Estado FOIA</div><div style={{fontSize:13,fontWeight:600}}>{ca.foiaEstado}</div></div>}
+                            {ca.sistema==="foia"&&ca.foiaEstado&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Estado FOIA</div><div style={{fontSize:13,fontWeight:600,color:ca.foiaEstado==="Respuesta recibida"?"#16A34A":"#D97706"}}>{ca.foiaEstado==="Respuesta recibida"?"✅":ca.foiaEstado==="En proceso"?"⏳":"📤"} {ca.foiaEstado}</div></div>}
+                            {ca.sistema==="foia"&&ca.foiaRespuesta&&<div style={{gridColumn:"1/-1"}}><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Respuesta FOIA</div><div style={{fontSize:13,color:"#475569",fontStyle:"italic"}}>📝 {ca.foiaRespuesta}</div></div>}
+
+                            {/* EAD — I-765 */}
+                            {(ca.tipoCaso||"").includes("I-765")&&ca.tieneEAD&&<div style={{gridColumn:"1/-1",background:ca.tieneEAD==="si"?"#F0FDF4":"#FEF2F2",border:`1px solid ${ca.tieneEAD==="si"?"#BBF7D0":"#FECACA"}`,borderRadius:8,padding:"9px 12px"}}>
+                              <div style={{fontSize:12,fontWeight:700,color:ca.tieneEAD==="si"?"#15803D":"#DC2626",marginBottom:ca.eadVence?6:0}}>{ca.tieneEAD==="si"?"✅ Tiene EAD":"❌ Sin EAD — Puede aplicar"}</div>
+                              {ca.eadVence&&<div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+                                <div><div style={{fontSize:10,color:"#6B7280",textTransform:"uppercase"}}>{ca.tieneEAD==="si"?"Vence":"Puede aplicar el"}</div><div style={{fontSize:13,fontWeight:700,color:ca.tieneEAD==="si"&&getDias(ca.eadVence)!==null&&getDias(ca.eadVence)<=30?"#DC2626":"#15803D"}}>{fmt(ca.eadVence)}{ca.tieneEAD==="si"&&getDias(ca.eadVence)!==null&&getDias(ca.eadVence)<=30&&" ⚠️"}</div></div>
+                                {ca.tieneEAD==="si"&&ca.eadRenovado&&<div><div style={{fontSize:10,color:"#6B7280",textTransform:"uppercase"}}>Renovación</div><div style={{fontSize:12,fontWeight:600,color:ca.eadRenovado==="si"?"#15803D":"#D97706"}}>{ca.eadRenovado==="si"?"✅ Renovado":"⏳ Pendiente renovar"}</div></div>}
+                              </div>}
+                            </div>}
+
                             {ca.nota&&<div style={{gridColumn:"1/-1"}}><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Notas</div><div style={{fontSize:13,color:"#475569",fontStyle:"italic"}}>📝 {ca.nota}</div></div>}
                           </div>
+
+                          {/* Links */}
                           <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
                             {ca.sistema==="eoir"&&ca.alienNum&&<a href={eoirUrl(ca.alienNum)} target="_blank" rel="noreferrer" style={{background:"#7C3AED",color:"#fff",borderRadius:7,padding:"6px 12px",fontSize:12,textDecoration:"none",fontWeight:600}}>⚖️ Ver en EOIR →</a>}
                             {ca.sistema==="uscis"&&ca.receiptNum&&<a href={uscisUrl(ca.receiptNum)} target="_blank" rel="noreferrer" style={{background:"#0369A1",color:"#fff",borderRadius:7,padding:"6px 12px",fontSize:12,textDecoration:"none",fontWeight:600}}>🏛 Ver en USCIS →</a>}
                           </div>
+
+                          {/* Pagos — solo Admin */}
                           {isAdmin&&(ca.procesos||[]).length>0&&(()=>{
                             const totalC=getTotalProcesos(ca.procesos||[]);const pagadoC=getTotalPagado(ca.procesos||[]);const pctC=getPct(totalC,pagadoC);const pcC=pagoColor(pctC);
                             return(
@@ -544,9 +615,9 @@ function App(){
                         </div>
                       );
                     })()}
+                    {exp&&(c.casos||[]).length===0&&<div style={{padding:"16px",textAlign:"center",color:"#94A3B8",fontSize:13,borderTop:"1px solid #F1F5F9"}}>Sin casos registrados.</div>}
                   </div>
                 )}
-                {exp&&(c.casos||[]).length===0&&<div style={{padding:"16px",textAlign:"center",color:"#94A3B8",fontSize:13,borderTop:"1px solid #F1F5F9"}}>Sin casos registrados.</div>}
               </div>
             );
           })}
@@ -575,12 +646,12 @@ function App(){
               <Field label="📱 Teléfono" value={formCliente.telefono||""} onChange={v=>setFormCliente(p=>({...p,telefono:v}))} placeholder="(407) 555-1234" type="tel"/>
               <Field label="📧 Email" value={formCliente.email||""} onChange={v=>setFormCliente(p=>({...p,email:v}))} placeholder="cliente@email.com" type="email"/>
             </div>
-            <div style={{marginBottom:11}}>
+            {isAdmin&&<div style={{marginBottom:11}}>
               <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>👩 Encargada</label>
               <select value={formCliente.encargada} onChange={e=>setFormCliente(p=>({...p,encargada:e.target.value}))} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,background:"#fff",cursor:"pointer"}}>
                 <option value="">Sin asignar</option>{equipo.map(m=><option key={m} value={m}>{m}</option>)}
               </select>
-            </div>
+            </div>}
             <div>
               <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>Notas generales</label>
               <textarea value={formCliente.nota} onChange={e=>setFormCliente(p=>({...p,nota:e.target.value}))} placeholder="Observaciones del cliente..." rows={2} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,resize:"vertical",outline:"none"}}/>
@@ -687,16 +758,101 @@ function App(){
     </div>)}
 
     {/* MODAL PDF */}
-    {showPDF&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-      <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:420,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
-        <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>📄 Descargar PDF</h2>
-        <div style={{background:"#F8FAFC",borderRadius:8,padding:"9px 13px",marginBottom:16,fontSize:13,color:"#475569"}}>📋 <strong>{filtered.length}</strong> clientes en el reporte</div>
-        <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-          <button onClick={()=>setShowPDF(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
-          <button onClick={generatePDF} style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>📥 Generar PDF</button>
+    {showPDF&&(()=>{
+      // Calcular clientes según filtros del modal PDF
+      const pdfClientes = clientes.filter(c => {
+        const st = getStatusCliente(c);
+        if(pdfOpts.sistema !== "todos" && !(c.casos||[]).some(ca => ca.sistema === pdfOpts.sistema)) return false;
+        if(pdfOpts.estado !== "todos" && st !== pdfOpts.estado) return false;
+        return true;
+      });
+      const BtnSistema = ({val, label, icon}) => {
+        const active = pdfOpts.sistema === val;
+        const colors = {uscis:{c:"#0369A1",bg:"#F0F9FF",b:"#BAE6FD"}, eoir:{c:"#7C3AED",bg:"#F5F3FF",b:"#DDD6FE"}, foia:{c:"#0891B2",bg:"#ECFEFF",b:"#A5F3FC"}, todos:{c:"#1E40AF",bg:"#EFF6FF",b:"#BFDBFE"}};
+        const clr = colors[val] || colors.todos;
+        return <button onClick={()=>setPdfOpts(p=>({...p,sistema:val}))} style={{padding:"8px 14px",borderRadius:8,border:active?`2px solid ${clr.c}`:"1px solid #E2E8F0",background:active?clr.bg:"#F8FAFC",color:active?clr.c:"#64748B",fontWeight:active?700:400,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>{icon} {label}</button>;
+      };
+      const BtnEstado = ({val, label, icon, color}) => {
+        const active = pdfOpts.estado === val;
+        return <button onClick={()=>setPdfOpts(p=>({...p,estado:val}))} style={{padding:"8px 14px",borderRadius:8,border:active?"2px solid "+color:"1px solid #E2E8F0",background:active?"#F1F5F9":"#F8FAFC",color:active?color:"#64748B",fontWeight:active?700:400,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>{icon&&<span style={{width:10,height:10,borderRadius:"50%",background:color,display:"inline-block"}}/>} {label}</button>;
+      };
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+          <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+              <span style={{fontSize:22}}>📄</span>
+              <h2 style={{margin:0,fontSize:18,fontWeight:800,color:"#0F172A"}}>Descargar PDF</h2>
+            </div>
+            <p style={{fontSize:13,color:"#64748B",margin:"0 0 20px"}}>Elige qué clientes incluir</p>
+
+            {/* FILTRO SISTEMA */}
+            <div style={{marginBottom:18}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>SISTEMA</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <BtnSistema val="todos" label="Todos" icon="🗂"/>
+                <BtnSistema val="eoir"  label="EOIR"  icon="⚖️"/>
+                <BtnSistema val="uscis" label="USCIS" icon="🏛"/>
+                <BtnSistema val="foia"  label="FOIA"  icon="📂"/>
+              </div>
+            </div>
+
+            {/* FILTRO ESTADO */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>ESTADO</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <BtnEstado val="todos"    label="Todos"    color="#1E40AF"/>
+                <BtnEstado val="vencido"  label="Vencidas" icon="●" color="#DC2626"/>
+                <BtnEstado val="urgente"  label="Urgentes" icon="●" color="#D97706"/>
+                <BtnEstado val="hoy"      label="Hoy"      icon="●" color="#EA580C"/>
+                <BtnEstado val="proximo"  label="Próximas" icon="●" color="#2563EB"/>
+                <BtnEstado val="ok"       label="Al día"   icon="●" color="#16A34A"/>
+              </div>
+            </div>
+
+            {/* CONTADOR */}
+            <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:13,color:"#475569",display:"flex",alignItems:"center",gap:8}}>
+              📋 <strong style={{color:"#0F172A"}}>{pdfClientes.length} cliente{pdfClientes.length!==1?"s":""}</strong> en el reporte
+            </div>
+
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button onClick={()=>{setShowPDF(false);setPdfOpts({sistema:"todos",estado:"todos"});}} style={{padding:"10px 22px",borderRadius:9,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer",fontWeight:500}}>Cancelar</button>
+              <button onClick={()=>{
+                // Generar PDF con los clientes filtrados del modal
+                const jsPDF=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+                if(!jsPDF){showToastFn("Error cargando PDF. Recarga la página.","error");return;}
+                const pdfdoc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+                const datos=pdfClientes;
+                if(!datos.length){showToastFn("Sin clientes para este filtro","error");return;}
+                pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,297,22,"F");
+                pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(14);pdfdoc.setFont("helvetica","bold");
+                const officeName2=officeData?.name||"Monitor de Inmigración";
+                pdfdoc.text(officeName2,14,10);pdfdoc.setFontSize(9);pdfdoc.setFont("helvetica","normal");
+                pdfdoc.text(`${new Date().toLocaleString("es-MX")} | ${datos.length} clientes | ${user.email}`,14,17);
+                const sLabel={vencido:"VENCIDA",hoy:"HOY",urgente:"URGENTE",proximo:"PROXIMA",ok:"AL DIA",pendiente:"PENDIENTE"};
+                const sColor={vencido:[220,38,38],hoy:[234,88,12],urgente:[217,119,6],proximo:[37,99,235],ok:[22,163,74],pendiente:[107,114,128]};
+                const rows2=[];
+                datos.forEach(c=>{
+                  const st=getStatusCliente(c);const pf=getProximaFecha(c);const dias=pf?getDias(pf):null;
+                  const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                  const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                  const pct=getPct(totalP,pagadoP);
+                  const sistemas=(c.casos||[]).map(ca=>(SISTEMAS[ca.sistema]?.label||ca.sistema)+" "+(ca.tipoCaso||"")).join(" | ");
+                  rows2.push({row:[c.nombre||"—",c.paisOrigen||"—",fmtA(c.alienNum)||"—",sistemas,pf?fmt(pf):"—",dias===null?"—":dias<0?`Hace ${Math.abs(dias)}d`:dias===0?"HOY":`En ${dias}d`,sLabel[st]||"—",c.encargada||"—",totalP?fmtMoney(totalP):"—",pagadoP?fmtMoney(pagadoP):"—",pct!==null?`${pct}%`:"—"],status:st});
+                });
+                pdfdoc.autoTable({startY:26,head:[["Nombre","País","A#","Sistemas / Casos","Próx. fecha","Tiempo","Estado","Encargada","Total","Pagado","%"]],body:rows2.map(r=>r.row),styles:{fontSize:7,cellPadding:2,overflow:"linebreak",valign:"middle"},headStyles:{fillColor:[30,64,175],textColor:255,fontStyle:"bold",fontSize:7.5},columnStyles:{0:{cellWidth:28},1:{cellWidth:16},2:{cellWidth:18},3:{cellWidth:50},4:{cellWidth:18},5:{cellWidth:13},6:{cellWidth:14},7:{cellWidth:20},8:{cellWidth:16},9:{cellWidth:16},10:{cellWidth:10}},alternateRowStyles:{fillColor:[248,250,252]},didParseCell:(data)=>{if(data.section==="body"&&data.column.index===6){const r=rows2[data.row.index];if(r){const[rv,gv,bv]=sColor[r.status]||[107,114,128];data.cell.styles.textColor=[rv,gv,bv];data.cell.styles.fontStyle="bold";}}},margin:{left:4,right:4}});
+                const pc=pdfdoc.internal.getNumberOfPages();
+                for(let i=1;i<=pc;i++){pdfdoc.setPage(i);pdfdoc.setFontSize(7);pdfdoc.setTextColor(150,150,150);pdfdoc.text(`Pag ${i} de ${pc} | Confidencial`,4,pdfdoc.internal.pageSize.height-4);}
+                pdfdoc.save(`reporte-${new Date().toISOString().slice(0,10)}.pdf`);
+                setShowPDF(false);setPdfOpts({sistema:"todos",estado:"todos"});
+                showToastFn(`PDF: ${datos.length} clientes ✓`);
+              }} disabled={pdfClientes.length===0} style={{padding:"10px 22px",borderRadius:9,border:"none",background:pdfClientes.length===0?"#E5E7EB":"#1E40AF",color:pdfClientes.length===0?"#9CA3AF":"#fff",fontSize:14,fontWeight:700,cursor:pdfClientes.length===0?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:7}}>
+                📥 Generar PDF
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>)}
+      );
+    })()}
 
     {/* MODAL USUARIOS */}
     {showAddUser&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
@@ -724,13 +880,297 @@ function App(){
       </div>
     </div>)}
 
+    {/* MODAL REPORTE DE COBROS */}
+    {showPagosReporte&&isAdmin&&(()=>{
+      const totalCobrar=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalProcesos(ca.procesos||[]),s),0);
+      const totalCobrado=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalPagado(ca.procesos||[]),s),0);
+      const pendiente=totalCobrar-totalCobrado;
+      const pctGeneral=getPct(totalCobrar,totalCobrado);
+
+      // Clientes con saldo pendiente
+      const clientesPendientes=clientes.filter(c=>{
+        const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+        const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        return t>0&&p<t;
+      }).sort((a,b)=>{
+        const sa=(a.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0)-(a.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        const sb=(b.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0)-(b.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        return sb-sa;
+      });
+
+      const clientesPagados=clientes.filter(c=>{
+        const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+        const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        return t>0&&p>=t;
+      });
+
+      const generarPDFCobros=()=>{
+        const jsPDF2 = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+        if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
+        const pdfdoc=new jsPDF2({orientation:"landscape",unit:"mm",format:"a4"});
+        pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,297,22,"F");
+        pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(14);pdfdoc.setFont("helvetica","bold");
+        pdfdoc.text("Reporte de Cobros — "+officeName,14,10);
+        pdfdoc.setFontSize(9);pdfdoc.setFont("helvetica","normal");
+        pdfdoc.text(`${new Date().toLocaleString("es-US")}   |   Total: ${fmtMoney(totalCobrar)}   |   Cobrado: ${fmtMoney(totalCobrado)}   |   Pendiente: ${fmtMoney(pendiente)}`,14,17);
+        const rows=clientes.filter(c=>(c.casos||[]).some(ca=>(ca.procesos||[]).length>0)).map(c=>{
+          const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+          const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+          const pct=getPct(t,p);
+          const procesos=(c.casos||[]).flatMap(ca=>ca.procesos||[]).map(p=>p.nombre).filter(Boolean).join(", ");
+          return[c.nombre||"—",c.encargada||"—",procesos,fmtMoney(t),fmtMoney(p),fmtMoney(t-p),pct!==null?`${pct}%`:"—",pct>=100?"✅ Pagado":pct>0?"⏳ Parcial":"❌ Pendiente"];
+        });
+        pdfdoc.autoTable({startY:26,head:[["Cliente","Encargada","Procesos","Total","Cobrado","Saldo","%","Estado"]],body:rows,styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[30,64,175],textColor:255,fontStyle:"bold"},columnStyles:{0:{cellWidth:35},1:{cellWidth:25},2:{cellWidth:60},3:{cellWidth:22},4:{cellWidth:22},5:{cellWidth:22},6:{cellWidth:12},7:{cellWidth:20}},alternateRowStyles:{fillColor:[248,250,252]},margin:{left:4,right:4}});
+        const pc=pdfdoc.internal.getNumberOfPages();
+        for(let i=1;i<=pc;i++){pdfdoc.setPage(i);pdfdoc.setFontSize(7);pdfdoc.setTextColor(150,150,150);pdfdoc.text(`Pág ${i} de ${pc}  |  Confidencial`,4,pdfdoc.internal.pageSize.height-4);}
+        pdfdoc.save(`cobros-${new Date().toISOString().slice(0,10)}.pdf`);
+      };
+
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16,overflowY:"auto"}}>
+          <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:800,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div>
+                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>📊 Reporte de Cobros</h2>
+                <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>{officeName} — {new Date().toLocaleDateString("es-US",{month:"long",year:"numeric"})}</p>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={generarPDFCobros} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>📥 Descargar PDF</button>
+                <button onClick={()=>setShowPagosReporte(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar ✕</button>
+              </div>
+            </div>
+
+            {/* Resumen general */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:16}}>
+              <div style={{background:"#EFF6FF",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #BFDBFE"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Total Facturado</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(totalCobrar)}</div>
+              </div>
+              <div style={{background:"#F0FDF4",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #BBF7D0"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Total Cobrado</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#16A34A"}}>{fmtMoney(totalCobrado)}</div>
+              </div>
+              <div style={{background:"#FEF2F2",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #FECACA"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>Pendiente</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#DC2626"}}>{fmtMoney(pendiente)}</div>
+              </div>
+              <div style={{background:"#FFFBEB",borderRadius:10,padding:"14px",textAlign:"center",border:"1px solid #FDE68A"}}>
+                <div style={{fontSize:11,color:"#6B7280",textTransform:"uppercase",marginBottom:4}}>% Cobrado</div>
+                <div style={{fontSize:20,fontWeight:800,color:"#D97706"}}>{pctGeneral||0}%</div>
+                <div style={{background:"#E2E8F0",borderRadius:20,height:4,marginTop:4}}><div style={{height:"100%",borderRadius:20,background:pagoColor(pctGeneral),width:`${pctGeneral||0}%`}}/></div>
+              </div>
+            </div>
+
+            {/* Clientes con saldo pendiente */}
+            {clientesPendientes.length>0&&<div style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:12,border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#DC2626",marginBottom:12}}>⏳ Clientes con saldo pendiente ({clientesPendientes.length})</div>
+              <table style={{width:"100%",borderCollapse:"collapse"}}>
+                <thead>
+                  <tr style={{background:"#FEF2F2"}}>
+                    {["Cliente","Encargada","Total","Cobrado","Saldo","%"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:11,fontWeight:600,color:"#374151",textTransform:"uppercase"}}>{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {clientesPendientes.map(c=>{
+                    const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                    const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                    const pct=getPct(t,p);
+                    const pc=pagoColor(pct);
+                    return(
+                      <tr key={c.id} style={{borderBottom:"1px solid #FEF2F2"}}>
+                        <td style={{padding:"8px 12px",fontSize:13,fontWeight:500}}>{c.nombre}</td>
+                        <td style={{padding:"8px 12px",fontSize:12,color:"#7C3AED"}}>{c.encargada||"—"}</td>
+                        <td style={{padding:"8px 12px",fontSize:13}}>{fmtMoney(t)}</td>
+                        <td style={{padding:"8px 12px",fontSize:13,color:"#16A34A",fontWeight:600}}>{fmtMoney(p)}</td>
+                        <td style={{padding:"8px 12px",fontSize:13,color:"#DC2626",fontWeight:700}}>{fmtMoney(t-p)}</td>
+                        <td style={{padding:"8px 12px"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <div style={{background:"#E2E8F0",borderRadius:20,height:6,width:60,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`}}/></div>
+                            <span style={{fontSize:11,fontWeight:700,color:pc}}>{pct||0}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>}
+
+            {/* Clientes pagados */}
+            {clientesPagados.length>0&&<div style={{background:"#fff",borderRadius:12,padding:"16px",border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#16A34A",marginBottom:12}}>✅ Clientes con pago completo ({clientesPagados.length})</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
+                {clientesPagados.map(c=>{
+                  const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                  return(
+                    <div key={c.id} style={{background:"#F0FDF4",borderRadius:8,padding:"10px 12px",border:"1px solid #BBF7D0"}}>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
+                      <div style={{fontSize:11,color:"#7C3AED"}}>{c.encargada||"—"}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:"#16A34A",marginTop:4}}>✅ {fmtMoney(t)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>}
+          </div>
+        </div>
+      );
+    })()}
+
+    {/* MODAL NÓMINA */}
+    {showNomina&&isAdmin&&(()=>{
+      // Calculate nomina data
+      const empleadas = [...new Set(clientes.map(c=>c.encargada).filter(Boolean))];
+      const TARIFAS_DEFAULT = {
+        "Asilo (I-589)": 100,
+        "Permiso de trabajo (I-765)": 50,
+        "Ajuste de estatus (I-485)": 150,
+        "Petición familiar (I-130)": 100,
+        "Naturalización (N-400)": 80,
+        "Cancelación de deportación": 150,
+        "FOIA": 40,
+        "Consultoría": 30,
+        "Advance Parole (I-131)": 60,
+        "Renovar Green Card (I-90)": 80,
+        "Otro": 50,
+      };
+
+      const nominaData = empleadas.map(emp => {
+        const clientesEmp = clientes.filter(c => c.encargada === emp);
+        const procesos = {};
+        clientesEmp.forEach(c => {
+          (c.casos||[]).forEach(ca => {
+            (ca.procesos||[]).forEach(p => {
+              if(p.nombre) {
+                if(!procesos[p.nombre]) procesos[p.nombre] = {cantidad:0, pagado:0};
+                procesos[p.nombre].cantidad++;
+                procesos[p.nombre].pagado += parseMoney(p.pagado);
+              }
+            });
+          });
+        });
+        const totalNomina = Object.entries(procesos).reduce((sum,[nombre,data]) => {
+          const tarifa = tarifasNomina[nombre] !== undefined ? tarifasNomina[nombre] : (TARIFAS_DEFAULT[nombre]||50);
+          return sum + (tarifa * data.cantidad);
+        }, 0);
+        return {emp, clientes:clientesEmp.length, procesos, totalNomina};
+      });
+
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16,overflowY:"auto"}}>
+          <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:760,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div>
+                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>💰 Reporte de Nómina</h2>
+                <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>{officeName} — {new Date().toLocaleDateString("es-US",{month:"long",year:"numeric"})}</p>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>{
+                  const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+                  if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
+                  const pdfdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
+                  const empleadas2=[...new Set(clientes.map(c=>c.encargada).filter(Boolean))];
+                  const TARIFAS_DEFAULT2={"Asilo (I-589)":100,"Permiso de trabajo (I-765)":50,"Ajuste de estatus (I-485)":150,"Petición familiar (I-130)":100,"Naturalización (N-400)":80,"Cancelación de deportación":150,"FOIA":40,"Consultoría":30,"Advance Parole (I-131)":60,"Renovar Green Card (I-90)":80,"Otro":50};
+                  // Header
+                  pdfdoc.setFillColor(15,23,42);pdfdoc.rect(0,0,210,24,"F");
+                  pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(15);pdfdoc.setFont("helvetica","bold");
+                  pdfdoc.text("💰 Reporte de Nómina — "+(officeData?.name||"Oficina"),14,11);
+                  pdfdoc.setFontSize(9);pdfdoc.setFont("helvetica","normal");
+                  pdfdoc.text(new Date().toLocaleDateString("es-US",{month:"long",year:"numeric",day:"numeric"})+" | "+user.email,14,19);
+                  let yPos=30;
+                  let grandTotal=0;
+                  empleadas2.forEach(emp=>{
+                    const clientesEmp=clientes.filter(c=>c.encargada===emp);
+                    const procesos={};
+                    clientesEmp.forEach(c=>{(c.casos||[]).forEach(ca=>{(ca.procesos||[]).forEach(p=>{if(p.nombre){if(!procesos[p.nombre])procesos[p.nombre]={cantidad:0};procesos[p.nombre].cantidad++;}});});});
+                    const rows=Object.entries(procesos).map(([nombre,data])=>{const tarifa=tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT2[nombre]||50);return[nombre,String(data.cantidad),"$"+tarifa.toFixed(2),"$"+(tarifa*data.cantidad).toFixed(2)];});
+                    const totalEmp=Object.entries(procesos).reduce((s,[nombre,data])=>{const tarifa=tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT2[nombre]||50);return s+(tarifa*data.cantidad);},0);
+                    grandTotal+=totalEmp;
+                    pdfdoc.autoTable({startY:yPos,head:[[{content:`👩 ${emp} — ${clientesEmp.length} clientes | Total: $${totalEmp.toFixed(2)}`,colSpan:4}],["Proceso","Casos","Tarifa","Subtotal"]],body:rows.length>0?rows:[["Sin procesos registrados","—","—","—"]],styles:{fontSize:9,cellPadding:3},headStyles:[{fillColor:[30,64,175],textColor:255,fontStyle:"bold",fontSize:10},{fillColor:[51,65,85],textColor:255,fontStyle:"bold",fontSize:8}],columnStyles:{0:{cellWidth:90},1:{cellWidth:20,halign:"center"},2:{cellWidth:30,halign:"right"},3:{cellWidth:30,halign:"right",fontStyle:"bold"}},margin:{left:14,right:14},foot:[[{content:`Total nómina: $${totalEmp.toFixed(2)}`,colSpan:4,styles:{fillColor:[22,163,74],textColor:255,fontStyle:"bold",halign:"right"}}]]});
+                    yPos=pdfdoc.lastAutoTable.finalY+10;
+                    if(yPos>260&&empleadas2.indexOf(emp)<empleadas2.length-1){pdfdoc.addPage();yPos=20;}
+                  });
+                  // Total general
+                  pdfdoc.autoTable({startY:yPos,body:[[{content:"💰 TOTAL GENERAL DE NÓMINA: $"+grandTotal.toFixed(2),styles:{fillColor:[15,23,42],textColor:255,fontStyle:"bold",fontSize:13,halign:"center"}}]],margin:{left:14,right:14}});
+                  const totalPages=pdfdoc.internal.getNumberOfPages();
+                  for(let i=1;i<=totalPages;i++){pdfdoc.setPage(i);pdfdoc.setFontSize(7);pdfdoc.setTextColor(150,150,150);pdfdoc.text(`Pág ${i} de ${totalPages} | Confidencial — ${officeName}`,14,pdfdoc.internal.pageSize.height-6);}
+                  pdfdoc.save(`nomina-${new Date().toISOString().slice(0,10)}.pdf`);
+                  showToastFn("PDF de nómina descargado ✓");
+                }} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>📄 PDF Nómina</button>
+                <button onClick={()=>setShowNomina(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar ✕</button>
+              </div>
+            </div>
+
+            {/* Tarifas configurables */}
+            <div style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:16,border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>⚙️ Tarifas por proceso (editable)</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:8}}>
+                {Object.entries(TARIFAS_DEFAULT).map(([nombre,defVal])=>(
+                  <div key={nombre} style={{display:"flex",alignItems:"center",gap:8,background:"#F8FAFC",borderRadius:8,padding:"6px 10px",border:"1px solid #E2E8F0"}}>
+                    <span style={{fontSize:12,flex:1,color:"#374151"}}>{nombre}</span>
+                    <span style={{fontSize:11,color:"#94A3B8"}}>$</span>
+                    <input type="number" value={tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:defVal}
+                      onChange={e=>setTarifasNomina(p=>({...p,[nombre]:parseFloat(e.target.value)||0}))}
+                      style={{width:60,padding:"3px 6px",borderRadius:6,border:"1px solid #D1D5DB",fontSize:12,textAlign:"right",outline:"none"}}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Nómina por empleada */}
+            {empleadas.length===0?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}>No hay empleadas con clientes asignados</div>:
+            nominaData.map(({emp,clientes:numClientes,procesos,totalNomina})=>(
+              <div key={emp} style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:12,border:"1px solid #E2E8F0"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <div>
+                    <div style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>👩 {emp}</div>
+                    <div style={{fontSize:12,color:"#64748B"}}>{numClientes} cliente{numClientes!==1?"s":""} asignado{numClientes!==1?"s":""}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase"}}>Total nómina</div>
+                    <div style={{fontSize:22,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(totalNomina)}</div>
+                  </div>
+                </div>
+                {Object.keys(procesos).length>0&&(
+                  <div style={{background:"#F8FAFC",borderRadius:8,padding:"10px 12px",border:"1px solid #E2E8F0"}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#374151",marginBottom:8,textTransform:"uppercase"}}>Desglose por proceso</div>
+                    {Object.entries(procesos).map(([nombre,data])=>{
+                      const tarifa = tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
+                      return(
+                        <div key={nombre} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px dashed #E2E8F0"}}>
+                          <span style={{fontSize:13,color:"#374151"}}>{nombre}</span>
+                          <div style={{display:"flex",gap:16,alignItems:"center"}}>
+                            <span style={{fontSize:12,color:"#64748B"}}>{data.cantidad} × {fmtMoney(tarifa)}</span>
+                            <span style={{fontSize:13,fontWeight:700,color:"#1E40AF"}}>{fmtMoney(tarifa*data.cantidad)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {Object.keys(procesos).length===0&&<div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"8px 0"}}>Sin procesos registrados aún</div>}
+              </div>
+            ))}
+
+            {/* Total general */}
+            {nominaData.length>0&&<div style={{background:"#1E293B",borderRadius:12,padding:"16px",border:"1px solid #334155"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#F1F5F9"}}>💰 Total nómina de la oficina</div>
+                <div style={{fontSize:24,fontWeight:800,color:"#34D399"}}>{fmtMoney(nominaData.reduce((s,d)=>s+d.totalNomina,0))}</div>
+              </div>
+            </div>}
+          </div>
+        </div>
+      );
+    })()}
+
     {/* TOAST */}
     {toast&&<div style={{position:"fixed",bottom:24,right:24,background:toast.type==="error"?"#EF4444":"#0F172A",color:"#fff",padding:"11px 18px",borderRadius:10,fontSize:14,fontWeight:500,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",zIndex:200}}>{toast.msg}</div>}
   </div>);
 }
 
 // ── Editor de Caso simplificado ──────────────────────────────────────────────
-function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,...props}){
+function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
   const sys=SISTEMAS[caso.sistema]||SISTEMAS.uscis;
   return(<div style={{background:"#F8FAFC",border:`2px solid ${sys.border}`,borderRadius:10,padding:"14px",marginBottom:12}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
@@ -797,13 +1237,57 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,...props}){
     {/* EOIR fecha de corte */}
     {caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de corte</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
 
-    {/* USCIS otros casos (no I-589) */}
+    {/* I-765 Permiso de trabajo — EAD */}
+    {caso.sistema==="uscis"&&(caso.tipoCaso||"").includes("I-765")&&<div style={{marginBottom:10}}>
+      <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:6,textTransform:"uppercase"}}>💼 Permiso de trabajo (EAD)</label>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
+        {[["si","✅ Sí tiene"],["no","❌ No tiene"]].map(([k,l])=>(
+          <button key={k} onClick={()=>onChange({...caso,tieneEAD:k,eadVence:"",eadRenovado:""})}
+            style={{padding:"7px",borderRadius:7,border:caso.tieneEAD===k?`2px solid ${k==="si"?"#16A34A":"#DC2626"}`:"1px solid #E2E8F0",background:caso.tieneEAD===k?(k==="si"?"#F0FDF4":"#FEF2F2"):"#fff",color:caso.tieneEAD===k?(k==="si"?"#15803D":"#DC2626"):"#374151",fontWeight:caso.tieneEAD===k?700:400,fontSize:12,cursor:"pointer"}}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {caso.tieneEAD==="si"&&<div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:"10px 12px",marginBottom:7}}>
+        <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase"}}>📅 Fecha de vencimiento del EAD</label>
+        <input type="date" value={caso.eadVence||""} onChange={e=>onChange({...caso,eadVence:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BBF7D0",fontSize:13,outline:"none",marginBottom:7}}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+          {[["si","✅ Renovado"],["no","⏳ Pendiente renovar"]].map(([k,l])=>(
+            <button key={k} onClick={()=>onChange({...caso,eadRenovado:k})}
+              style={{padding:"6px",borderRadius:7,border:caso.eadRenovado===k?`2px solid ${k==="si"?"#16A34A":"#D97706"}`:"1px solid #E2E8F0",background:caso.eadRenovado===k?(k==="si"?"#F0FDF4":"#FFFBEB"):"#fff",color:caso.eadRenovado===k?(k==="si"?"#15803D":"#D97706"):"#374151",fontWeight:caso.eadRenovado===k?700:400,fontSize:12,cursor:"pointer"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>}
+      {caso.tieneEAD==="no"&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"10px 12px",marginBottom:7}}>
+        <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase"}}>📅 Fecha en que puede aplicar al EAD</label>
+        <input type="date" value={caso.eadVence||""} onChange={e=>onChange({...caso,eadVence:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #FECACA",fontSize:13,outline:"none"}}/>
+      </div>}
+    </div>}
+
+    {/* USCIS otros casos (no I-589, no I-765) */}
     {caso.sistema==="uscis"&&!(caso.tipoCaso||"").includes("I-589")&&!(caso.tipoCaso||"").includes("I-765")&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de cita</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
 
     {/* FOIA */}
-    {caso.sistema==="foia"&&<><div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tracking FOIA</label><input value={caso.foiaTracking||""} onChange={e=>onChange({...caso,foiaTracking:e.target.value})} placeholder="NRC2024123456" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div><div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de envío</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div></>}
+    {caso.sistema==="foia"&&<>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+        <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tracking FOIA</label><input value={caso.foiaTracking||""} onChange={e=>onChange({...caso,foiaTracking:e.target.value})} placeholder="NRC2024123456" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>
+        <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Estado FOIA</label>
+          <select value={caso.foiaEstado||""} onChange={e=>onChange({...caso,foiaEstado:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,background:"#fff",cursor:"pointer"}}>
+            <option value="">Seleccionar...</option>
+            <option value="Enviado">📤 Enviado</option>
+            <option value="En proceso">⏳ En proceso</option>
+            <option value="Respuesta recibida">✅ Respuesta recibida</option>
+            <option value="Cerrado">🔒 Cerrado</option>
+          </select>
+        </div>
+      </div>
+      <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de envío</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
+      <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Respuesta / Notas FOIA</label><textarea value={caso.foiaRespuesta||""} onChange={e=>onChange({...caso,foiaRespuesta:e.target.value})} placeholder="Notas de la respuesta..." rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
+    </>}
     <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Notas del caso</label><textarea value={caso.nota||""} onChange={e=>onChange({...caso,nota:e.target.value})} placeholder="Observaciones..." rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
-    {props.isAdmin&&<ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>}
+    <ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>
   </div>);
 }
 
