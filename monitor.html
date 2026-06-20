@@ -396,10 +396,7 @@ function App(){
                   pdfdoc.text("Confidencial", W2-M-29, 12);
 
                   // ── TABLA ────────────────────────────────────────────────
-                  // Labels y colores de estado (sin caracteres especiales)
-                  const sLabel2={vencido:"Vencida",hoy:"Hoy",urgente:"Urgente",proximo:"Proxima",ok:"Al dia",pendiente:"Pendiente"};
-                  const sBg={vencido:[254,242,242],hoy:[255,247,237],urgente:[255,251,235],proximo:[239,246,255],ok:[240,253,244],pendiente:[249,250,251]};
-                  const sFg={vencido:[220,38,38],hoy:[234,88,12],urgente:[217,119,6],proximo:[37,99,235],ok:[22,163,74],pendiente:[107,114,128]};
+                  // (estado removido del PDF — no se muestra)
 
                   const rows3=[];
                   datos.forEach(c=>{
@@ -409,12 +406,11 @@ function App(){
                     const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
                     const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
                     const pct=getPct(totalP,pagadoP);
-                    // Sistemas: badges unicos por sistema + tipo de caso simplificado
-                    const sistemasBadges=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()))];
-                    // Mapear tipoCaso a etiquetas cortas
-                    const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"AP","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
-                    const tiposBadges=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
-                    const sistemasStr=[...sistemasBadges,...tiposBadges].join(" | ");
+                    // Sistemas: texto limpio deduplicado, separado por " · "
+                    const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"A.P.","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
+                    const sistemasUnicos=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()).filter(Boolean))];
+                    const tiposUnicos=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
+                    const sistemasStr=[...sistemasUnicos,...tiposUnicos].join(" · ");
                     // Tiempo legible
                     let tiempoStr="—";
                     if(dias!==null){
@@ -422,19 +418,22 @@ function App(){
                       else if(dias===0) tiempoStr="Hoy";
                       else tiempoStr="+"+dias+"d";
                     }
+                    // Fecha de ingreso del cliente al sistema
+                    const fechaIngreso=c.createdAt?new Date(c.createdAt).toLocaleDateString("en-US",{month:"2-digit",day:"2-digit",year:"numeric"}):"—";
+                    // Pais en una sola linea (max 12 chars)
+                    const paisStr=cleanTxt(c.paisOrigen)||"—";
+                    // Alien num sin guiones partidos
+                    const alienStr=fmtA(c.alienNum)||"—";
                     rows3.push({
                       row:[
                         cleanTxt(c.nombre)||"—",
-                        cleanTxt(c.paisOrigen)||"—",
-                        fmtA(c.alienNum)||"—",
+                        paisStr,
+                        alienStr,
                         sistemasStr,
-                        pf?fmt(pf):"—",
-                        tiempoStr,
-                        sLabel2[st]||"—",
+                        fechaIngreso,
                         cleanTxt(c.encargada)||"—",
                         totalP?fmtMoney(totalP):"—",
                         pagadoP?fmtMoney(pagadoP):"—",
-                        pct!==null?pct+"%":"—"
                       ],
                       status:st
                     });
@@ -442,7 +441,7 @@ function App(){
 
                   pdfdoc.autoTable({
                     startY: 30,
-                    head:[["Nombre","Pais","A#","Sistemas","Fecha","Dias","Estado","Encargada","Total","Pagado","%"]],
+                    head:[["Nombre","Pais","Num. Alien","Sistemas","Ingreso","Encargada","Total","Pagado"]],
                     body: rows3.map(r=>r.row),
                     styles:{
                       fontSize: 7.5,
@@ -465,28 +464,19 @@ function App(){
                       fillColor: [248,250,252]
                     },
                     columnStyles:{
-                      0:{cellWidth:32, fontStyle:"bold"},
-                      1:{cellWidth:18},
-                      2:{cellWidth:20, font:"courier", fontSize:7},
-                      3:{cellWidth:55},
-                      4:{cellWidth:18, halign:"center"},
-                      5:{cellWidth:12, halign:"center"},
-                      6:{cellWidth:16, halign:"center", fontStyle:"bold"},
-                      7:{cellWidth:24},
-                      8:{cellWidth:18, halign:"right"},
-                      9:{cellWidth:18, halign:"right"},
-                      10:{cellWidth:10, halign:"center"}
+                      0:{cellWidth:40, fontStyle:"bold"},
+                      1:{cellWidth:22},
+                      2:{cellWidth:26, fontSize:7.5},
+                      3:{cellWidth:68},
+                      4:{cellWidth:22, halign:"center"},
+                      5:{cellWidth:32},
+                      6:{cellWidth:22, halign:"right"},
+                      7:{cellWidth:22, halign:"right"},
                     },
                     didParseCell:(data)=>{
-                      if(data.section==="body" && data.column.index===6){
-                        const r=rows3[data.row.index];
-                        if(r){
-                          const fg=sFg[r.status]||[107,114,128];
-                          const bg=sBg[r.status]||[249,250,251];
-                          data.cell.styles.textColor=fg;
-                          data.cell.styles.fillColor=bg;
-                          data.cell.styles.fontStyle="bold";
-                        }
+                      if(data.section==="body" && data.column.index===0){
+                        data.cell.styles.textColor=[30,58,95];
+                        data.cell.styles.fontStyle="bold";
                       }
                     },
                     margin:{left:M, right:M},
@@ -982,10 +972,7 @@ function App(){
                   pdfdoc.text("Confidencial", W2-M-29, 12);
 
                   // ── TABLA ────────────────────────────────────────────────
-                  // Labels y colores de estado (sin caracteres especiales)
-                  const sLabel2={vencido:"Vencida",hoy:"Hoy",urgente:"Urgente",proximo:"Proxima",ok:"Al dia",pendiente:"Pendiente"};
-                  const sBg={vencido:[254,242,242],hoy:[255,247,237],urgente:[255,251,235],proximo:[239,246,255],ok:[240,253,244],pendiente:[249,250,251]};
-                  const sFg={vencido:[220,38,38],hoy:[234,88,12],urgente:[217,119,6],proximo:[37,99,235],ok:[22,163,74],pendiente:[107,114,128]};
+                  // (estado removido del PDF — no se muestra)
 
                   const rows3=[];
                   datos.forEach(c=>{
@@ -995,12 +982,11 @@ function App(){
                     const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
                     const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
                     const pct=getPct(totalP,pagadoP);
-                    // Sistemas: badges unicos por sistema + tipo de caso simplificado
-                    const sistemasBadges=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()))];
-                    // Mapear tipoCaso a etiquetas cortas
-                    const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"AP","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
-                    const tiposBadges=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
-                    const sistemasStr=[...sistemasBadges,...tiposBadges].join(" | ");
+                    // Sistemas: texto limpio deduplicado, separado por " · "
+                    const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"A.P.","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
+                    const sistemasUnicos=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()).filter(Boolean))];
+                    const tiposUnicos=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
+                    const sistemasStr=[...sistemasUnicos,...tiposUnicos].join(" · ");
                     // Tiempo legible
                     let tiempoStr="—";
                     if(dias!==null){
@@ -1008,19 +994,22 @@ function App(){
                       else if(dias===0) tiempoStr="Hoy";
                       else tiempoStr="+"+dias+"d";
                     }
+                    // Fecha de ingreso del cliente al sistema
+                    const fechaIngreso=c.createdAt?new Date(c.createdAt).toLocaleDateString("en-US",{month:"2-digit",day:"2-digit",year:"numeric"}):"—";
+                    // Pais en una sola linea (max 12 chars)
+                    const paisStr=cleanTxt(c.paisOrigen)||"—";
+                    // Alien num sin guiones partidos
+                    const alienStr=fmtA(c.alienNum)||"—";
                     rows3.push({
                       row:[
                         cleanTxt(c.nombre)||"—",
-                        cleanTxt(c.paisOrigen)||"—",
-                        fmtA(c.alienNum)||"—",
+                        paisStr,
+                        alienStr,
                         sistemasStr,
-                        pf?fmt(pf):"—",
-                        tiempoStr,
-                        sLabel2[st]||"—",
+                        fechaIngreso,
                         cleanTxt(c.encargada)||"—",
                         totalP?fmtMoney(totalP):"—",
                         pagadoP?fmtMoney(pagadoP):"—",
-                        pct!==null?pct+"%":"—"
                       ],
                       status:st
                     });
@@ -1028,7 +1017,7 @@ function App(){
 
                   pdfdoc.autoTable({
                     startY: 30,
-                    head:[["Nombre","Pais","A#","Sistemas","Fecha","Dias","Estado","Encargada","Total","Pagado","%"]],
+                    head:[["Nombre","Pais","Num. Alien","Sistemas","Ingreso","Encargada","Total","Pagado"]],
                     body: rows3.map(r=>r.row),
                     styles:{
                       fontSize: 7.5,
@@ -1051,28 +1040,19 @@ function App(){
                       fillColor: [248,250,252]
                     },
                     columnStyles:{
-                      0:{cellWidth:32, fontStyle:"bold"},
-                      1:{cellWidth:18},
-                      2:{cellWidth:20, font:"courier", fontSize:7},
-                      3:{cellWidth:55},
-                      4:{cellWidth:18, halign:"center"},
-                      5:{cellWidth:12, halign:"center"},
-                      6:{cellWidth:16, halign:"center", fontStyle:"bold"},
-                      7:{cellWidth:24},
-                      8:{cellWidth:18, halign:"right"},
-                      9:{cellWidth:18, halign:"right"},
-                      10:{cellWidth:10, halign:"center"}
+                      0:{cellWidth:40, fontStyle:"bold"},
+                      1:{cellWidth:22},
+                      2:{cellWidth:26, fontSize:7.5},
+                      3:{cellWidth:68},
+                      4:{cellWidth:22, halign:"center"},
+                      5:{cellWidth:32},
+                      6:{cellWidth:22, halign:"right"},
+                      7:{cellWidth:22, halign:"right"},
                     },
                     didParseCell:(data)=>{
-                      if(data.section==="body" && data.column.index===6){
-                        const r=rows3[data.row.index];
-                        if(r){
-                          const fg=sFg[r.status]||[107,114,128];
-                          const bg=sBg[r.status]||[249,250,251];
-                          data.cell.styles.textColor=fg;
-                          data.cell.styles.fillColor=bg;
-                          data.cell.styles.fontStyle="bold";
-                        }
+                      if(data.section==="body" && data.column.index===0){
+                        data.cell.styles.textColor=[30,58,95];
+                        data.cell.styles.fontStyle="bold";
                       }
                     },
                     margin:{left:M, right:M},
