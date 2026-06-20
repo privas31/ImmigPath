@@ -168,7 +168,12 @@ function LoginScreen({onLogin}){
       let officeInfo=null;
       if(userData.officeId){
         const officeDoc=await getDoc(doc(db,"offices",userData.officeId));
-        if(officeDoc.exists()){officeInfo={id:officeDoc.id,...officeDoc.data()};if(officeDoc.data().logoUrl){setOfficeLogo(officeDoc.data().logoUrl);window._officeLogo=officeDoc.data().logoUrl;}}
+        if(officeDoc.exists()){
+              const od3=officeDoc.data();
+              officeInfo={id:officeDoc.id,...od3};
+              if(od3.logoUrl){setOfficeLogo(od3.logoUrl);window._officeLogo=od3.logoUrl;}
+              if(od3.enabledModules&&od3.enabledModules.length>0)setEnabledModules(od3.enabledModules);
+            }
       }
       onLogin(cred.user,userData,officeInfo);
     }catch(e){setErr("Email o contraseña incorrectos");}setLoading(false);};
@@ -194,6 +199,7 @@ function LoginScreen({onLogin}){
 //  MAIN APP 
 function App(){
   const[user,setUser]=useState(null);const[userData,setUserData]=useState(null);const[officeData,setOfficeData]=useState(null);const[officeLogo,setOfficeLogo]=useState(null);
+  const[enabledModules,setEnabledModules]=useState(["immigration"]);
   const[authLoading,setAuthLoading]=useState(true);
   const[clientes,setClientes]=useState([]);const[loading,setLoading]=useState(false);
   const[showModal,setShowModal]=useState(false);const[editId,setEditId]=useState(null);const[formCliente,setFormCliente]=useState(emptyCliente);
@@ -239,7 +245,12 @@ function App(){
           setUserData(ud);
           if(ud.officeId){
             const officeDoc=await getDoc(doc(db,"offices",ud.officeId));
-            if(officeDoc.exists()){setOfficeData({id:officeDoc.id,...officeDoc.data()});if(officeDoc.data().logoUrl){setOfficeLogo(officeDoc.data().logoUrl);window._officeLogo=officeDoc.data().logoUrl;}}
+            if(officeDoc.exists()){
+              const od=officeDoc.data();
+              setOfficeData({id:officeDoc.id,...od});
+              if(od.logoUrl){setOfficeLogo(od.logoUrl);window._officeLogo=od.logoUrl;}
+              if(od.enabledModules&&od.enabledModules.length>0)setEnabledModules(od.enabledModules);
+            }
           }
           setUser(u);
         }
@@ -777,7 +788,7 @@ const loadTeam=async()=>{
             {isAdmin&&<button onClick={()=>setShowNomina(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>💰 Nomina</button>}
             {isAdmin&&<button onClick={()=>setShowPagosConfig(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>⚙️ Pagos</button>}
             {isAdmin&&<button onClick={()=>setShowPagosReporte(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📊 Cobros</button>}
-            <a href="/notaria.html" style={{background:"rgba(196,132,252,0.2)",color:"#E9D5FF",border:"1px solid rgba(196,132,252,0.4)",borderRadius:8,padding:"8px 13px",fontSize:12,fontWeight:600,textDecoration:"none",display:"inline-flex",alignItems:"center"}}>Notaria</a>
+            {enabledModules.includes("notary")&&<a href="/notaria.html" style={{background:"rgba(196,132,252,0.2)",color:"#E9D5FF",border:"1px solid rgba(196,132,252,0.4)",borderRadius:8,padding:"8px 13px",fontSize:12,fontWeight:600,textDecoration:"none",display:"inline-flex",alignItems:"center"}}>Notaria</a>}
             {isAdmin&&<button onClick={()=>setShowTeam(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>👥 Equipo</button>}
             {isAdmin&&<button onClick={()=>setShowAddUser(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔐 Usuarios</button>}
             {isAdmin&&<button onClick={()=>setShowPDF(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 PDF</button>}
