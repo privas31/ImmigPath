@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Migracion de Datos — ImmigPath</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
+  authDomain: "immigration-platform-11380.firebaseapp.com",
+  projectId: "immigration-platform-11380",
+  storageBucket: "immigration-platform-11380.firebasestorage.app",
+  messagingSenderId: "682062748742",
+  appId: "1:682062748742:web:5b2466ddf7d8ae05a67e47"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+window._fb = { auth, db, onAuthStateChanged, collection, addDoc, doc, getDoc };
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh;}
+.header{background:linear-gradient(135deg,#0F172A,#1E3A5F);padding:20px 28px;color:#fff;display:flex;align-items:center;justify-content:space-between;}
+.header h1{font-size:20px;font-weight:700;}
+.header p{font-size:12px;opacity:0.6;margin-top:3px;}
+.back-btn{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+.back-btn:hover{background:rgba(255,255,255,0.2);}
+.container{max-width:960px;margin:28px auto;padding:0 20px 40px;}
+
+/* STEPS */
+.steps{display:flex;gap:0;margin-bottom:28px;background:#fff;border-radius:12px;border:1px solid #E2E8F0;overflow:hidden;}
+.step{flex:1;padding:14px 16px;text-align:center;font-size:12px;font-weight:600;color:#94A3B8;border-right:1px solid #E2E8F0;transition:all .2s;}
+.step:last-child{border-right:none;}
+.step.active{background:#EFF6FF;color:#2563EB;}
+.step.done{background:#F0FDF4;color:#16A34A;}
+.step-num{display:block;font-size:18px;font-weight:800;margin-bottom:2px;}
+
+/* CARDS */
+.card{background:#fff;border-radius:14px;border:1px solid #E2E8F0;padding:28px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+.card h2{font-size:17px;font-weight:700;color:#0F172A;margin-bottom:6px;}
+.card p.desc{font-size:14px;color:#64748B;margin-bottom:20px;line-height:1.6;}
+
+/* UPLOAD */
+.upload-zone{border:2px dashed #CBD5E1;border-radius:12px;padding:48px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#F8FAFC;}
+.upload-zone:hover,.upload-zone.drag{border-color:#2563EB;background:#EFF6FF;}
+.upload-zone .icon{font-size:48px;margin-bottom:12px;}
+.upload-zone h3{font-size:16px;font-weight:600;color:#0F172A;margin-bottom:6px;}
+.upload-zone p{font-size:13px;color:#64748B;}
+#file-input{display:none;}
+.upload-btn{background:#2563EB;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;margin-top:14px;}
+
+/* MAPPING */
+.map-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+.map-item{background:#F8FAFC;border-radius:10px;padding:14px;border:1px solid #E2E8F0;}
+.map-item label{display:block;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;}
+.map-item select{width:100%;padding:8px 10px;border-radius:7px;border:1px solid #D1D5DB;font-size:13px;background:#fff;cursor:pointer;outline:none;}
+.map-required{color:#EF4444;font-size:10px;margin-left:4px;}
+.map-optional{color:#94A3B8;font-size:10px;margin-left:4px;}
+
+/* PREVIEW TABLE */
+.preview-wrap{overflow-x:auto;border-radius:10px;border:1px solid #E2E8F0;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:#1E3A5F;color:#fff;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;}
+td{padding:10px 14px;border-bottom:1px solid #F1F5F9;color:#374151;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#F8FAFC;}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-blue{background:#EFF6FF;color:#2563EB;}
+.badge-green{background:#F0FDF4;color:#16A34A;}
+
+/* PROGRESS */
+.progress-bar{background:#E2E8F0;border-radius:20px;height:12px;overflow:hidden;margin:12px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#2563EB,#7C3AED);border-radius:20px;transition:width .3s;}
+.progress-text{font-size:13px;color:#64748B;text-align:center;}
+
+/* RESULT */
+.result-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:20px 0;}
+.result-card{border-radius:10px;padding:18px;text-align:center;}
+.result-card.success{background:#F0FDF4;border:1px solid #BBF7D0;}
+.result-card.error{background:#FEF2F2;border:1px solid #FECACA;}
+.result-card.total{background:#EFF6FF;border:1px solid #BFDBFE;}
+.result-num{font-size:32px;font-weight:800;}
+.result-label{font-size:12px;margin-top:4px;}
+
+/* BTNS */
+.btn{padding:10px 22px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+.btn-primary{background:#1E3A5F;color:#fff;}
+.btn-primary:hover{background:#2A4F7F;}
+.btn-gold{background:linear-gradient(135deg,#B8952A,#D4AF50);color:#0F172A;}
+.btn-gold:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(184,149,42,0.3);}
+.btn-ghost{background:#F1F5F9;color:#374151;border:1px solid #E2E8F0;}
+.btn-ghost:hover{background:#E2E8F0;}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+
+/* ALERTS */
+.alert{border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:16px;}
+.alert-info{background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;}
+.alert-warn{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;}
+.alert-error{background:#FEF2F2;border:1px solid #FECACA;color:#DC2626;}
+
+/* HIDDEN */
+.hidden{display:none;}
+.screen{display:none;}
+.screen.active{display:block;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Migracion de Datos — ImmigPath</h1>
+    <p>Importa clientes desde Excel al monitor en minutos</p>
+  </div>
+  <a href="/superadmin.html" class="back-btn">← Volver al superadmin</a>
+</div>
+
+<div class="container">
+
+  <!-- STEPS -->
+  <div class="steps" id="steps">
+    <div class="step active" id="step1"><span class="step-num">1</span>Subir Excel</div>
+    <div class="step" id="step2"><span class="step-num">2</span>Mapear columnas</div>
+    <div class="step" id="step3"><span class="step-num">3</span>Previsualizar</div>
+    <div class="step" id="step4"><span class="step-num">4</span>Importar</div>
+    <div class="step" id="step5"><span class="step-num">5</span>Resultado</div>
+  </div>
+
+  <!-- SCREEN 1: SUBIR -->
+  <div class="screen active" id="s1">
+    <div class="card">
+      <h2>Paso 1 — Sube el archivo Excel</h2>
+      <p class="desc">Acepta archivos .xlsx, .xls y .csv. El archivo puede tener cualquier nombre de columnas — en el siguiente paso las vas a mapear.</p>
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+        <div class="icon">📊</div>
+        <h3>Arrastra tu archivo aqui</h3>
+        <p>o haz clic para seleccionarlo</p>
+        <button class="upload-btn" onclick="event.stopPropagation();document.getElementById('file-input').click()">Seleccionar archivo</button>
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" onchange="handleFile(event)"/>
+      </div>
+      <div id="file-info" class="hidden" style="margin-top:16px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:600;color:#0F172A;" id="file-name"></div>
+            <div style="font-size:13px;color:#64748B;margin-top:3px;" id="file-stats"></div>
+          </div>
+          <button class="btn btn-primary" onclick="goStep2()">Continuar →</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Formato del Excel</h2>
+      <p class="desc">Tu Excel puede tener estas columnas en cualquier orden. No importa el nombre exacto — las mapeas en el siguiente paso.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+        <div style="background:#F8FAFC;border-radius:8px;padding:12px;border:1px solid #E2E8F0;">
+          <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;margin-bottom:6px;">Obligatorias</div>
+          <div style="font-size:13px;color:#0F172A;line-height:1.8;">• Nombre del cliente</div>
+        </div>
+        <div style="background:#F8FAFC;border-radius:8px;padding:12px;border:1px solid #E2E8F0;">
+          <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;margin-bottom:6px;">Opcionales</div>
+          <div style="font-size:13px;color:#64748B;line-height:1.8;">• Numero Alien (A#)<br/>• Telefono<br/>• Email<br/>• Pais de origen<br/>• Tipo de caso<br/>• Estado<br/>• Encargada<br/>• Notas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: MAPEAR -->
+  <div class="screen" id="s2">
+    <div class="card">
+      <h2>Paso 2 — Selecciona la oficina de destino</h2>
+      <p class="desc">Los clientes se importaran a esta oficina en el monitor.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;margin-bottom:6px;">Oficina de destino *</label>
+          <select id="sel-oficina" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid #D1D5DB;font-size:14px;background:#fff;outline:none;">
+            <option value="">Cargando oficinas...</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;margin-bottom:6px;">Sistema por defecto</label>
+          <select id="sel-sistema" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid #D1D5DB;font-size:14px;background:#fff;outline:none;">
+            <option value="uscis">USCIS</option>
+            <option value="eoir">EOIR</option>
+            <option value="foia">FOIA</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Mapea las columnas de tu Excel</h2>
+      <p class="desc">Selecciona qué columna de tu Excel corresponde a cada campo del sistema. Las marcadas con * son obligatorias.</p>
+      <div class="map-grid" id="map-grid"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Atrás</button>
+        <button class="btn btn-primary" onclick="goStep3()">Ver previsualización →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: PREVIEW -->
+  <div class="screen" id="s3">
+    <div class="card">
+      <h2>Paso 3 — Previsualización</h2>
+      <p class="desc">Revisa los primeros 10 registros antes de importar. Verifica que los datos se mapearon correctamente.</p>
+      <div id="preview-alert" class="alert alert-info" style="margin-bottom:16px;"></div>
+      <div class="preview-wrap">
+        <table id="preview-table"></table>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(2)">← Atrás</button>
+        <button class="btn btn-gold" onclick="goStep4()">Importar todos los registros →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: IMPORTAR -->
+  <div class="screen" id="s4">
+    <div class="card" style="text-align:center;padding:48px;">
+      <div style="font-size:48px;margin-bottom:16px;">⏳</div>
+      <h2 style="margin-bottom:10px;">Importando clientes...</h2>
+      <p class="desc" style="margin-bottom:24px;">No cierres esta ventana. El proceso puede tardar varios minutos dependiendo de la cantidad de clientes.</p>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="progress-text" id="prog-text">Preparando importacion...</div>
+      <div style="margin-top:20px;font-size:13px;color:#94A3B8;" id="prog-detail"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: RESULTADO -->
+  <div class="screen" id="s5">
+    <div class="card">
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="font-size:52px;margin-bottom:12px;">🎉</div>
+        <h2 style="font-size:22px;">Importacion completada</h2>
+      </div>
+      <div class="result-grid">
+        <div class="result-card total">
+          <div class="result-num" id="res-total" style="color:#2563EB;">0</div>
+          <div class="result-label" style="color:#1D4ED8;">Total procesados</div>
+        </div>
+        <div class="result-card success">
+          <div class="result-num" id="res-ok" style="color:#16A34A;">0</div>
+          <div class="result-label" style="color:#15803D;">Importados exitosamente</div>
+        </div>
+        <div class="result-card error">
+          <div class="result-num" id="res-err" style="color:#DC2626;">0</div>
+          <div class="result-label" style="color:#B91C1C;">Con errores</div>
+        </div>
+      </div>
+      <div id="errors-list" class="hidden" style="margin-top:16px;">
+        <div class="alert alert-warn">
+          <strong>Registros con error:</strong>
+          <div id="errors-detail" style="margin-top:8px;font-size:12px;max-height:200px;overflow-y:auto;"></div>
+        </div>
+      </div>
+      <div class="btn-row" style="justify-content:center;margin-top:24px;">
+        <a href="/superadmin.html" class="btn btn-primary">Ir al superadmin</a>
+        <button class="btn btn-ghost" onclick="resetAll()">Importar otro archivo</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let xlsxData = [];
+let headers = [];
+let userData = null;
+let officeData = null;
+let offices = [];
+
+const FIELDS = [
+  {key:'nombre', label:'Nombre del cliente', required:true},
+  {key:'alienNum', label:'Numero Alien (A#)', required:false},
+  {key:'telefono', label:'Telefono', required:false},
+  {key:'email', label:'Email', required:false},
+  {key:'paisOrigen', label:'Pais de origen', required:false},
+  {key:'tipoCaso', label:'Tipo de caso', required:false},
+  {key:'encargada', label:'Encargada', required:false},
+  {key:'nota', label:'Notas / Observaciones', required:false},
+];
+
+// Auth check
+window._fb.onAuthStateChanged(window._fb.auth, async user => {
+  if (!user) { window.location.href = '/superadmin.html'; return; }
+  try {
+    const ud = await window._fb.getDoc(window._fb.doc(window._fb.db, 'users', user.uid));
+    if (!ud.exists() || ud.data().role !== 'superadmin') {
+      window.location.href = '/superadmin.html'; return;
+    }
+    userData = ud.data();
+    loadOffices();
+  } catch(e) { window.location.href = '/superadmin.html'; }
+});
+
+async function loadOffices() {
+  try {
+    const { db, collection } = window._fb;
+    const { getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const snap = await getDocs(collection(db, 'offices'));
+    offices = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    const sel = document.getElementById('sel-oficina');
+    sel.innerHTML = '<option value="">Selecciona una oficina</option>' +
+      offices.filter(o => o.isActive).map(o => `<option value="${o.id}">${o.name}</option>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+// File handling
+function handleDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
+function handleDragLeave(e) { document.getElementById('upload-zone').classList.remove('drag'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFile(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const wb = XLSX.read(e.target.result, {type:'binary'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    if (json.length < 2) { alert('El archivo parece estar vacio.'); return; }
+    headers = json[0].map(h => String(h).trim());
+    xlsxData = json.slice(1).filter(row => row.some(c => c !== ''));
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-stats').textContent = `${xlsxData.length.toLocaleString()} registros · ${headers.length} columnas detectadas`;
+    document.getElementById('file-info').classList.remove('hidden');
+  };
+  reader.readAsBinaryString(file);
+}
+
+function goStep2() {
+  if (!xlsxData.length) { alert('Primero sube un archivo.'); return; }
+  buildMappingUI();
+  goStep(2);
+}
+
+function buildMappingUI() {
+  const grid = document.getElementById('map-grid');
+  const noOption = '<option value="">-- No mapear --</option>';
+  const opts = headers.map((h,i) => `<option value="${i}">${h}</option>`).join('');
+  
+  grid.innerHTML = FIELDS.map(f => `
+    <div class="map-item">
+      <label>${f.label}<span class="${f.required?'map-required':'map-optional'}">${f.required?'*':''}</span></label>
+      <select id="map-${f.key}">
+        ${f.required ? '' : noOption}
+        ${opts}
+      </select>
+    </div>
+  `).join('');
+
+  // Auto-detect columns
+  const autoMap = {
+    nombre: ['nombre','name','cliente','client','apellido','full name','nombre completo'],
+    alienNum: ['alien','a#','numero alien','alien number','num alien','a number'],
+    telefono: ['telefono','phone','tel','celular','movil','mobile','telephone'],
+    email: ['email','correo','e-mail','mail'],
+    paisOrigen: ['pais','country','origen','pais de origen','country of origin','nacionalidad'],
+    tipoCaso: ['tipo','case type','tipo de caso','servicio','case','proceso'],
+    encargada: ['encargada','empleada','asignada','agent','assigned','staff'],
+    nota: ['nota','notes','notas','observacion','comments','comentarios'],
+  };
+
+  FIELDS.forEach(f => {
+    const sel = document.getElementById('map-'+f.key);
+    const keywords = autoMap[f.key] || [];
+    const found = headers.findIndex(h => keywords.some(k => h.toLowerCase().includes(k)));
+    if (found >= 0) sel.value = String(found);
+  });
+}
+
+function getMapping() {
+  const map = {};
+  FIELDS.forEach(f => {
+    const val = document.getElementById('map-'+f.key)?.value;
+    if (val !== '' && val !== undefined) map[f.key] = parseInt(val);
+  });
+  return map;
+}
+
+function goStep3() {
+  const officeId = document.getElementById('sel-oficina').value;
+  if (!officeId) { alert('Selecciona una oficina de destino.'); return; }
+  const map = getMapping();
+  if (map.nombre === undefined) { alert('El campo Nombre del cliente es obligatorio.'); return; }
+  buildPreview(map);
+  goStep(3);
+}
+
+function buildPreview(map) {
+  const preview = xlsxData.slice(0, 10);
+  const sistema = document.getElementById('sel-sistema').value;
+  const total = xlsxData.length;
+  
+  document.getElementById('preview-alert').textContent = 
+    `Se importaran ${total.toLocaleString()} clientes a la oficina seleccionada con sistema ${sistema.toUpperCase()}.`;
+
+  const fieldLabels = FIELDS.filter(f => map[f.key] !== undefined);
+  let html = '<thead><tr>' + fieldLabels.map(f => `<th>${f.label}</th>`).join('') + '</tr></thead><tbody>';
+  
+  preview.forEach(row => {
+    html += '<tr>';
+    fieldLabels.forEach(f => {
+      const val = map[f.key] !== undefined ? String(row[map[f.key]] || '') : '';
+      html += `<td>${val || '<span style="color:#CBD5E1">—</span>'}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('preview-table').innerHTML = html;
+}
+
+async function goStep4() {
+  goStep(4);
+  const map = getMapping();
+  const officeId = document.getElementById('sel-oficina').value;
+  const sistema = document.getElementById('sel-sistema').value;
+  const { db, collection, addDoc } = window._fb;
+  
+  let ok = 0, err = 0;
+  const errors = [];
+  const total = xlsxData.length;
+  const BATCH = 50; // procesar en lotes
+
+  for (let i = 0; i < total; i++) {
+    const row = xlsxData[i];
+    const nombre = map.nombre !== undefined ? String(row[map.nombre] || '').trim() : '';
+    if (!nombre) { err++; errors.push(`Fila ${i+2}: sin nombre`); continue; }
+
+    const cliente = {
+      nombre,
+      officeId,
+      alienNum: map.alienNum !== undefined ? String(row[map.alienNum] || '').replace(/[^\d-]/g,'') : '',
+      telefono: map.telefono !== undefined ? String(row[map.telefono] || '') : '',
+      email: map.email !== undefined ? String(row[map.email] || '') : '',
+      paisOrigen: map.paisOrigen !== undefined ? String(row[map.paisOrigen] || '') : '',
+      encargada: map.encargada !== undefined ? String(row[map.encargada] || '') : '',
+      nota: map.nota !== undefined ? String(row[map.nota] || '') : '',
+      casos: [{
+        sistema,
+        tipoCaso: map.tipoCaso !== undefined ? String(row[map.tipoCaso] || '') : '',
+        alienNum: map.alienNum !== undefined ? String(row[map.alienNum] || '').replace(/[^\d-]/g,'') : '',
+        procesos: [],
+        nota: map.nota !== undefined ? String(row[map.nota] || '') : '',
+      }],
+      createdAt: new Date().toISOString(),
+      createdBy: 'migracion-excel',
+      fromMigration: true,
+    };
+
+    try {
+      await addDoc(collection(db, 'clientes'), cliente);
+      ok++;
+    } catch(e) {
+      err++;
+      errors.push(`Fila ${i+2} (${nombre}): ${e.message}`);
+    }
+
+    // Update progress
+    const pct = Math.round(((i+1)/total)*100);
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('prog-text').textContent = `${i+1} de ${total} clientes procesados (${pct}%)`;
+    document.getElementById('prog-detail').textContent = `✅ ${ok} importados · ❌ ${err} errores`;
+
+    // Small delay every batch to avoid rate limits
+    if ((i+1) % BATCH === 0) await new Promise(r => setTimeout(r, 300));
+  }
+
+  // Show results
+  document.getElementById('res-total').textContent = total.toLocaleString();
+  document.getElementById('res-ok').textContent = ok.toLocaleString();
+  document.getElementById('res-err').textContent = err.toLocaleString();
+  
+  if (errors.length > 0) {
+    document.getElementById('errors-list').classList.remove('hidden');
+    document.getElementById('errors-detail').innerHTML = errors.slice(0,20).map(e => `<div>• ${e}</div>`).join('');
+    if (errors.length > 20) document.getElementById('errors-detail').innerHTML += `<div style="color:#94A3B8">...y ${errors.length-20} mas</div>`;
+  }
+  goStep(5);
+}
+
+function goStep(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.querySelectorAll('.step').forEach((s,i) => {
+    s.classList.remove('active','done');
+    if (i+1 < n) s.classList.add('done');
+    if (i+1 === n) s.classList.add('active');
+  });
+  window.scrollTo(0,0);
+}
+
+function resetAll() {
+  xlsxData = []; headers = [];
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-info').classList.add('hidden');
+  goStep(1);
+}
+</script>
+</body>
+</html>
