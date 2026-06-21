@@ -23,6 +23,223 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 window._fb = { auth, db, onAuthStateChanged, collection, addDoc, doc, getDoc, getDocs };
+
+// ── TODA LA LOGICA VA AQUI DENTRO DEL MODULO ──────────────────────────────
+let xlsxData = [];
+let headers = [];
+let userData = null;
+let offices = [];
+
+const FIELDS = [
+  {key:'nombre', label:'Nombre del cliente', required:true},
+  {key:'alienNum', label:'Numero Alien (A#)', required:false},
+  {key:'telefono', label:'Telefono', required:false},
+  {key:'email', label:'Email', required:false},
+  {key:'paisOrigen', label:'Pais de origen', required:false},
+  {key:'tipoCaso', label:'Tipo de caso', required:false},
+  {key:'encargada', label:'Encargada', required:false},
+  {key:'nota', label:'Notas / Observaciones', required:false},
+];
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = '/superadmin.html'; return; }
+  try {
+    const ud = await getDoc(doc(db, 'users', user.uid));
+    if (!ud.exists() || ud.data().role !== 'superadmin') {
+      window.location.href = '/superadmin.html'; return;
+    }
+    userData = ud.data();
+    await loadOffices();
+  } catch(e) { console.error(e); window.location.href = '/superadmin.html'; }
+});
+
+async function loadOffices() {
+  try {
+    const snap = await getDocs(collection(db, 'offices'));
+    offices = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    const sel = document.getElementById('sel-oficina');
+    if (sel) {
+      sel.innerHTML = '<option value="">Selecciona una oficina</option>' +
+        offices.filter(o => o.isActive).map(o => `<option value="${o.id}">${o.name}</option>`).join('');
+    }
+  } catch(e) { console.error('Error cargando oficinas:', e); }
+}
+
+window.handleDragOver = function(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
+window.handleDragLeave = function(e) { document.getElementById('upload-zone').classList.remove('drag'); }
+window.handleDrop = function(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+window.handleFile = function(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const wb = XLSX.read(e.target.result, {type:'binary'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    if (json.length < 2) { alert('El archivo parece estar vacio.'); return; }
+    headers = json[0].map(h => String(h).trim());
+    xlsxData = json.slice(1).filter(row => row.some(c => c !== ''));
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-stats').textContent = `${xlsxData.length.toLocaleString()} registros · ${headers.length} columnas detectadas`;
+    document.getElementById('file-info').classList.remove('hidden');
+  };
+  reader.readAsBinaryString(file);
+}
+
+window.goStep2 = function() {
+  if (!xlsxData.length) { alert('Primero sube un archivo.'); return; }
+  buildMappingUI();
+  goStep(2);
+}
+
+function buildMappingUI() {
+  const grid = document.getElementById('map-grid');
+  const noOption = '<option value="">-- No mapear --</option>';
+  const opts = headers.map((h,i) => `<option value="${i}">${h}</option>`).join('');
+  grid.innerHTML = FIELDS.map(f => `
+    <div class="map-item">
+      <label>${f.label}<span class="${f.required?'map-required':'map-optional'}">${f.required?'*':''}</span></label>
+      <select id="map-${f.key}">
+        ${f.required ? '' : noOption}
+        ${opts}
+      </select>
+    </div>
+  `).join('');
+  const autoMap = {
+    nombre: ['nombre','name','cliente','apellido','full name','nombre completo'],
+    alienNum: ['alien','a#','numero alien','alien number','num alien'],
+    telefono: ['telefono','phone','tel','celular','movil','mobile'],
+    email: ['email','correo','e-mail','mail'],
+    paisOrigen: ['pais','country','origen','pais de origen','nacionalidad'],
+    tipoCaso: ['tipo','case type','tipo de caso','servicio','proceso'],
+    encargada: ['encargada','empleada','asignada','agent','staff'],
+    nota: ['nota','notes','notas','observacion','comments'],
+  };
+  FIELDS.forEach(f => {
+    const sel = document.getElementById('map-'+f.key);
+    if (!sel) return;
+    const keywords = autoMap[f.key] || [];
+    const found = headers.findIndex(h => keywords.some(k => h.toLowerCase().includes(k)));
+    if (found >= 0) sel.value = String(found);
+    else if (!f.required) sel.value = '';
+  });
+}
+
+function getMapping() {
+  const map = {};
+  FIELDS.forEach(f => {
+    const val = document.getElementById('map-'+f.key)?.value;
+    if (val !== '' && val !== undefined && val !== null) map[f.key] = parseInt(val);
+  });
+  return map;
+}
+
+window.goStep3 = function() {
+  const officeId = document.getElementById('sel-oficina').value;
+  if (!officeId) { alert('Selecciona una oficina de destino.'); return; }
+  const map = getMapping();
+  if (map.nombre === undefined) { alert('El campo Nombre del cliente es obligatorio.'); return; }
+  buildPreview(map);
+  goStep(3);
+}
+
+function buildPreview(map) {
+  const preview = xlsxData.slice(0, 10);
+  const sistema = document.getElementById('sel-sistema').value;
+  const total = xlsxData.length;
+  document.getElementById('preview-alert').textContent =
+    `Se importaran ${total.toLocaleString()} clientes con sistema ${sistema.toUpperCase()}.`;
+  const fieldLabels = FIELDS.filter(f => map[f.key] !== undefined);
+  let html = '<thead><tr>' + fieldLabels.map(f => `<th>${f.label}</th>`).join('') + '</tr></thead><tbody>';
+  preview.forEach(row => {
+    html += '<tr>';
+    fieldLabels.forEach(f => {
+      const val = map[f.key] !== undefined ? String(row[map[f.key]] || '') : '';
+      html += `<td>${val || '<span style="color:#CBD5E1">—</span>'}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('preview-table').innerHTML = html;
+}
+
+window.goStep4 = async function() {
+  goStep(4);
+  const map = getMapping();
+  const officeId = document.getElementById('sel-oficina').value;
+  const sistema = document.getElementById('sel-sistema').value;
+  let ok = 0, err = 0;
+  const errors = [];
+  const total = xlsxData.length;
+  for (let i = 0; i < total; i++) {
+    const row = xlsxData[i];
+    const nombre = map.nombre !== undefined ? String(row[map.nombre] || '').trim() : '';
+    if (!nombre) { err++; errors.push(`Fila ${i+2}: sin nombre`); continue; }
+    const cliente = {
+      nombre,
+      officeId,
+      alienNum: map.alienNum !== undefined ? String(row[map.alienNum] || '').replace(/[^\d-]/g,'') : '',
+      telefono: map.telefono !== undefined ? String(row[map.telefono] || '') : '',
+      email: map.email !== undefined ? String(row[map.email] || '') : '',
+      paisOrigen: map.paisOrigen !== undefined ? String(row[map.paisOrigen] || '') : '',
+      encargada: map.encargada !== undefined ? String(row[map.encargada] || '') : '',
+      nota: map.nota !== undefined ? String(row[map.nota] || '') : '',
+      casos: [{
+        sistema,
+        tipoCaso: map.tipoCaso !== undefined ? String(row[map.tipoCaso] || '') : '',
+        alienNum: map.alienNum !== undefined ? String(row[map.alienNum] || '').replace(/[^\d-]/g,'') : '',
+        procesos: [],
+      }],
+      createdAt: new Date().toISOString(),
+      fromMigration: true,
+    };
+    try {
+      await addDoc(collection(db, 'clientes'), cliente);
+      ok++;
+    } catch(e) {
+      err++;
+      errors.push(`Fila ${i+2} (${nombre}): ${e.message}`);
+    }
+    const pct = Math.round(((i+1)/total)*100);
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('prog-text').textContent = `${i+1} de ${total} clientes procesados (${pct}%)`;
+    document.getElementById('prog-detail').textContent = `✅ ${ok} importados · ❌ ${err} errores`;
+    if ((i+1) % 50 === 0) await new Promise(r => setTimeout(r, 300));
+  }
+  document.getElementById('res-total').textContent = total.toLocaleString();
+  document.getElementById('res-ok').textContent = ok.toLocaleString();
+  document.getElementById('res-err').textContent = err.toLocaleString();
+  if (errors.length > 0) {
+    document.getElementById('errors-list').classList.remove('hidden');
+    document.getElementById('errors-detail').innerHTML = errors.slice(0,20).map(e => `<div>• ${e}</div>`).join('');
+  }
+  goStep(5);
+}
+
+window.goStep = goStep;
+function goStep(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.querySelectorAll('.step').forEach((s,i) => {
+    s.classList.remove('active','done');
+    if (i+1 < n) s.classList.add('done');
+    if (i+1 === n) s.classList.add('active');
+  });
+  window.scrollTo(0,0);
+}
+
+window.resetAll = function() {
+  xlsxData = []; headers = [];
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-info').classList.add('hidden');
+  goStep(1);
+}
+
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -268,242 +485,7 @@ tr:hover td{background:#F8FAFC;}
 </div>
 
 <script>
-let xlsxData = [];
-let headers = [];
-let userData = null;
-let officeData = null;
-let offices = [];
-
-const FIELDS = [
-  {key:'nombre', label:'Nombre del cliente', required:true},
-  {key:'alienNum', label:'Numero Alien (A#)', required:false},
-  {key:'telefono', label:'Telefono', required:false},
-  {key:'email', label:'Email', required:false},
-  {key:'paisOrigen', label:'Pais de origen', required:false},
-  {key:'tipoCaso', label:'Tipo de caso', required:false},
-  {key:'encargada', label:'Encargada', required:false},
-  {key:'nota', label:'Notas / Observaciones', required:false},
-];
-
-// Auth check
-window._fb.onAuthStateChanged(window._fb.auth, async user => {
-  if (!user) { window.location.href = '/superadmin.html'; return; }
-  try {
-    const ud = await window._fb.getDoc(window._fb.doc(window._fb.db, 'users', user.uid));
-    if (!ud.exists() || ud.data().role !== 'superadmin') {
-      window.location.href = '/superadmin.html'; return;
-    }
-    userData = ud.data();
-    loadOffices();
-  } catch(e) { window.location.href = '/superadmin.html'; }
-});
-
-async function loadOffices() {
-  try {
-    const { db, collection, getDocs } = window._fb;
-    const snap = await getDocs(collection(db, 'offices'));
-    offices = snap.docs.map(d => ({id: d.id, ...d.data()}));
-    const sel = document.getElementById('sel-oficina');
-    sel.innerHTML = '<option value="">Selecciona una oficina</option>' +
-      offices.filter(o => o.isActive).map(o => `<option value="${o.id}">${o.name}</option>`).join('');
-  } catch(e) { console.error(e); }
-}
-
-// File handling
-function handleDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
-function handleDragLeave(e) { document.getElementById('upload-zone').classList.remove('drag'); }
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('upload-zone').classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if (file) processFile(file);
-}
-function handleFile(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
-
-function processFile(file) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const wb = XLSX.read(e.target.result, {type:'binary'});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-    if (json.length < 2) { alert('El archivo parece estar vacio.'); return; }
-    headers = json[0].map(h => String(h).trim());
-    xlsxData = json.slice(1).filter(row => row.some(c => c !== ''));
-    document.getElementById('file-name').textContent = file.name;
-    document.getElementById('file-stats').textContent = `${xlsxData.length.toLocaleString()} registros · ${headers.length} columnas detectadas`;
-    document.getElementById('file-info').classList.remove('hidden');
-  };
-  reader.readAsBinaryString(file);
-}
-
-function goStep2() {
-  if (!xlsxData.length) { alert('Primero sube un archivo.'); return; }
-  buildMappingUI();
-  goStep(2);
-}
-
-function buildMappingUI() {
-  const grid = document.getElementById('map-grid');
-  const noOption = '<option value="">-- No mapear --</option>';
-  const opts = headers.map((h,i) => `<option value="${i}">${h}</option>`).join('');
-  
-  grid.innerHTML = FIELDS.map(f => `
-    <div class="map-item">
-      <label>${f.label}<span class="${f.required?'map-required':'map-optional'}">${f.required?'*':''}</span></label>
-      <select id="map-${f.key}">
-        ${f.required ? '' : noOption}
-        ${opts}
-      </select>
-    </div>
-  `).join('');
-
-  // Auto-detect columns
-  const autoMap = {
-    nombre: ['nombre','name','cliente','client','apellido','full name','nombre completo'],
-    alienNum: ['alien','a#','numero alien','alien number','num alien','a number'],
-    telefono: ['telefono','phone','tel','celular','movil','mobile','telephone'],
-    email: ['email','correo','e-mail','mail'],
-    paisOrigen: ['pais','country','origen','pais de origen','country of origin','nacionalidad'],
-    tipoCaso: ['tipo','case type','tipo de caso','servicio','case','proceso'],
-    encargada: ['encargada','empleada','asignada','agent','assigned','staff'],
-    nota: ['nota','notes','notas','observacion','comments','comentarios'],
-  };
-
-  FIELDS.forEach(f => {
-    const sel = document.getElementById('map-'+f.key);
-    const keywords = autoMap[f.key] || [];
-    const found = headers.findIndex(h => keywords.some(k => h.toLowerCase().includes(k)));
-    if (found >= 0) sel.value = String(found);
-  });
-}
-
-function getMapping() {
-  const map = {};
-  FIELDS.forEach(f => {
-    const val = document.getElementById('map-'+f.key)?.value;
-    if (val !== '' && val !== undefined) map[f.key] = parseInt(val);
-  });
-  return map;
-}
-
-function goStep3() {
-  const officeId = document.getElementById('sel-oficina').value;
-  if (!officeId) { alert('Selecciona una oficina de destino.'); return; }
-  const map = getMapping();
-  if (map.nombre === undefined) { alert('El campo Nombre del cliente es obligatorio.'); return; }
-  buildPreview(map);
-  goStep(3);
-}
-
-function buildPreview(map) {
-  const preview = xlsxData.slice(0, 10);
-  const sistema = document.getElementById('sel-sistema').value;
-  const total = xlsxData.length;
-  
-  document.getElementById('preview-alert').textContent = 
-    `Se importaran ${total.toLocaleString()} clientes a la oficina seleccionada con sistema ${sistema.toUpperCase()}.`;
-
-  const fieldLabels = FIELDS.filter(f => map[f.key] !== undefined);
-  let html = '<thead><tr>' + fieldLabels.map(f => `<th>${f.label}</th>`).join('') + '</tr></thead><tbody>';
-  
-  preview.forEach(row => {
-    html += '<tr>';
-    fieldLabels.forEach(f => {
-      const val = map[f.key] !== undefined ? String(row[map[f.key]] || '') : '';
-      html += `<td>${val || '<span style="color:#CBD5E1">—</span>'}</td>`;
-    });
-    html += '</tr>';
-  });
-  html += '</tbody>';
-  document.getElementById('preview-table').innerHTML = html;
-}
-
-async function goStep4() {
-  goStep(4);
-  const map = getMapping();
-  const officeId = document.getElementById('sel-oficina').value;
-  const sistema = document.getElementById('sel-sistema').value;
-  const { db, collection, addDoc, getDocs } = window._fb;
-  
-  let ok = 0, err = 0;
-  const errors = [];
-  const total = xlsxData.length;
-  const BATCH = 50; // procesar en lotes
-
-  for (let i = 0; i < total; i++) {
-    const row = xlsxData[i];
-    const nombre = map.nombre !== undefined ? String(row[map.nombre] || '').trim() : '';
-    if (!nombre) { err++; errors.push(`Fila ${i+2}: sin nombre`); continue; }
-
-    const cliente = {
-      nombre,
-      officeId,
-      alienNum: map.alienNum !== undefined ? String(row[map.alienNum] || '').replace(/[^\d-]/g,'') : '',
-      telefono: map.telefono !== undefined ? String(row[map.telefono] || '') : '',
-      email: map.email !== undefined ? String(row[map.email] || '') : '',
-      paisOrigen: map.paisOrigen !== undefined ? String(row[map.paisOrigen] || '') : '',
-      encargada: map.encargada !== undefined ? String(row[map.encargada] || '') : '',
-      nota: map.nota !== undefined ? String(row[map.nota] || '') : '',
-      casos: [{
-        sistema,
-        tipoCaso: map.tipoCaso !== undefined ? String(row[map.tipoCaso] || '') : '',
-        alienNum: map.alienNum !== undefined ? String(row[map.alienNum] || '').replace(/[^\d-]/g,'') : '',
-        procesos: [],
-        nota: map.nota !== undefined ? String(row[map.nota] || '') : '',
-      }],
-      createdAt: new Date().toISOString(),
-      createdBy: 'migracion-excel',
-      fromMigration: true,
-    };
-
-    try {
-      await addDoc(collection(db, 'clientes'), cliente);
-      ok++;
-    } catch(e) {
-      err++;
-      errors.push(`Fila ${i+2} (${nombre}): ${e.message}`);
-    }
-
-    // Update progress
-    const pct = Math.round(((i+1)/total)*100);
-    document.getElementById('prog-fill').style.width = pct + '%';
-    document.getElementById('prog-text').textContent = `${i+1} de ${total} clientes procesados (${pct}%)`;
-    document.getElementById('prog-detail').textContent = `✅ ${ok} importados · ❌ ${err} errores`;
-
-    // Small delay every batch to avoid rate limits
-    if ((i+1) % BATCH === 0) await new Promise(r => setTimeout(r, 300));
-  }
-
-  // Show results
-  document.getElementById('res-total').textContent = total.toLocaleString();
-  document.getElementById('res-ok').textContent = ok.toLocaleString();
-  document.getElementById('res-err').textContent = err.toLocaleString();
-  
-  if (errors.length > 0) {
-    document.getElementById('errors-list').classList.remove('hidden');
-    document.getElementById('errors-detail').innerHTML = errors.slice(0,20).map(e => `<div>• ${e}</div>`).join('');
-    if (errors.length > 20) document.getElementById('errors-detail').innerHTML += `<div style="color:#94A3B8">...y ${errors.length-20} mas</div>`;
-  }
-  goStep(5);
-}
-
-function goStep(n) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('s'+n).classList.add('active');
-  document.querySelectorAll('.step').forEach((s,i) => {
-    s.classList.remove('active','done');
-    if (i+1 < n) s.classList.add('done');
-    if (i+1 === n) s.classList.add('active');
-  });
-  window.scrollTo(0,0);
-}
-
-function resetAll() {
-  xlsxData = []; headers = [];
-  document.getElementById('file-input').value = '';
-  document.getElementById('file-info').classList.add('hidden');
-  goStep(1);
-}
+// Logica manejada en el modulo Firebase arriba
 </script>
 </body>
 </html>
