@@ -386,7 +386,7 @@ const savePagosConfig=async(cfg)=>{
       setOfficeData(prev=>({...prev,logoUrl:officeLogo||""}));
     }
     showToastFn("Configuracion guardada ✓");
-  }catch(e){showToastFn("Error al guardar","error");}
+  }catch(e){console.error("Error al guardar:",e);showToastFn("Error al guardar: "+e.message,"error");}
   setConfigSaving(false);
 };
 
@@ -570,6 +570,7 @@ const loadTeam=async()=>{
   const handleSubmit=async()=>{
     if(!formCliente.nombre)return;setSaving(true);
     const officeId=officeData?.id||userData?.officeId||"";
+
     try{
       const{db,collection,addDoc,doc,updateDoc}=window._firebase;
       if(editId){
@@ -602,13 +603,13 @@ const loadTeam=async()=>{
         showToastFn("Cliente actualizado ✓");
       }else{
         //  MULTI-OFFICE: always save officeId 
-        const encargadaAuto = formCliente.encargada || currentUser?.displayName || userData?.displayName || user.email;
+        const encargadaAuto = formCliente.encargada || userData?.displayName || user.email || "";
         const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString(),createdBy:user.email});
         try{await addDoc(collection(db,"historial"),{clienteId:ref.id,officeId,accion:"Cliente registrado",usuario:user.email,fecha:new Date().toISOString()});}catch(he){console.error(he);}
         setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString()},...prev]);
         showToastFn("Cliente agregado ✓");
       }
-    }catch(e){showToastFn("Error al guardar","error");}
+    }catch(e){console.error("Error al guardar:",e);showToastFn("Error al guardar: "+e.message,"error");}
     setSaving(false);setShowModal(false);
   };
 
