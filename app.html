@@ -575,27 +575,29 @@ const loadTeam=async()=>{
       if(editId){
         const prevCliente = clientes.find(c=>c.id===editId)||{};
         await updateDoc(doc(db,"clientes",editId),{...formCliente,officeId,updatedAt:new Date().toISOString(),updatedBy:user.email});
-        // Guardar en historial
-        const cambios=[];
-        if(prevCliente.nombre!==formCliente.nombre) cambios.push("Nombre cambiado");
-        if(prevCliente.alienNum!==formCliente.alienNum) cambios.push("A# actualizado a "+formCliente.alienNum);
-        if(prevCliente.encargada!==formCliente.encargada) cambios.push("Encargada cambiada a "+(formCliente.encargada||"Sin asignar"));
-        if((prevCliente.casos||[]).length!==(formCliente.casos||[]).length) cambios.push("Casos actualizados");
-        (formCliente.casos||[]).forEach((ca,i)=>{
-          const prev=(prevCliente.casos||[])[i]||{};
-          if(prev.estatusUSCIS!==ca.estatusUSCIS&&ca.estatusUSCIS) cambios.push("Estado USCIS: "+ca.estatusUSCIS);
-          if(prev.estatusEOIR!==ca.estatusEOIR&&ca.estatusEOIR) cambios.push("Estado EOIR: "+ca.estatusEOIR);
-          if(prev.fechaCorte!==ca.fechaCorte&&ca.fechaCorte) cambios.push("Fecha de cita: "+ca.fechaCorte);
-          if(prev.tipoCaso!==ca.tipoCaso&&ca.tipoCaso) cambios.push("Tipo de caso: "+ca.tipoCaso);
-        });
-        if(cambios.length>0){
-          await addDoc(collection(db,"historial"),{
-            clienteId:editId,officeId,
-            accion: cambios.join(" · "),
-            usuario:user.email,
-            fecha:new Date().toISOString(),
+        // Guardar en historial (con try/catch para no romper el guardado)
+        try{
+          const cambios=[];
+          if(prevCliente.nombre!==formCliente.nombre) cambios.push("Nombre cambiado");
+          if(prevCliente.alienNum!==formCliente.alienNum) cambios.push("A# actualizado");
+          if(prevCliente.encargada!==formCliente.encargada) cambios.push("Encargada: "+(formCliente.encargada||"Sin asignar"));
+          if((prevCliente.casos||[]).length!==(formCliente.casos||[]).length) cambios.push("Casos actualizados");
+          (formCliente.casos||[]).forEach((ca,i)=>{
+            const prev=(prevCliente.casos||[])[i]||{};
+            if(prev.estatusUSCIS!==ca.estatusUSCIS&&ca.estatusUSCIS) cambios.push("Estado USCIS: "+ca.estatusUSCIS);
+            if(prev.estatusEOIR!==ca.estatusEOIR&&ca.estatusEOIR) cambios.push("Estado EOIR: "+ca.estatusEOIR);
+            if(prev.fechaCorte!==ca.fechaCorte&&ca.fechaCorte) cambios.push("Fecha de cita: "+ca.fechaCorte);
+            if(prev.tipoCaso!==ca.tipoCaso&&ca.tipoCaso) cambios.push("Tipo de caso: "+ca.tipoCaso);
           });
-        }
+          if(cambios.length>0){
+            await addDoc(collection(db,"historial"),{
+              clienteId:editId,officeId,
+              accion:cambios.join(" · "),
+              usuario:user.email,
+              fecha:new Date().toISOString(),
+            });
+          }
+        }catch(he){console.error("Historial error:",he);}
         setClientes(prev=>prev.map(c=>c.id===editId?{...c,...formCliente,officeId}:c));
         showToastFn("Cliente actualizado ✓");
       }else{
