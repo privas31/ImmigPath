@@ -537,9 +537,19 @@ const loadTeam=async()=>{
   const handleLogout=async()=>{const{auth,signOut}=window._firebase;await signOut(auth);setUser(null);setUserData(null);setOfficeData(null);setClientes([]);};
 
   const openAdd=()=>{setEditId(null);setFormCliente({...emptyCliente,casos:[]});setShowModal(true);};
-  const openEdit=(c)=>{setEditId(c.id);setFormCliente({nombre:c.nombre||"",paisOrigen:c.paisOrigen||"",alienNum:c.alienNum||"",telefono:c.telefono||"",email:c.email||"",encargada:c.encargada||"",casos:(c.casos||[]).map(ca=>({...emptyCaso,...ca})),nota:c.nota||""});setShowModal(true);};
+  const openEdit=(c)=>{
+    setEditId(c.id);
+    const clienteAlien=c.alienNum||"";
+    setFormCliente({
+      nombre:c.nombre||"",paisOrigen:c.paisOrigen||"",alienNum:clienteAlien,
+      telefono:c.telefono||"",email:c.email||"",encargada:c.encargada||"",
+      casos:(c.casos||[]).map(ca=>({...emptyCaso,...ca,alienNum:ca.alienNum||clienteAlien})),
+      nota:c.nota||""
+    });
+    setShowModal(true);
+  };
 
-  const addCaso=()=>setFormCliente(p=>({...p,casos:[...p.casos,{...emptyCaso,id:Date.now(),alienNum:p.alienNum||""}]}));
+  const addCaso=()=>setFormCliente(p=>{const alien=p.alienNum||"";return{...p,casos:[...p.casos,{...emptyCaso,id:Date.now(),alienNum:alien}]};});
   const updateCaso=(i,v)=>setFormCliente(p=>{const c=[...p.casos];c[i]=v;return{...p,casos:c};});
   const deleteCaso=(i)=>setFormCliente(p=>({...p,casos:p.casos.filter((_,idx)=>idx!==i)}));
 
