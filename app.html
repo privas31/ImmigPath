@@ -927,6 +927,17 @@ const loadTeam=async()=>{
                     <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}} title="Editar">✏️</button>
                     <button onClick={e=>{e.stopPropagation();openHistorial(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}} title="Ver historial">📋</button>
                     <button title="Copiar link del cliente" onClick={e=>{e.stopPropagation();const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>{prompt("Copia este link:",link);});}} style={{background:"#EFF6FF",color:"#1D4ED8",border:"1px solid #BFDBFE",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔗</button>
+                    <button title="Enviar WhatsApp al cliente" onClick={e=>{
+                      e.stopPropagation();
+                      const tel=(c.telefono||"").replace(/[^0-9]/g,"");
+                      if(!tel){showToastFn("Sin telefono registrado","error");return;}
+                      const nombre=c.nombre||"cliente";
+                      const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigracion";
+                      const estado=(c.casos||[]).map(ca=>ca.estatusUSCIS||ca.estatusEOIR||"").filter(Boolean).join(", ");
+                      const oficina=officeData?.name||"nuestra oficina";
+                      const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualizacion de su proceso. Para mas informacion contactenos. — "+oficina;
+                      window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");
+                    }} style={{background:"#F0FDF4",color:"#16A34A",border:"1px solid #BBF7D0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}} title="WhatsApp">💬</button>
                 {isAdmin&&<button title="Cobrar cliente" onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{background:"#F0FDF4",color:"#16A34A",border:"1px solid #BBF7D0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}}>💳</button>}
                     {isAdmin&&<button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);}} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>🗑</button>}
                   </div>
