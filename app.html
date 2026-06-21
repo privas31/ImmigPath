@@ -207,7 +207,10 @@ function App(){
   const[busqueda,setBusqueda]=useState("");const[saving,setSaving]=useState(false);
   const[toast,setToast]=useState(null);const[sortBy,setSortBy]=useState("fecha");
   const[confirmDelete,setConfirmDelete]=useState(null);const[expandedId,setExpandedId]=useState(null);const[activeCasoTab,setActiveCasoTab]=useState({});
-  const[showPDF,setShowPDF]=useState(false);const[pdfOpts,setPdfOpts]=useState({sistema:"todos",estado:"todos"});
+  const[showPDF,setShowPDF]=useState(false);
+  const[showHistorial,setShowHistorial]=useState(false);
+  const[historialCliente,setHistorialCliente]=useState(null);
+  const[historialData,setHistorialData]=useState([]);const[pdfOpts,setPdfOpts]=useState({sistema:"todos",estado:"todos"});
   const[showAddUser,setShowAddUser]=useState(false);const[newUserEmail,setNewUserEmail]=useState("");const[newUserPass,setNewUserPass]=useState("");const[addUserMsg,setAddUserMsg]=useState("");
   const[newUserName,setNewUserName]=useState("");
   const[newUserRole,setNewUserRole]=useState("employee");
@@ -537,6 +540,17 @@ const loadTeam=async()=>{
   const handleLogout=async()=>{const{auth,signOut}=window._firebase;await signOut(auth);setUser(null);setUserData(null);setOfficeData(null);setClientes([]);};
 
   const openAdd=()=>{setEditId(null);setFormCliente({...emptyCliente,casos:[]});setShowModal(true);};
+  const openHistorial=async(c)=>{
+    setHistorialCliente(c);
+    setHistorialData([]);
+    setShowHistorial(true);
+    try{
+      const{db,collection,query,where,orderBy,getDocs}=window._firebase;
+      const q=query(collection(db,"historial"),where("clienteId","==",c.id),orderBy("fecha","desc"));
+      const snap=await getDocs(q);
+      setHistorialData(snap.docs.map(d=>({id:d.id,...d.data()})));
+    }catch(e){console.error(e);}
+  };
   const openEdit=(c)=>{
     setEditId(c.id);
     const clienteAlien=c.alienNum||"";
@@ -559,13 +573,36 @@ const loadTeam=async()=>{
     try{
       const{db,collection,addDoc,doc,updateDoc}=window._firebase;
       if(editId){
+        const prevCliente = clientes.find(c=>c.id===editId)||{};
         await updateDoc(doc(db,"clientes",editId),{...formCliente,officeId,updatedAt:new Date().toISOString(),updatedBy:user.email});
+        // Guardar en historial
+        const cambios=[];
+        if(prevCliente.nombre!==formCliente.nombre) cambios.push("Nombre cambiado");
+        if(prevCliente.alienNum!==formCliente.alienNum) cambios.push("A# actualizado a "+formCliente.alienNum);
+        if(prevCliente.encargada!==formCliente.encargada) cambios.push("Encargada cambiada a "+(formCliente.encargada||"Sin asignar"));
+        if((prevCliente.casos||[]).length!==(formCliente.casos||[]).length) cambios.push("Casos actualizados");
+        (formCliente.casos||[]).forEach((ca,i)=>{
+          const prev=(prevCliente.casos||[])[i]||{};
+          if(prev.estatusUSCIS!==ca.estatusUSCIS&&ca.estatusUSCIS) cambios.push("Estado USCIS: "+ca.estatusUSCIS);
+          if(prev.estatusEOIR!==ca.estatusEOIR&&ca.estatusEOIR) cambios.push("Estado EOIR: "+ca.estatusEOIR);
+          if(prev.fechaCorte!==ca.fechaCorte&&ca.fechaCorte) cambios.push("Fecha de cita: "+ca.fechaCorte);
+          if(prev.tipoCaso!==ca.tipoCaso&&ca.tipoCaso) cambios.push("Tipo de caso: "+ca.tipoCaso);
+        });
+        if(cambios.length>0){
+          await addDoc(collection(db,"historial"),{
+            clienteId:editId,officeId,
+            accion: cambios.join(" · "),
+            usuario:user.email,
+            fecha:new Date().toISOString(),
+          });
+        }
         setClientes(prev=>prev.map(c=>c.id===editId?{...c,...formCliente,officeId}:c));
         showToastFn("Cliente actualizado ✓");
       }else{
         //  MULTI-OFFICE: always save officeId 
         const encargadaAuto = formCliente.encargada || currentUser?.displayName || userData?.displayName || user.email;
         const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString(),createdBy:user.email});
+        try{await addDoc(collection(db,"historial"),{clienteId:ref.id,officeId,accion:"Cliente registrado",usuario:user.email,fecha:new Date().toISOString()});}catch(he){console.error(he);}
         setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString()},...prev]);
         showToastFn("Cliente agregado ✓");
       }
@@ -887,7 +924,8 @@ const loadTeam=async()=>{
                     {dias!==null&&<div style={{fontSize:11,color:scfg.color,fontWeight:600,marginTop:1}}>{dias<0?`Hace ${Math.abs(dias)}d`:dias===0?"HOY!":`En ${dias}d`}</div>}
                   </div>
                   <div style={{display:"flex",gap:6}}>
-                    <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>✏️</button>
+                    <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}} title="Editar">✏️</button>
+                    <button onClick={e=>{e.stopPropagation();openHistorial(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}} title="Ver historial">📋</button>
                     <button title="Copiar link del cliente" onClick={e=>{e.stopPropagation();const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>{prompt("Copia este link:",link);});}} style={{background:"#EFF6FF",color:"#1D4ED8",border:"1px solid #BFDBFE",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔗</button>
                 {isAdmin&&<button title="Cobrar cliente" onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{background:"#F0FDF4",color:"#16A34A",border:"1px solid #BBF7D0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}}>💳</button>}
                     {isAdmin&&<button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);}} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>🗑</button>}
@@ -1299,6 +1337,44 @@ const loadTeam=async()=>{
         </div>
       );
     })()}
+
+    {showHistorial&&historialCliente&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:560,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"85vh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+            <div>
+              <h2 style={{fontSize:18,fontWeight:800,color:"#0F172A",margin:0}}>Historial de cambios</h2>
+              <p style={{fontSize:13,color:"#64748B",marginTop:4}}>{historialCliente.nombre}</p>
+            </div>
+            <button onClick={()=>setShowHistorial(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar</button>
+          </div>
+          {historialData.length===0?(
+            <div style={{textAlign:"center",padding:"32px 0",color:"#94A3B8"}}>
+              <div style={{fontSize:36,marginBottom:8}}>📋</div>
+              <div style={{fontSize:14}}>Sin historial registrado aun</div>
+              <div style={{fontSize:12,marginTop:6,color:"#CBD5E1"}}>Los cambios futuros apareceran aqui</div>
+            </div>
+          ):(
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {historialData.map((h,i)=>(
+                <div key={h.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 14px",background:i===0?"#F0FDF4":"#F8FAFC",borderRadius:10,border:`1px solid ${i===0?"#BBF7D0":"#E2E8F0"}`}}>
+                  <div style={{width:36,height:36,borderRadius:"50%",background:i===0?"#16A34A":"#E2E8F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+                    {i===0?"✓":"·"}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:600,color:"#0F172A",marginBottom:3}}>{h.accion}</div>
+                    <div style={{fontSize:12,color:"#64748B",display:"flex",gap:12,flexWrap:"wrap"}}>
+                      <span>👤 {h.usuario}</span>
+                      <span>📅 {new Date(h.fecha).toLocaleDateString("es-US",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
 
     {confirmDelete&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
       <div style={{background:"#fff",borderRadius:14,width:340,padding:28,textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
