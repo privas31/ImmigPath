@@ -8,7 +8,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
@@ -22,7 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-window._fb = { auth, db, onAuthStateChanged, collection, addDoc, doc, getDoc };
+window._fb = { auth, db, onAuthStateChanged, collection, addDoc, doc, getDoc, getDocs };
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -300,8 +300,7 @@ window._fb.onAuthStateChanged(window._fb.auth, async user => {
 
 async function loadOffices() {
   try {
-    const { db, collection } = window._fb;
-    const { getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const { db, collection, getDocs } = window._fb;
     const snap = await getDocs(collection(db, 'offices'));
     offices = snap.docs.map(d => ({id: d.id, ...d.data()}));
     const sel = document.getElementById('sel-oficina');
@@ -424,7 +423,7 @@ async function goStep4() {
   const map = getMapping();
   const officeId = document.getElementById('sel-oficina').value;
   const sistema = document.getElementById('sel-sistema').value;
-  const { db, collection, addDoc } = window._fb;
+  const { db, collection, addDoc, getDocs } = window._fb;
   
   let ok = 0, err = 0;
   const errors = [];
