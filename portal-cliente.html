@@ -64,23 +64,14 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
 .i589-btn-cancel{background:#F1F5F9;color:#374151;border:none;border-radius:10px;padding:12px 18px;font-size:14px;cursor:pointer;font-weight:600;}
 .i589-saved{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px;margin-top:12px;display:flex;align-items:center;gap:10px;}
 
-.form-menu-wrap{position:relative;}
-.form-menu-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:8px;color:#fff;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;}
-.form-menu-btn:hover{background:rgba(255,255,255,0.22);}
-.form-menu-btn svg{width:12px;height:12px;transition:transform 0.2s;}
-.form-menu-btn.open svg{transform:rotate(180deg);}
-.form-dropdown{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.2);border:1px solid #E2E8F0;min-width:220px;overflow:hidden;z-index:500;}
-.form-dropdown.open{display:block;}
-.form-dropdown-title{padding:8px 14px;font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid #F1F5F9;}
-.form-dropdown-item{display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;color:#374151;cursor:pointer;border:none;background:none;width:100%;text-align:left;}
-.form-dropdown-item:hover{background:#F8FAFC;}
-.form-dropdown-item.disabled{color:#CBD5E1;cursor:default;}
-.form-dropdown-item.disabled:hover{background:none;}
-.form-dropdown-soon{font-size:10px;margin-left:auto;color:#94A3B8;font-style:italic;}
-
-.i589-step{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.2);cursor:default;}
-.i589-step.active{background:rgba(255,255,255,0.2);color:#fff;border-color:rgba(255,255,255,0.4);}
-.i589-step.done{background:rgba(52,211,153,0.2);color:#6EE7B7;border-color:rgba(52,211,153,0.4);}
+.alert-banner{display:none;background:linear-gradient(135deg,#FEF2F2,#FFF5F5);border-left:4px solid #EF4444;border-radius:0 0 12px 12px;padding:14px 20px;margin-bottom:0;}
+.alert-banner.visible{display:flex;align-items:flex-start;gap:12px;}
+.alert-banner-icon{font-size:22px;flex-shrink:0;margin-top:1px;}
+.alert-banner-body{flex:1;}
+.alert-banner-title{font-size:13px;font-weight:800;color:#DC2626;margin-bottom:3px;}
+.alert-banner-msg{font-size:13px;color:#7F1D1D;line-height:1.5;}
+.alert-banner-btn{background:#DC2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;margin-top:2px;}
+.alert-banner-btn:hover{background:#B91C1C;}
 </style>
 </head>
 <body>
@@ -88,28 +79,9 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
 <div class="header">
   <div class="header-top">
     <div class="logo" id="office-name">ImmigPath</div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <!-- Botón FORMULARIOS -->
-      <div class="form-menu-wrap">
-        <button class="form-menu-btn" id="form-menu-btn" onclick="toggleFormMenu()">
-          📄 Formularios
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="form-dropdown" id="form-dropdown">
-          <div class="form-dropdown-title">Selecciona un formulario</div>
-          <button class="form-dropdown-item" onclick="openFormulario('asilo')">🕊️ Asilo (I-589)</button>
-          <button class="form-dropdown-item disabled">💼 Permiso de trabajo (I-765) <span class="form-dropdown-soon">pronto</span></button>
-          <button class="form-dropdown-item disabled">🏠 Residencia (I-485) <span class="form-dropdown-soon">pronto</span></button>
-          <button class="form-dropdown-item disabled">👨‍👩‍👧 Petición familiar (I-130) <span class="form-dropdown-soon">pronto</span></button>
-          <button class="form-dropdown-item disabled">🗽 Ciudadanía (N-400) <span class="form-dropdown-soon">pronto</span></button>
-          <button class="form-dropdown-item disabled">📂 FOIA <span class="form-dropdown-soon">pronto</span></button>
-        </div>
-      </div>
-      <!-- Toggle idioma -->
-      <div class="lang-switch">
-        <button id="btn-es" onclick="setLang('es')" style="background:#1E3A5F;color:#fff;font-weight:700">ES</button>
-        <button id="btn-en" onclick="setLang('en')" style="color:#A8C4E0;background:transparent;font-weight:400">EN</button>
-      </div>
+    <div class="lang-switch">
+      <button id="btn-es" onclick="setLang('es')" style="background:#1E3A5F;color:#fff;font-weight:700">ES</button>
+      <button id="btn-en" onclick="setLang('en')" style="color:#A8C4E0;background:transparent;font-weight:400">EN</button>
     </div>
   </div>
   <div class="greeting" id="lbl-hola">Hola,</div>
@@ -137,6 +109,16 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
   <div style="font-size:14px;color:#64748B;max-width:280px" id="lbl-err-sub">Este link no existe o ya no está disponible. Contacta a tu oficina.</div>
 </div>
 
+<!-- Banner alerta nota de oficina -->
+<div class="alert-banner" id="alert-banner">
+  <div class="alert-banner-icon">⚠️</div>
+  <div class="alert-banner-body">
+    <div class="alert-banner-title">Tu oficina revisó tu formulario y dejó una nota</div>
+    <div class="alert-banner-msg" id="alert-banner-msg"></div>
+    <button class="alert-banner-btn" onclick="openI589()" style="margin-top:8px">✏️ Ver y corregir formulario</button>
+  </div>
+</div>
+
 <div id="main" style="display:none">
   <div class="container">
     <div class="section-label" id="lbl-casos">Mis Casos</div>
@@ -153,7 +135,7 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
         <div>
           <div style="font-size:11px;color:#A8C4E0;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Formulario USCIS</div>
           <div style="font-size:20px;font-weight:800">I-589 — Solicitud de Asilo</div>
-          <div style="font-size:12px;color:#A8C4E0;margin-top:4px">Departamento de Seguridad Nacional (DHS)</div>
+          <div style="font-size:12px;color:#A8C4E0;margin-top:4px">Parte A — Información Personal</div>
         </div>
         <button onclick="closeI589()" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:16px">✕</button>
       </div>
@@ -161,422 +143,144 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
         <div style="font-size:11px;color:#A8C4E0;margin-bottom:2px">⚠️ Importante</div>
         <div style="font-size:12px;color:#CBD5E1">Este formulario <strong style="color:#fff">NO se envía a USCIS</strong> directamente. Tu oficina lo revisará antes de enviarlo.</div>
       </div>
-      <!-- Progress steps -->
-      <div style="display:flex;gap:4px;margin-top:14px;" id="i589-steps">
-        <div class="i589-step active" data-step="1">A.I</div>
-        <div class="i589-step" data-step="2">A.II</div>
-        <div class="i589-step" data-step="3">A.III</div>
-        <div class="i589-step" data-step="4">B</div>
-        <div class="i589-step" data-step="5">Historia</div>
-      </div>
     </div>
-
     <div class="i589-body" id="i589-body">
 
-      <!-- ═══ PASO 1: Parte A.I ═══ -->
-      <div id="i589-step-1">
-        <div class="i589-section-title">📋 Parte A.I — Información Sobre Usted</div>
+      <!-- Parte A: Datos personales -->
+      <div class="i589-section">
+        <div class="i589-section-title">📋 Parte A — Información del Solicitante</div>
 
         <div class="i589-row2">
           <div class="i589-field">
-            <label class="i589-label">1. Número Alien (A#) <span style="color:#6B7280;font-weight:400">(si tiene)</span></label>
-            <input class="i589-input" id="f-alien" placeholder="A-000-000-000">
-          </div>
-          <div class="i589-field">
-            <label class="i589-label">2. Número de Seguro Social <span style="color:#6B7280;font-weight:400">(si tiene)</span></label>
-            <input class="i589-input" id="f-ssn" placeholder="XXX-XX-XXXX">
-          </div>
-        </div>
-
-        <div class="i589-row2">
-          <div class="i589-field">
-            <label class="i589-label">4. Apellido(s) completo(s) <span>*</span></label>
+            <label class="i589-label">Apellido(s) <span>*</span></label>
             <input class="i589-input" id="f-apellido" placeholder="Como en tu pasaporte">
           </div>
           <div class="i589-field">
-            <label class="i589-label">5. Nombre(s) <span>*</span></label>
+            <label class="i589-label">Nombre(s) <span>*</span></label>
             <input class="i589-input" id="f-nombre" placeholder="Como en tu pasaporte">
           </div>
         </div>
 
-        <div class="i589-field">
-          <label class="i589-label">6. Segundo nombre</label>
-          <input class="i589-input" id="f-middle" placeholder="Si aplica">
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">7. Otros nombres que ha usado (incluyendo nombre de soltera/alias)</label>
-          <input class="i589-input" id="f-alias" placeholder="Si aplica">
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">8. Residencia en EE.UU. (donde vive actualmente) <span>*</span></label>
-          <input class="i589-input" id="f-direccion" placeholder="Calle y número">
-          <div class="i589-row2" style="margin-top:8px">
-            <input class="i589-input" id="f-ciudad" placeholder="Ciudad">
-            <input class="i589-input" id="f-estado" placeholder="Estado">
-          </div>
-          <div class="i589-row2" style="margin-top:8px">
-            <input class="i589-input" id="f-zip" placeholder="ZIP Code">
-            <input class="i589-input" id="f-telefono" placeholder="Teléfono">
-          </div>
-        </div>
-
         <div class="i589-row2">
           <div class="i589-field">
-            <label class="i589-label">10. Sexo <span>*</span></label>
+            <label class="i589-label">Alias / Otros nombres</label>
+            <input class="i589-input" id="f-alias" placeholder="Si aplica">
+          </div>
+          <div class="i589-field">
+            <label class="i589-label">Sexo <span>*</span></label>
             <select class="i589-select" id="f-sexo">
               <option value="">— Selecciona —</option>
               <option value="M">Masculino</option>
               <option value="F">Femenino</option>
             </select>
           </div>
-          <div class="i589-field">
-            <label class="i589-label">11. Estado civil <span>*</span></label>
-            <select class="i589-select" id="f-estado-civil">
-              <option value="">— Selecciona —</option>
-              <option value="soltero">Soltero/a</option>
-              <option value="casado">Casado/a</option>
-              <option value="divorciado">Divorciado/a</option>
-              <option value="viudo">Viudo/a</option>
-            </select>
-          </div>
         </div>
 
         <div class="i589-row2">
           <div class="i589-field">
-            <label class="i589-label">12. Fecha de nacimiento <span>*</span></label>
+            <label class="i589-label">Fecha de nacimiento <span>*</span></label>
             <input class="i589-input" id="f-dob" type="date">
           </div>
           <div class="i589-field">
-            <label class="i589-label">13. Ciudad y país de nacimiento <span>*</span></label>
-            <input class="i589-input" id="f-ciudad-nac" placeholder="Ej: Managua, Nicaragua">
+            <label class="i589-label">Ciudad de nacimiento <span>*</span></label>
+            <input class="i589-input" id="f-ciudad-nac" placeholder="Ciudad">
           </div>
         </div>
 
         <div class="i589-row2">
           <div class="i589-field">
-            <label class="i589-label">14. Nacionalidad actual <span>*</span></label>
+            <label class="i589-label">País de nacimiento <span>*</span></label>
+            <input class="i589-input" id="f-pais-nac" placeholder="País">
+          </div>
+          <div class="i589-field">
+            <label class="i589-label">Nacionalidad actual <span>*</span></label>
             <input class="i589-input" id="f-nacionalidad" placeholder="País">
           </div>
-          <div class="i589-field">
-            <label class="i589-label">15. Nacionalidad de nacimiento <span>*</span></label>
-            <input class="i589-input" id="f-nacionalidad-nac" placeholder="País">
-          </div>
+        </div>
+
+        <div class="i589-field">
+          <label class="i589-label">Número de pasaporte</label>
+          <input class="i589-input" id="f-pasaporte" placeholder="Si tienes">
+          <div class="i589-hint">Si no tienes pasaporte, deja en blanco</div>
         </div>
 
         <div class="i589-row2">
           <div class="i589-field">
-            <label class="i589-label">16. Raza / Etnia / Grupo tribal</label>
-            <input class="i589-input" id="f-raza" placeholder="Si aplica">
+            <label class="i589-label">Fecha de entrada a EE.UU. <span>*</span></label>
+            <input class="i589-input" id="f-fecha-entrada" type="date">
           </div>
           <div class="i589-field">
-            <label class="i589-label">17. Religión</label>
-            <input class="i589-input" id="f-religion" placeholder="Si aplica">
-          </div>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">18. Procedimientos de inmigración <span>*</span></label>
-          <select class="i589-select" id="f-court-status">
-            <option value="">— Selecciona —</option>
-            <option value="nunca">Nunca he estado en procedimientos de inmigración</option>
-            <option value="actualmente">Actualmente estoy en procedimientos de inmigración</option>
-            <option value="anterior">No estoy actualmente, pero estuve antes</option>
-          </select>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">19a. ¿Cuándo salió de su país por última vez? <span>*</span></label>
-          <input class="i589-input" id="f-fecha-salida" type="date">
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">19b. Número de I-94 (si tiene)</label>
-          <input class="i589-input" id="f-i94" placeholder="I-94 Number">
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">19c. Entradas a EE.UU. (más reciente primero) <span>*</span></label>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px">
-            <input class="i589-input" id="f-entrada1-fecha" type="date" placeholder="Fecha">
-            <input class="i589-input" id="f-entrada1-lugar" placeholder="Lugar">
-            <input class="i589-input" id="f-entrada1-estatus" placeholder="Estatus/Visa">
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-            <input class="i589-input" id="f-entrada2-fecha" type="date" placeholder="Fecha 2">
-            <input class="i589-input" id="f-entrada2-lugar" placeholder="Lugar 2">
-            <input class="i589-input" id="f-entrada2-estatus" placeholder="Estatus/Visa 2">
-          </div>
-        </div>
-
-        <div class="i589-row2">
-          <div class="i589-field">
-            <label class="i589-label">20. País que emitió su pasaporte</label>
-            <input class="i589-input" id="f-pais-pasaporte" placeholder="País">
-          </div>
-          <div class="i589-field">
-            <label class="i589-label">21. Número de pasaporte</label>
-            <input class="i589-input" id="f-pasaporte" placeholder="Si tiene">
-          </div>
-        </div>
-
-        <div class="i589-row2">
-          <div class="i589-field">
-            <label class="i589-label">22. Fecha de vencimiento del pasaporte</label>
-            <input class="i589-input" id="f-pasaporte-vence" type="date">
-          </div>
-          <div class="i589-field">
-            <label class="i589-label">23. Idioma nativo</label>
-            <input class="i589-input" id="f-idioma" placeholder="Español, Maya, etc.">
-          </div>
-        </div>
-
-        <div class="i589-row2">
-          <div class="i589-field">
-            <label class="i589-label">24. ¿Habla inglés?</label>
-            <select class="i589-select" id="f-ingles">
+            <label class="i589-label">¿Cómo entraste? <span>*</span></label>
+            <select class="i589-select" id="f-como-entro">
               <option value="">— Selecciona —</option>
-              <option value="si">Sí</option>
-              <option value="no">No</option>
+              <option value="puerto_entrada">Puerto de entrada</option>
+              <option value="sin_inspeccion">Sin inspección</option>
+              <option value="visa">Con visa</option>
+              <option value="parol">Parole / CBP One</option>
             </select>
           </div>
+        </div>
+
+        <div class="i589-field">
+          <label class="i589-label">Dirección actual en EE.UU. <span>*</span></label>
+          <input class="i589-input" id="f-direccion" placeholder="Calle, Ciudad, Estado, ZIP">
+        </div>
+
+        <div class="i589-row2">
           <div class="i589-field">
-            <label class="i589-label">25. Otros idiomas que habla</label>
-            <input class="i589-input" id="f-otros-idiomas" placeholder="Si aplica">
+            <label class="i589-label">Teléfono</label>
+            <input class="i589-input" id="f-telefono" placeholder="(000) 000-0000">
           </div>
+          <div class="i589-field">
+            <label class="i589-label">Email</label>
+            <input class="i589-input" id="f-email" type="email" placeholder="tu@email.com">
+          </div>
+        </div>
+
+        <div class="i589-field">
+          <label class="i589-label">¿Tienes número Alien (A#)?</label>
+          <input class="i589-input" id="f-alien" placeholder="A-000-000-000 (si aplica)">
         </div>
       </div>
 
-      <!-- ═══ PASO 2: Parte A.II — Cónyuge e Hijos ═══ -->
-      <div id="i589-step-2" style="display:none">
-        <div class="i589-section-title">👨‍👩‍👧 Parte A.II — Cónyuge e Hijos</div>
+      <!-- Sección narrativa -->
+      <div class="i589-narrative">
+        <div class="i589-narrative-title">🕊️ ¿Por qué necesitas protección?</div>
+        <div class="i589-narrative-sub">Cuéntanos con tus propias palabras. No hay respuestas correctas o incorrectas — solo tu historia.</div>
 
-        <div class="i589-field">
-          <label class="i589-label">¿Está casado/a actualmente?</label>
-          <select class="i589-select" id="f-tiene-conyuge" onchange="toggleConyuge()">
-            <option value="">— Selecciona —</option>
-            <option value="no">No estoy casado/a</option>
-            <option value="si">Sí, estoy casado/a</option>
-          </select>
+        <div class="i589-q">
+          <label class="i589-q-label"><span class="i589-q-num">1</span> ¿Qué te pasó o qué temes que te pase si regresas a tu país?</label>
+          <textarea class="i589-textarea" id="f-q1" rows="4" placeholder="Describe lo que viviste o lo que temes..."></textarea>
         </div>
 
-        <div id="f-conyuge-section" style="display:none">
-          <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;padding:14px;margin-bottom:16px;">
-            <div style="font-size:12px;font-weight:700;color:#0369A1;margin-bottom:12px">INFORMACIÓN DEL CÓNYUGE</div>
-            <div class="i589-row2">
-              <div class="i589-field"><label class="i589-label">Apellido(s)</label><input class="i589-input" id="f-c-apellido" placeholder="Apellido"></div>
-              <div class="i589-field"><label class="i589-label">Nombre(s)</label><input class="i589-input" id="f-c-nombre" placeholder="Nombre"></div>
-            </div>
-            <div class="i589-row2">
-              <div class="i589-field"><label class="i589-label">Fecha de nacimiento</label><input class="i589-input" id="f-c-dob" type="date"></div>
-              <div class="i589-field"><label class="i589-label">Nacionalidad</label><input class="i589-input" id="f-c-nacionalidad" placeholder="País"></div>
-            </div>
-            <div class="i589-row2">
-              <div class="i589-field"><label class="i589-label">Ciudad y país de nacimiento</label><input class="i589-input" id="f-c-ciudad-nac" placeholder="Ciudad, País"></div>
-              <div class="i589-field"><label class="i589-label">Fecha de matrimonio</label><input class="i589-input" id="f-c-fecha-mat" type="date"></div>
-            </div>
-            <div class="i589-row2">
-              <div class="i589-field"><label class="i589-label">Sexo</label><select class="i589-select" id="f-c-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option></select></div>
-              <div class="i589-field"><label class="i589-label">¿Está en EE.UU.?</label><select class="i589-select" id="f-c-enusa"><option value="">—</option><option value="si">Sí</option><option value="no">No</option></select></div>
-            </div>
-            <div class="i589-field">
-              <label class="i589-label">¿Incluir al cónyuge en esta solicitud?</label>
-              <select class="i589-select" id="f-c-incluir"><option value="">—</option><option value="si">Sí</option><option value="no">No</option></select>
-            </div>
-          </div>
+        <div class="i589-q">
+          <label class="i589-q-label"><span class="i589-q-num">2</span> ¿Quién te amenazó, persiguió o hizo daño? (gobierno, grupo, persona, etc.)</label>
+          <textarea class="i589-textarea" id="f-q2" rows="3" placeholder="Describe quién y por qué crees que te eligieron..."></textarea>
         </div>
 
-        <div class="i589-field">
-          <label class="i589-label">¿Tiene hijos?</label>
-          <select class="i589-select" id="f-tiene-hijos" onchange="toggleHijos()">
-            <option value="">— Selecciona —</option>
-            <option value="no">No tengo hijos</option>
-            <option value="si">Sí tengo hijos</option>
-          </select>
+        <div class="i589-q">
+          <label class="i589-q-label"><span class="i589-q-num">3</span> ¿Cuándo ocurrió? ¿Hubo incidentes específicos que recuerdes?</label>
+          <textarea class="i589-textarea" id="f-q3" rows="3" placeholder="Fechas aproximadas, lugares, eventos..."></textarea>
         </div>
 
-        <div id="f-hijos-section" style="display:none">
-          <div style="font-size:12px;color:#64748B;margin-bottom:10px">Agrega la información de cada hijo (sin importar edad, lugar o estado civil):</div>
-          <div id="f-hijos-list"></div>
-          <button type="button" onclick="addHijo()" style="background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;width:100%">+ Agregar hijo</button>
+        <div class="i589-q">
+          <label class="i589-q-label"><span class="i589-q-num">4</span> ¿Por qué crees que fuiste elegido/a? (raza, religión, opinión política, grupo social, etc.)</label>
+          <textarea class="i589-textarea" id="f-q4" rows="3" placeholder="¿Qué crees que motivó las amenazas o persecución?"></textarea>
+        </div>
+
+        <div class="i589-q">
+          <label class="i589-q-label"><span class="i589-q-num">5</span> ¿Hay familiares que también estén en peligro?</label>
+          <textarea class="i589-textarea" id="f-q5" rows="3" placeholder="Nombre, parentesco y situación de cada uno..."></textarea>
         </div>
       </div>
 
-      <!-- ═══ PASO 3: Parte A.III — Antecedentes ═══ -->
-      <div id="i589-step-3" style="display:none">
-        <div class="i589-section-title">📍 Parte A.III — Información de Antecedentes</div>
-
-        <div class="i589-field">
-          <label class="i589-label">1. Última dirección en su país de origen antes de venir a EE.UU.</label>
-          <input class="i589-input" id="f-dir-origen" placeholder="Calle, Ciudad, Departamento/Provincia, País">
-          <div class="i589-row2" style="margin-top:8px">
-            <input class="i589-input" id="f-dir-origen-desde" type="date" placeholder="Desde (mes/año)">
-            <input class="i589-input" id="f-dir-origen-hasta" type="date" placeholder="Hasta (mes/año)">
-          </div>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">2. Residencias durante los últimos 5 años (empezando por la más reciente)</label>
-          <textarea class="i589-textarea" id="f-residencias" rows="3" placeholder="Ej: 2022-2024: Miami, FL, EE.UU. / 2019-2022: Managua, Nicaragua..."></textarea>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">3. Educación (empezando por la más reciente)</label>
-          <textarea class="i589-textarea" id="f-educacion" rows="3" placeholder="Nombre de escuela / universidad, tipo, dirección, fechas..."></textarea>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">4. Empleos durante los últimos 5 años (empezando por el más reciente)</label>
-          <textarea class="i589-textarea" id="f-empleos" rows="3" placeholder="Empleador, ocupación, dirección, fechas..."></textarea>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">5. Padres y hermanos</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;font-size:11px;color:#94A3B8;font-weight:600;text-transform:uppercase">
-            <span>Nombre completo</span><span>Ciudad y país de nacimiento</span><span>Ubicación actual</span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px">
-            <input class="i589-input" id="f-madre-nombre" placeholder="Madre">
-            <input class="i589-input" id="f-madre-nac" placeholder="Ciudad, País">
-            <input class="i589-input" id="f-madre-ubicacion" placeholder="Ubicación">
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px">
-            <input class="i589-input" id="f-padre-nombre" placeholder="Padre">
-            <input class="i589-input" id="f-padre-nac" placeholder="Ciudad, País">
-            <input class="i589-input" id="f-padre-ubicacion" placeholder="Ubicación">
-          </div>
-          <textarea class="i589-textarea" id="f-hermanos" rows="2" placeholder="Hermanos: Nombre, ciudad de nacimiento, ubicación actual (uno por línea)"></textarea>
-        </div>
-      </div>
-
-      <!-- ═══ PASO 4: Parte B — Información de la Solicitud ═══ -->
-      <div id="i589-step-4" style="display:none">
-        <div class="i589-section-title">📄 Parte B — Información de la Solicitud</div>
-
-        <div class="i589-field">
-          <label class="i589-label">Base de su solicitud de asilo (seleccione todas las que apliquen) <span>*</span></label>
-          <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-base-raza"> Raza</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-base-religion"> Religión</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-base-nacionalidad"> Nacionalidad</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-base-opinion"> Opinión política</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-base-grupo"> Membresía en grupo social particular</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-base-tortura"> Convención contra la Tortura</label>
-          </div>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">2. ¿Ha sido acusado, arrestado, detenido o encarcelado en algún país?</label>
-          <select class="i589-select" id="f-arrestado">
-            <option value="">— Selecciona —</option>
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-          <textarea class="i589-textarea" id="f-arrestado-detalle" rows="2" placeholder="Si sí, explique las circunstancias..." style="margin-top:8px"></textarea>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">3A. ¿Ha pertenecido a alguna organización (partido político, sindicato, grupo religioso, militar, etc.)?</label>
-          <select class="i589-select" id="f-organizacion">
-            <option value="">— Selecciona —</option>
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-          <textarea class="i589-textarea" id="f-organizacion-detalle" rows="2" placeholder="Si sí, describa el nivel de participación..." style="margin-top:8px"></textarea>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">4. ¿Teme ser torturado en su país de origen?</label>
-          <select class="i589-select" id="f-tortura">
-            <option value="">— Selecciona —</option>
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-          <textarea class="i589-textarea" id="f-tortura-detalle" rows="2" placeholder="Si sí, explique por qué y por quién..." style="margin-top:8px"></textarea>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">Parte C — ¿Ha solicitado asilo anteriormente en EE.UU.?</label>
-          <select class="i589-select" id="f-solicitud-previa">
-            <option value="">— Selecciona —</option>
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-          <textarea class="i589-textarea" id="f-solicitud-previa-detalle" rows="2" placeholder="Si sí, explique la decisión y qué ocurrió..." style="margin-top:8px"></textarea>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">¿Después de salir de su país, viajó por otros países antes de llegar a EE.UU.?</label>
-          <select class="i589-select" id="f-otros-paises">
-            <option value="">— Selecciona —</option>
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-          <textarea class="i589-textarea" id="f-otros-paises-detalle" rows="2" placeholder="Si sí, nombre los países y tiempo de estadía..." style="margin-top:8px"></textarea>
-        </div>
-
-        <div class="i589-field">
-          <label class="i589-label">¿Está solicitando el asilo más de 1 año después de su llegada a EE.UU.?</label>
-          <select class="i589-select" id="f-mas-un-anio">
-            <option value="">— Selecciona —</option>
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-          <textarea class="i589-textarea" id="f-mas-un-anio-detalle" rows="2" placeholder="Si sí, explique por qué no aplicó en el primer año..." style="margin-top:8px"></textarea>
-        </div>
-      </div>
-
-      <!-- ═══ PASO 5: Historia Personal ═══ -->
-      <div id="i589-step-5" style="display:none">
-        <div class="i589-narrative">
-          <div class="i589-narrative-title">🕊️ ¿Por qué necesitas protección?</div>
-          <div class="i589-narrative-sub">Cuéntanos con tus propias palabras. No hay respuestas correctas — solo tu historia.</div>
-
-          <div class="i589-q">
-            <label class="i589-q-label"><span class="i589-q-num">1</span> ¿Qué te pasó o qué temes que te pase si regresas? (Parte B-A del I-589)</label>
-            <textarea class="i589-textarea" id="f-q1" rows="5" placeholder="Describe lo que viviste — qué pasó, cuándo ocurrió, quién te hizo daño o amenazó, y por qué crees que ocurrió..."></textarea>
-          </div>
-
-          <div class="i589-q">
-            <label class="i589-q-label"><span class="i589-q-num">2</span> ¿Qué daño o maltrato temes si regresas? (Parte B-B del I-589)</label>
-            <textarea class="i589-textarea" id="f-q2" rows="4" placeholder="¿Qué podría pasarte? ¿Quién te haría daño? ¿Por qué crees que serías víctima?"></textarea>
-          </div>
-
-          <div class="i589-q">
-            <label class="i589-q-label"><span class="i589-q-num">3</span> ¿Quién te amenazó o persiguió?</label>
-            <textarea class="i589-textarea" id="f-q3" rows="3" placeholder="Gobierno, grupo armado, pandilla, persona específica... Describe quién y por qué te eligieron"></textarea>
-          </div>
-
-          <div class="i589-q">
-            <label class="i589-q-label"><span class="i589-q-num">4</span> ¿Cuándo ocurrió? Incidentes específicos</label>
-            <textarea class="i589-textarea" id="f-q4" rows="3" placeholder="Fechas aproximadas, lugares, eventos específicos que recuerdes..."></textarea>
-          </div>
-
-          <div class="i589-q">
-            <label class="i589-q-label"><span class="i589-q-num">5</span> ¿Por qué fuiste elegido/a?</label>
-            <textarea class="i589-textarea" id="f-q5" rows="3" placeholder="¿Fue por tu raza, religión, opinión política, grupo social? Explica la conexión..."></textarea>
-          </div>
-
-          <div class="i589-q">
-            <label class="i589-q-label"><span class="i589-q-num">6</span> ¿Hay familiares en peligro?</label>
-            <textarea class="i589-textarea" id="f-q6" rows="3" placeholder="Nombre, parentesco y situación de cada familiar en riesgo..."></textarea>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- fin i589-body -->
-
-    <!-- Navegación entre pasos -->
+    </div>
     <div class="i589-footer">
-      <button class="i589-btn-cancel" id="i589-btn-back" onclick="i589Prev()" style="display:none">← Anterior</button>
       <button class="i589-btn-cancel" onclick="closeI589()">Cancelar</button>
-      <div style="flex:1"></div>
-      <button class="i589-btn-save" id="i589-btn-next" onclick="i589Next()">Siguiente →</button>
+      <button class="i589-btn-save" onclick="saveI589()">💾 Guardar y enviar a mi oficina</button>
     </div>
   </div>
 </div>
-
 
 <div class="footer">
   <div id="office-footer">ImmigPath</div>
@@ -884,6 +588,19 @@ window.renderI589Status = function(c){
   section.style.cssText = "margin-top:24px;";
   section.innerHTML = `<div class="section-label">📄 Formulario I-589</div>${inner}`;
   container.parentNode.insertBefore(section, container.nextSibling);
+
+  // Banner de alerta en la parte superior si la oficina devolvió con nota
+  const banner    = document.getElementById("alert-banner");
+  const bannerMsg = document.getElementById("alert-banner-msg");
+  if(banner && bannerMsg){
+    if(draft && draft.status === "devuelto" && draft.comentarioOficina){
+      bannerMsg.textContent = draft.comentarioOficina;
+      banner.classList.add("visible");
+      banner.scrollIntoView({ behavior:"smooth", block:"start" });
+    } else {
+      banner.classList.remove("visible");
+    }
+  }
 }
 
 window.openI589 = function(){
@@ -974,265 +691,6 @@ window.saveI589 = async function(){
     btn.textContent = "💾 Guardar y enviar a mi oficina";
     btn.disabled = false;
   }
-};
-
-// ── Menú FORMULARIOS ─────────────────────────────────────────────────────────
-window.toggleFormMenu = function(){
-  const btn = document.getElementById('form-menu-btn');
-  const dd  = document.getElementById('form-dropdown');
-  btn.classList.toggle('open');
-  dd.classList.toggle('open');
-};
-document.addEventListener('click', function(e){
-  const wrap = document.querySelector('.form-menu-wrap');
-  if(wrap && !wrap.contains(e.target)){
-    document.getElementById('form-menu-btn')?.classList.remove('open');
-    document.getElementById('form-dropdown')?.classList.remove('open');
-  }
-});
-
-window.openFormulario = function(tipo){
-  document.getElementById('form-menu-btn')?.classList.remove('open');
-  document.getElementById('form-dropdown')?.classList.remove('open');
-  if(tipo === 'asilo') openI589();
-};
-
-// ── I-589 Multi-step ─────────────────────────────────────────────────────────
-let i589CurrentStep = 1;
-const I589_TOTAL_STEPS = 5;
-
-window.openI589 = function(){
-  i589CurrentStep = 1;
-  showI589Step(1);
-
-  if(clientData){
-    const parts = (clientData.nombre||'').trim().split(' ');
-    document.getElementById('f-apellido').value     = parts.length>1 ? parts.slice(-1)[0] : '';
-    document.getElementById('f-nombre').value       = parts.length>1 ? parts.slice(0,-1).join(' ') : clientData.nombre||'';
-    document.getElementById('f-telefono').value     = clientData.telefono||'';
-    document.getElementById('f-nacionalidad').value = clientData.paisOrigen||'';
-    document.getElementById('f-nacionalidad-nac').value = clientData.paisOrigen||'';
-    document.getElementById('f-alien').value        = clientData.alienNum||'';
-  }
-  if(clientData?.i589Draft){
-    loadI589Draft(clientData.i589Draft);
-  }
-  document.getElementById('i589-modal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-};
-
-function showI589Step(step){
-  for(let i=1; i<=I589_TOTAL_STEPS; i++){
-    const el = document.getElementById('i589-step-'+i);
-    if(el) el.style.display = i===step ? 'block' : 'none';
-  }
-  document.querySelectorAll('.i589-step').forEach(s=>{
-    const n = parseInt(s.dataset.step);
-    s.classList.remove('active','done');
-    if(n===step) s.classList.add('active');
-    else if(n<step) s.classList.add('done');
-  });
-  const backBtn = document.getElementById('i589-btn-back');
-  const nextBtn = document.getElementById('i589-btn-next');
-  if(backBtn) backBtn.style.display = step>1 ? 'block' : 'none';
-  if(nextBtn) nextBtn.textContent = step===I589_TOTAL_STEPS ? '💾 Guardar y enviar a mi oficina' : 'Siguiente →';
-  i589CurrentStep = step;
-  document.getElementById('i589-body')?.scrollTo(0,0);
-}
-
-window.i589Next = function(){
-  if(i589CurrentStep < I589_TOTAL_STEPS){
-    showI589Step(i589CurrentStep + 1);
-  } else {
-    saveI589();
-  }
-};
-
-window.i589Prev = function(){
-  if(i589CurrentStep > 1) showI589Step(i589CurrentStep - 1);
-};
-
-window.toggleConyuge = function(){
-  const val = document.getElementById('f-tiene-conyuge').value;
-  document.getElementById('f-conyuge-section').style.display = val==='si' ? 'block' : 'none';
-};
-
-window.toggleHijos = function(){
-  const val = document.getElementById('f-tiene-hijos').value;
-  const sec = document.getElementById('f-hijos-section');
-  sec.style.display = val==='si' ? 'block' : 'none';
-  if(val==='si' && document.getElementById('f-hijos-list').children.length===0) addHijo();
-};
-
-window.addHijo = function(){
-  const list = document.getElementById('f-hijos-list');
-  const idx  = list.children.length;
-  const div  = document.createElement('div');
-  div.style.cssText = 'background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:12px;margin-bottom:10px';
-  div.innerHTML = `
-    <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">Hijo/a ${idx+1}</div>
-    <div class="i589-row2">
-      <div class="i589-field"><label class="i589-label">Apellido(s)</label><input class="i589-input" id="f-h${idx}-apellido" placeholder="Apellido"></div>
-      <div class="i589-field"><label class="i589-label">Nombre(s)</label><input class="i589-input" id="f-h${idx}-nombre" placeholder="Nombre"></div>
-    </div>
-    <div class="i589-row2">
-      <div class="i589-field"><label class="i589-label">Fecha de nacimiento</label><input class="i589-input" id="f-h${idx}-dob" type="date"></div>
-      <div class="i589-field"><label class="i589-label">Nacionalidad</label><input class="i589-input" id="f-h${idx}-nacionalidad" placeholder="País"></div>
-    </div>
-    <div class="i589-row2">
-      <div class="i589-field"><label class="i589-label">Ciudad y país de nacimiento</label><input class="i589-input" id="f-h${idx}-ciudad-nac" placeholder="Ciudad, País"></div>
-      <div class="i589-field"><label class="i589-label">Sexo</label><select class="i589-select" id="f-h${idx}-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option></select></div>
-    </div>
-    <div class="i589-row2">
-      <div class="i589-field"><label class="i589-label">¿Está en EE.UU.?</label><select class="i589-select" id="f-h${idx}-enusa"><option value="">—</option><option value="si">Sí</option><option value="no">No</option></select></div>
-      <div class="i589-field"><label class="i589-label">¿Incluir en solicitud?</label><select class="i589-select" id="f-h${idx}-incluir"><option value="">—</option><option value="si">Sí</option><option value="no">No</option></select></div>
-    </div>`;
-  list.appendChild(div);
-};
-
-function loadI589Draft(d){
-  const set = (id, val) => { const el=document.getElementById(id); if(el&&val!==undefined) el.value=val; };
-  const fields = ['alien','ssn','apellido','nombre','middle','alias','direccion','ciudad','estado','zip',
-    'telefono','sexo','estado-civil','dob','ciudad-nac','nacionalidad','nacionalidad-nac','raza','religion',
-    'court-status','fecha-salida','i94','entrada1-fecha','entrada1-lugar','entrada1-estatus',
-    'entrada2-fecha','entrada2-lugar','entrada2-estatus','pais-pasaporte','pasaporte','pasaporte-vence',
-    'idioma','ingles','otros-idiomas','tiene-conyuge','c-apellido','c-nombre','c-dob','c-nacionalidad',
-    'c-ciudad-nac','c-fecha-mat','c-sexo','c-enusa','c-incluir','tiene-hijos',
-    'dir-origen','dir-origen-desde','dir-origen-hasta','residencias','educacion','empleos',
-    'madre-nombre','madre-nac','madre-ubicacion','padre-nombre','padre-nac','padre-ubicacion','hermanos',
-    'arrestado','arrestado-detalle','organizacion','organizacion-detalle','tortura','tortura-detalle',
-    'solicitud-previa','solicitud-previa-detalle','otros-paises','otros-paises-detalle',
-    'mas-un-anio','mas-un-anio-detalle','q1','q2','q3','q4','q5','q6'];
-  fields.forEach(k => set('f-'+k, d[k]));
-  ['raza','religion','nacionalidad','opinion','grupo','tortura-base'].forEach(k=>{
-    const el=document.getElementById('f-base-'+k); if(el&&d['base-'+k]) el.checked=true;
-  });
-  if(d['tiene-conyuge']==='si') toggleConyuge();
-  if(d['tiene-hijos']==='si'){
-    document.getElementById('f-tiene-hijos').value='si';
-    toggleHijos();
-  }
-}
-
-function collectI589Draft(){
-  const g = id => document.getElementById(id)?.value||'';
-  const gc = id => document.getElementById(id)?.checked||false;
-  const numHijos = document.getElementById('f-hijos-list')?.children.length||0;
-  const hijos = [];
-  for(let i=0;i<numHijos;i++){
-    hijos.push({
-      apellido: g(`f-h${i}-apellido`), nombre: g(`f-h${i}-nombre`),
-      dob: g(`f-h${i}-dob`), nacionalidad: g(`f-h${i}-nacionalidad`),
-      'ciudad-nac': g(`f-h${i}-ciudad-nac`), sexo: g(`f-h${i}-sexo`),
-      enusa: g(`f-h${i}-enusa`), incluir: g(`f-h${i}-incluir`)
-    });
-  }
-  return {
-    alien:g('f-alien'), ssn:g('f-ssn'), apellido:g('f-apellido'), nombre:g('f-nombre'),
-    middle:g('f-middle'), alias:g('f-alias'), direccion:g('f-direccion'), ciudad:g('f-ciudad'),
-    estado:g('f-estado'), zip:g('f-zip'), telefono:g('f-telefono'), sexo:g('f-sexo'),
-    'estado-civil':g('f-estado-civil'), dob:g('f-dob'), 'ciudad-nac':g('f-ciudad-nac'),
-    nacionalidad:g('f-nacionalidad'), 'nacionalidad-nac':g('f-nacionalidad-nac'),
-    raza:g('f-raza'), religion:g('f-religion'), 'court-status':g('f-court-status'),
-    'fecha-salida':g('f-fecha-salida'), i94:g('f-i94'),
-    'entrada1-fecha':g('f-entrada1-fecha'),'entrada1-lugar':g('f-entrada1-lugar'),'entrada1-estatus':g('f-entrada1-estatus'),
-    'entrada2-fecha':g('f-entrada2-fecha'),'entrada2-lugar':g('f-entrada2-lugar'),'entrada2-estatus':g('f-entrada2-estatus'),
-    'pais-pasaporte':g('f-pais-pasaporte'), pasaporte:g('f-pasaporte'), 'pasaporte-vence':g('f-pasaporte-vence'),
-    idioma:g('f-idioma'), ingles:g('f-ingles'), 'otros-idiomas':g('f-otros-idiomas'),
-    'tiene-conyuge':g('f-tiene-conyuge'), 'c-apellido':g('f-c-apellido'), 'c-nombre':g('f-c-nombre'),
-    'c-dob':g('f-c-dob'), 'c-nacionalidad':g('f-c-nacionalidad'), 'c-ciudad-nac':g('f-c-ciudad-nac'),
-    'c-fecha-mat':g('f-c-fecha-mat'), 'c-sexo':g('f-c-sexo'), 'c-enusa':g('f-c-enusa'), 'c-incluir':g('f-c-incluir'),
-    'tiene-hijos':g('f-tiene-hijos'), hijos,
-    'dir-origen':g('f-dir-origen'),'dir-origen-desde':g('f-dir-origen-desde'),'dir-origen-hasta':g('f-dir-origen-hasta'),
-    residencias:g('f-residencias'), educacion:g('f-educacion'), empleos:g('f-empleos'),
-    'madre-nombre':g('f-madre-nombre'),'madre-nac':g('f-madre-nac'),'madre-ubicacion':g('f-madre-ubicacion'),
-    'padre-nombre':g('f-padre-nombre'),'padre-nac':g('f-padre-nac'),'padre-ubicacion':g('f-padre-ubicacion'),
-    hermanos:g('f-hermanos'),
-    'base-raza':gc('f-base-raza'),'base-religion':gc('f-base-religion'),
-    'base-nacionalidad':gc('f-base-nacionalidad'),'base-opinion':gc('f-base-opinion'),
-    'base-grupo':gc('f-base-grupo'),'base-tortura':gc('f-base-tortura'),
-    arrestado:g('f-arrestado'),'arrestado-detalle':g('f-arrestado-detalle'),
-    organizacion:g('f-organizacion'),'organizacion-detalle':g('f-organizacion-detalle'),
-    tortura:g('f-tortura'),'tortura-detalle':g('f-tortura-detalle'),
-    'solicitud-previa':g('f-solicitud-previa'),'solicitud-previa-detalle':g('f-solicitud-previa-detalle'),
-    'otros-paises':g('f-otros-paises'),'otros-paises-detalle':g('f-otros-paises-detalle'),
-    'mas-un-anio':g('f-mas-un-anio'),'mas-un-anio-detalle':g('f-mas-un-anio-detalle'),
-    q1:g('f-q1'), q2:g('f-q2'), q3:g('f-q3'), q4:g('f-q4'), q5:g('f-q5'), q6:g('f-q6'),
-    savedAt: new Date().toISOString(), status: 'pendiente_revision'
-  };
-}
-
-window.closeI589 = function(){
-  document.getElementById('i589-modal').classList.remove('open');
-  document.body.style.overflow = '';
-};
-
-window.saveI589 = async function(){
-  const req = ['f-apellido','f-nombre','f-sexo','f-dob','f-ciudad-nac','f-nacionalidad','f-nacionalidad-nac','f-direccion'];
-  let valid = true;
-  req.forEach(id=>{
-    const el=document.getElementById(id);
-    if(el&&!el.value.trim()){ el.style.borderColor='#EF4444'; valid=false; }
-    else if(el) el.style.borderColor='#E2E8F0';
-  });
-  if(!valid){ showI589Step(1); alert('Por favor completa los campos obligatorios (*)'); return; }
-
-  const btn = document.getElementById('i589-btn-next');
-  if(btn){ btn.textContent='Guardando...'; btn.disabled=true; }
-
-  try{
-    const draft = collectI589Draft();
-    await setDoc(doc(db,'clientes',clientId), { i589Draft: draft }, { merge: true });
-    clientData.i589Draft = draft;
-    closeI589();
-    window.renderI589Status(clientData);
-    const toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.2)';
-    toast.textContent = '✅ Formulario guardado — tu oficina lo revisará pronto';
-    document.body.appendChild(toast);
-    setTimeout(()=>toast.remove(), 4000);
-  }catch(err){
-    alert('Error al guardar: '+err.message);
-    if(btn){ btn.textContent='💾 Guardar y enviar a mi oficina'; btn.disabled=false; }
-  }
-};
-
-// ── renderI589Status ──────────────────────────────────────────────────────────
-window.renderI589Status = function(c){
-  const prev = document.getElementById('i589-section');
-  if(prev) prev.remove();
-  const container = document.getElementById('casos');
-  const draft = c.i589Draft;
-  const statusMap = {
-    pendiente_revision:{ label:'⏳ Pendiente de revisión', color:'#D97706', bg:'#FFFBEB', border:'#FDE68A' },
-    en_revision:       { label:'🔍 En revisión por la oficina', color:'#2563EB', bg:'#EFF6FF', border:'#BFDBFE' },
-    aprobado:          { label:'✅ Aprobado — listo para enviar', color:'#16A34A', bg:'#F0FDF4', border:'#BBF7D0' },
-    devuelto:          { label:'↩️ Devuelto — requiere correcciones', color:'#DC2626', bg:'#FEF2F2', border:'#FECACA' },
-  };
-  let inner = '';
-  if(!draft){
-    inner = `<button class="i589-btn" onclick="openI589()">📄 Completar formulario I-589 (Asilo)</button>
-    <div style="font-size:11px;color:#94A3B8;text-align:center;margin-top:8px">Tu oficina revisará el formulario antes de enviarlo a USCIS</div>`;
-  } else {
-    const st = statusMap[draft.status]||statusMap.pendiente_revision;
-    inner = `<div class="i589-saved">
-      <div style="font-size:24px">${st.label.split(' ')[0]}</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:700;color:#0F172A">Formulario I-589 — Asilo</div>
-        <div style="font-size:12px;color:${st.color};font-weight:600;margin-top:2px">${st.label}</div>
-        <div style="font-size:11px;color:#94A3B8;margin-top:2px">Guardado el ${new Date(draft.savedAt).toLocaleDateString('es')}</div>
-        ${draft.status==='devuelto'&&draft.comentarioOficina?`<div style="margin-top:6px;background:#FEF2F2;border-radius:6px;padding:8px;font-size:12px;color:#DC2626"><strong>Nota de la oficina:</strong> ${draft.comentarioOficina}</div>`:''}
-      </div>
-      <button onclick="openI589()" style="background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
-        ${draft.status==='devuelto'?'✏️ Corregir':'✏️ Editar'}
-      </button>
-    </div>`;
-  }
-  const section = document.createElement('div');
-  section.id = 'i589-section';
-  section.style.cssText = 'margin-top:24px;';
-  section.innerHTML = `<div class="section-label">📄 Formularios USCIS</div>${inner}`;
-  container.parentNode.insertBefore(section, container.nextSibling);
 };
 
 </script>
