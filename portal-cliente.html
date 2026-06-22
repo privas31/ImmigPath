@@ -85,6 +85,13 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
 .form-dropdown-item.disabled:hover{background:none;}
 .form-dropdown-soon{font-size:10px;margin-left:auto;color:#94A3B8;font-style:italic;}
 </style>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ImmigPath">
+  <link rel="apple-touch-icon" href="/pwa-icons/icon-192x192.png">
 </head>
 <body>
 
@@ -765,6 +772,16 @@ window.saveI589=async function(){
   }
 };
 
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('ImmigPath PWA ready'))
+      .catch(e => console.log('SW error:', e));
+  });
+}
 </script>
 </body>
 </html>
