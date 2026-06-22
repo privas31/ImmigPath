@@ -72,6 +72,18 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
 .alert-banner-msg{font-size:13px;color:#7F1D1D;line-height:1.5;}
 .alert-banner-btn{background:#DC2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;margin-top:2px;}
 .alert-banner-btn:hover{background:#B91C1C;}
+
+.form-menu-wrap{position:relative;}
+.form-menu-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:8px;color:#fff;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;}
+.form-menu-btn:hover{background:rgba(255,255,255,0.22);}
+.form-dropdown{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.2);border:1px solid #E2E8F0;min-width:220px;overflow:hidden;z-index:500;}
+.form-dropdown.open{display:block;}
+.form-dropdown-title{padding:8px 14px;font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid #F1F5F9;}
+.form-dropdown-item{display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;color:#374151;cursor:pointer;border:none;background:none;width:100%;text-align:left;}
+.form-dropdown-item:hover{background:#F8FAFC;}
+.form-dropdown-item.disabled{color:#CBD5E1;cursor:default;}
+.form-dropdown-item.disabled:hover{background:none;}
+.form-dropdown-soon{font-size:10px;margin-left:auto;color:#94A3B8;font-style:italic;}
 </style>
 </head>
 <body>
@@ -79,9 +91,26 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
 <div class="header">
   <div class="header-top">
     <div class="logo" id="office-name">ImmigPath</div>
-    <div class="lang-switch">
-      <button id="btn-es" onclick="setLang('es')" style="background:#1E3A5F;color:#fff;font-weight:700">ES</button>
-      <button id="btn-en" onclick="setLang('en')" style="color:#A8C4E0;background:transparent;font-weight:400">EN</button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="form-menu-wrap">
+        <button class="form-menu-btn" id="form-menu-btn" onclick="toggleFormMenu()">
+          📄 Formularios
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" id="form-menu-arrow"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="form-dropdown" id="form-dropdown">
+          <div class="form-dropdown-title">Selecciona un formulario</div>
+          <button class="form-dropdown-item" onclick="openFormulario('asilo')">🕊️ Asilo (I-589)</button>
+          <button class="form-dropdown-item disabled">💼 Permiso de trabajo (I-765) <span class="form-dropdown-soon">pronto</span></button>
+          <button class="form-dropdown-item disabled">🏠 Residencia (I-485) <span class="form-dropdown-soon">pronto</span></button>
+          <button class="form-dropdown-item disabled">👨‍👩‍👧 Petición familiar (I-130) <span class="form-dropdown-soon">pronto</span></button>
+          <button class="form-dropdown-item disabled">🗽 Ciudadanía (N-400) <span class="form-dropdown-soon">pronto</span></button>
+          <button class="form-dropdown-item disabled">📂 FOIA <span class="form-dropdown-soon">pronto</span></button>
+        </div>
+      </div>
+      <div class="lang-switch">
+        <button id="btn-es" onclick="setLang('es')" style="background:#1E3A5F;color:#fff;font-weight:700">ES</button>
+        <button id="btn-en" onclick="setLang('en')" style="color:#A8C4E0;background:transparent;font-weight:400">EN</button>
+      </div>
     </div>
   </div>
   <div class="greeting" id="lbl-hola">Hola,</div>
@@ -691,6 +720,26 @@ window.saveI589 = async function(){
     btn.textContent = "💾 Guardar y enviar a mi oficina";
     btn.disabled = false;
   }
+};
+
+window.toggleFormMenu = function(){
+  const btn = document.getElementById('form-menu-btn');
+  const dd  = document.getElementById('form-dropdown');
+  const arrow = document.getElementById('form-menu-arrow');
+  dd.classList.toggle('open');
+  if(arrow) arrow.style.transform = dd.classList.contains('open') ? 'rotate(180deg)' : '';
+};
+document.addEventListener('click', function(e){
+  const wrap = document.querySelector('.form-menu-wrap');
+  if(wrap && !wrap.contains(e.target)){
+    document.getElementById('form-dropdown')?.classList.remove('open');
+    const arrow = document.getElementById('form-menu-arrow');
+    if(arrow) arrow.style.transform = '';
+  }
+});
+window.openFormulario = function(tipo){
+  document.getElementById('form-dropdown')?.classList.remove('open');
+  if(tipo === 'asilo') window.openI589 && openI589();
 };
 
 </script>
