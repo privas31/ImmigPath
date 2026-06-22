@@ -953,7 +953,31 @@ const loadTeam=async()=>{
                           <button onClick={e=>{e.stopPropagation();openHistorial(c);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F8FAFC"} onMouseLeave={e=>e.target.style.background="none"}>
                             <span>📋</span> Ver historial de cambios
                           </button>
-                          {c.i589Draft&&<button onClick={e=>{e.stopPropagation();setI589Cliente(c);setI589Comentario("");setShowI589Review(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#7C3AED",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F5F3FF"} onMouseLeave={e=>e.target.style.background="none"}><span>📄</span> Revisar I-589{c.i589Draft?.status==="pendiente_revision"&&<span style={{marginLeft:"auto",background:"#FEF3C7",color:"#D97706",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:10}}>NUEVO</span>}</button>}
+                          {(c.casos||[]).some(ca=>(ca.tipoCaso||"").toLowerCase().includes("589")||((ca.tipoCaso||"").toLowerCase().includes("asilo")&&ca.sistema!=="eoir"))&&(
+                            <button onClick={e=>{e.stopPropagation();setI589Cliente(c);setI589Comentario("");setShowI589Review(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#7C3AED",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F5F3FF"} onMouseLeave={e=>e.target.style.background="none"}>
+                              <span>📄</span> Revisar Form Asilo
+                              {c.i589Draft?.status==="pendiente_revision"&&<span style={{marginLeft:"auto",background:"#FEF3C7",color:"#D97706",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:10}}>NUEVO</span>}
+                              {!c.i589Draft&&<span style={{marginLeft:"auto",fontSize:10,color:"#94A3B8",fontStyle:"italic"}}>sin llenar</span>}
+                            </button>
+                          )}
+                          {(c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("765"))&&(
+                            <button onClick={e=>{e.stopPropagation();setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#7C3AED",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F5F3FF"} onMouseLeave={e=>e.target.style.background="none"}>
+                              <span>📋</span> Revisar Form WP
+                              <span style={{marginLeft:"auto",fontSize:10,color:"#94A3B8",fontStyle:"italic"}}>pronto</span>
+                            </button>
+                          )}
+                          {(c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("485"))&&(
+                            <button onClick={e=>{e.stopPropagation();setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#7C3AED",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F5F3FF"} onMouseLeave={e=>e.target.style.background="none"}>
+                              <span>📋</span> Revisar Form Residencia
+                              <span style={{marginLeft:"auto",fontSize:10,color:"#94A3B8",fontStyle:"italic"}}>pronto</span>
+                            </button>
+                          )}
+                          {(c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("130"))&&(
+                            <button onClick={e=>{e.stopPropagation();setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#7C3AED",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F5F3FF"} onMouseLeave={e=>e.target.style.background="none"}>
+                              <span>📋</span> Revisar Form Petición
+                              <span style={{marginLeft:"auto",fontSize:10,color:"#94A3B8",fontStyle:"italic"}}>pronto</span>
+                            </button>
+                          )}
                           <button onClick={e=>{e.stopPropagation();const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>{prompt("Copia este link:",link);});setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F8FAFC"} onMouseLeave={e=>e.target.style.background="none"}>
                             <span>🔗</span> Copiar link del portal
                           </button>
