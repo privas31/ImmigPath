@@ -56,13 +56,6 @@
     })();
   </script>
   <style>* { box-sizing:border-box; margin:0; padding:0; } body { font-family:'Segoe UI',Inter,sans-serif; background:#F1F5F9; } ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}</style>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0F172A">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ImmigPath">
-  <link rel="apple-touch-icon" href="/pwa-icons/icon-192x192.png">
 </head>
 <body>
 <div id="root"></div>
@@ -673,6 +666,9 @@ const loadTeam=async()=>{
     const hoy=new Date();hoy.setHours(0,0,0,0);
     const en7dias=new Date(hoy);en7dias.setDate(en7dias.getDate()+7);
     const alertas=clientes.filter(c=>{const pf=getProximaFecha(c);if(!pf)return false;const d=new Date(pf+"T00:00:00");return d>=hoy&&d<=en7dias;});
+    const alertas1dia=alertas.filter(c=>{const pf=getProximaFecha(c);return getDias(pf)===0||getDias(pf)===1;});
+    const alertas3dias=alertas.filter(c=>{const pf=getProximaFecha(c);const d=getDias(pf);return d>1&&d<=3;});
+    const alertas7dias=alertas.filter(c=>{const pf=getProximaFecha(c);const d=getDias(pf);return d>3&&d<=7;});
     const vencidos=clientes.filter(c=>getStatusCliente(c)==="vencido");
     const totalCobrar=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalProcesos(ca.procesos||[]),s),0);
     const totalCobrado=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalPagado(ca.procesos||[]),s),0);
@@ -681,7 +677,7 @@ const loadTeam=async()=>{
     const pagadoCompleto=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p>=t;});
     const conSaldo=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p<t;});
     const sinPago=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p===0;});
-    return{alertas,vencidos,totalCobrar,totalCobrado,pendiente,eadElegibles,pagadoCompleto,conSaldo,sinPago};
+    return{alertas,alertas1dia,alertas3dias,alertas7dias,vencidos,totalCobrar,totalCobrado,pendiente,eadElegibles,pagadoCompleto,conSaldo,sinPago};
   },[clientes]);
 
   const generatePDF=()=>{
@@ -909,6 +905,68 @@ const loadTeam=async()=>{
           <button onClick={openAdd} style={{marginTop:16,background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:14,cursor:"pointer",fontWeight:600}}>+ Agregar primer cliente</button>
         </div>
       ):(
+        <>
+        {(stats.vencidos.length>0||stats.alertas1dia.length>0||stats.alertas3dias.length>0)&&(
+          <div style={{marginBottom:16,borderRadius:12,overflow:"hidden",border:"1px solid #FECACA"}}>
+            {stats.vencidos.length>0&&(
+              <div style={{background:"#FEF2F2",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,borderBottom:stats.alertas1dia.length>0||stats.alertas3dias.length>0?"1px solid #FECACA":"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:18}}>🔴</span>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#DC2626"}}>FECHAS VENCIDAS — {stats.vencidos.length} cliente{stats.vencidos.length>1?"s":""}</div>
+                    <div style={{fontSize:11,color:"#EF4444"}}>{stats.vencidos.slice(0,3).map(c=>c.nombre.split(" ")[0]).join(", ")}{stats.vencidos.length>3?" y más...":""}</div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {stats.vencidos.slice(0,2).map((c,i)=>(
+                    <button key={i} onClick={()=>{const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}const msg="Hola "+c.nombre+", le contactamos de "+(officeData?.name||"nuestra oficina")+" respecto a su caso. Tenemos una fecha importante pendiente. Por favor contáctenos a la brevedad.";window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");}}
+                      style={{background:"#25D366",color:"#fff",border:"none",borderRadius:7,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                      💬 {c.nombre.split(" ")[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {stats.alertas1dia.length>0&&(
+              <div style={{background:"#FFF7ED",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,borderBottom:stats.alertas3dias.length>0?"1px solid #FED7AA":"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:18}}>🟠</span>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#D97706"}}>HOY / MAÑANA — {stats.alertas1dia.length} cliente{stats.alertas1dia.length>1?"s":""}</div>
+                    <div style={{fontSize:11,color:"#F59E0B"}}>{stats.alertas1dia.map(c=>c.nombre.split(" ")[0]+" ("+fmt(getProximaFecha(c))+")").join(", ")}</div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {stats.alertas1dia.slice(0,2).map((c,i)=>(
+                    <button key={i} onClick={()=>{const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}const pf=getProximaFecha(c);const msg="Hola "+c.nombre+", le recordamos de "+(officeData?.name||"nuestra oficina")+" que tiene una cita/fecha importante el "+fmt(pf)+". Por favor asegúrese de estar preparado/a.";window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");}}
+                      style={{background:"#25D366",color:"#fff",border:"none",borderRadius:7,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                      💬 {c.nombre.split(" ")[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {stats.alertas3dias.length>0&&(
+              <div style={{background:"#FFFBEB",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:18}}>🟡</span>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#B45309"}}>PRÓXIMOS 3 DÍAS — {stats.alertas3dias.length} cliente{stats.alertas3dias.length>1?"s":""}</div>
+                    <div style={{fontSize:11,color:"#D97706"}}>{stats.alertas3dias.map(c=>c.nombre.split(" ")[0]+" ("+fmt(getProximaFecha(c))+")").join(", ")}</div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {stats.alertas3dias.slice(0,2).map((c,i)=>(
+                    <button key={i} onClick={()=>{const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}const pf=getProximaFecha(c);const msg="Hola "+c.nombre+", le recordamos de "+(officeData?.name||"nuestra oficina")+" que tiene una cita/fecha importante el "+fmt(pf)+". Le confirmaremos los detalles próximamente.";window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");}}
+                      style={{background:"#25D366",color:"#fff",border:"none",borderRadius:7,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                      💬 {c.nombre.split(" ")[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <div style={{display:"grid",gap:10}}>
           {filtered.map(c=>{
             const st=getStatusCliente(c);const scfg=STATUS_CONFIG[st];const pf=getProximaFecha(c);const dias=pf?getDias(pf):null;const exp=expandedId===c.id;
@@ -1138,6 +1196,7 @@ const loadTeam=async()=>{
             );
           })}
         </div>
+        </>
       )}
     </div>
 
@@ -2290,16 +2349,6 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
-
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('ImmigPath PWA ready'))
-      .catch(e => console.log('SW error:', e));
-  });
-}
 </script>
 </body>
 </html>
