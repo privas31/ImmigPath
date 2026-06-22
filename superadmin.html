@@ -310,7 +310,29 @@
       </div>
       <div class="form-group">
         <label class="form-label">Password inicial del Admin *</label>
-        <input class="form-input" id="new-office-pass" type="password" placeholder="Minimo 8 caracteres">
+        <input class="form-input" id="new-office-pass" type="password" placeholder="Minimo 8 caracteres" oninput="updateAccessInfo()">
+      </div>
+      <div class="form-group">
+        <div style="background:#0F172A;border-radius:10px;padding:14px;border:1px solid rgba(99,102,241,0.3)">
+          <div style="font-size:11px;font-weight:700;color:#818CF8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Credenciales de acceso del cliente</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <div style="font-size:10px;color:#64748B;margin-bottom:3px">EMAIL DE ACCESO</div>
+              <div id="cred-email" style="font-size:13px;font-weight:600;color:#E2E8F0;background:rgba(255,255,255,0.05);border-radius:6px;padding:7px 10px;font-family:monospace">— completa el email arriba —</div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:#64748B;margin-bottom:3px">CONTRASENA</div>
+              <div id="cred-pass" style="font-size:13px;font-weight:600;color:#E2E8F0;background:rgba(255,255,255,0.05);border-radius:6px;padding:7px 10px;font-family:monospace">— completa la contrasena —</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:#64748B;margin-bottom:3px">LINK DE ACCESO AL MONITOR</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div id="cred-link" style="font-size:11px;color:#818CF8;background:rgba(99,102,241,0.1);border-radius:6px;padding:7px 10px;font-family:monospace;flex:1;word-break:break-all">— se genera al crear la oficina —</div>
+              <button onclick="copyCredLink()" style="background:rgba(99,102,241,0.2);color:#818CF8;border:1px solid rgba(99,102,241,0.3);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;white-space:nowrap">Copiar</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Tipo de acceso</label>
@@ -435,6 +457,21 @@ window.previewLogo = function() {
   };
   setTimeout(setDefaultDemoDate, 500);
 })();
+
+window.updateAccessInfo = function() {
+  const email = document.getElementById('new-office-email')?.value || '';
+  const pass = document.getElementById('new-office-pass')?.value || '';
+  const emailEl = document.getElementById('cred-email');
+  const passEl = document.getElementById('cred-pass');
+  if (emailEl) emailEl.textContent = email || '— completa el email arriba —';
+  if (passEl) passEl.textContent = pass || '— completa la contrasena —';
+};
+
+window.copyCredLink = function() {
+  const link = document.getElementById('cred-link')?.textContent || '';
+  if (link.includes('—')) { showToast('Primero crea la oficina para obtener el link', 'error'); return; }
+  navigator.clipboard.writeText(link).then(() => showToast('Link copiado ✓')).catch(() => {});
+};
 
 window.setAccessType = function(type) {
   document.getElementById('type-demo').checked = type === 'demo';
@@ -777,18 +814,24 @@ window.createOffice = async function() {
     const uid = userCred.user.uid;
     const isDemo = document.getElementById('type-demo')?.checked !== false && document.getElementById('type-active')?.checked !== true;
     const demoEnd = document.getElementById('new-office-demo-end')?.value || '';
-    const officeRef = await addDoc(collection(db,'offices'), {
+    const officeRef = const officeRef2 = await addDoc(collection(db,'offices'), {
       name, ownerName:owner, email, phone, plan, isActive:true,
       enabledModules:modules,
       stats:{totalClients:0,activeCases:0,totalCases:0},
       isDemo: isDemo,
       demoEndsAt: isDemo ? demoEnd : null,
       accessType: isDemo ? 'demo' : 'active',
+      adminEmail: email,
+      adminPass: pass,
       createdAt:serverTimestamp(), createdBy:currentUser.uid,
     });
+    // Mostrar link de acceso generado
+    const accessLink = window.location.origin + '/app.html?o=' + officeRef2.id;
+    const linkEl = document.getElementById('cred-link');
+    if (linkEl) linkEl.textContent = accessLink;
     await setDoc(doc(db,'users',uid), {
       uid, email, displayName:owner, role:'office_admin',
-      officeId:officeRef.id, moduleAccess:modules,
+      officeId:officeRef2.id, moduleAccess:modules,
       isActive:true, createdAt:serverTimestamp(),
     });
     closeModal('modal-new-office');
