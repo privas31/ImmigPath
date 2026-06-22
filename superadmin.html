@@ -634,7 +634,7 @@ function renderOfficeCards(offices) {
           <div style="font-size:10px;color:var(--text2)">Cobrado</div>
         </div>
       </div>
-      <button onclick="event.stopPropagation();window.open('/app.html?o=${o.id}','_blank')" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);background:rgba(99,102,241,0.1);color:var(--accent2);font-size:12px;font-weight:600;cursor:pointer">Entrar al monitor →</button>
+      <button onclick="event.stopPropagation();window.open('${o.plan==='basic'?'/app-basico.html':'/app.html'}?o=${o.id}','_blank')" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);background:rgba(99,102,241,0.1);color:var(--accent2);font-size:12px;font-weight:600;cursor:pointer">Entrar al monitor →</button>
     </div>`).join('');
 
   // Cargar estadisticas
@@ -688,7 +688,7 @@ function renderOfficesTable(offices) {
         })()}</td>
       <td>
         <div class="actions">
-          <button class="action-btn" onclick="window.open(getMonitorUrl(o),'_blank')" title="Entrar al monitor de esta oficina" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
+          <button class="action-btn" onclick="window.open('${o.plan==='basic'?'/app-basico.html':'/app.html'}?o=${o.id}','_blank')" title="Entrar al monitor de esta oficina" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
           <button class="action-btn" onclick="openEditOffice('${o.id}')" style="background:rgba(251,191,36,0.12);color:#FBBF24;border-color:rgba(251,191,36,0.3)">✏️ Editar</button>
           <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
           <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
@@ -737,7 +737,7 @@ function renderOfficesFullTable(offices) {
         return '<span class="badge badge-green">Activa</span>';
       })()}</td>
       <td>
-        <button class="action-btn" onclick="window.open(getMonitorUrl(o),'_blank')" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
+        <button class="action-btn" onclick="window.open('${o.plan==='basic'?'/app-basico.html':'/app.html'}?o=${o.id}','_blank')" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
         <button class="action-btn" onclick="openEditOffice('${o.id}')" style="background:rgba(251,191,36,0.12);color:#FBBF24;border-color:rgba(251,191,36,0.3)">✏️ Editar</button>
         <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
         <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
