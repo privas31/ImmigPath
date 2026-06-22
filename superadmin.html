@@ -241,6 +241,16 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1000px">
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+          <!-- Config ImmigPath (para el contrato) -->
+          <details style="margin-bottom:16px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:10px">
+            <summary style="font-size:12px;font-weight:700;color:var(--accent2);cursor:pointer">⚙️ Datos de ImmigPath (para el contrato)</summary>
+            <div style="margin-top:10px;display:grid;gap:8px">
+              <input class="form-input" id="immig-ein" placeholder="EIN: XX-XXXXXXX (cuando lo tengas)">
+              <input class="form-input" id="immig-direccion" placeholder="Dirección: Ciudad, FL XXXXX (cuando la tengas)">
+              <input class="form-input" id="immig-email" value="plataforma-migracion@outlook.com" placeholder="Email ImmigPath">
+              <input class="form-input" id="immig-tel" placeholder="Teléfono ImmigPath">
+            </div>
+          </details>
           <h3 style="margin:0 0 16px;font-size:14px;color:var(--text)">📋 Datos de la Oficina</h3>
           <div class="form-group">
             <label class="form-label">Nombre de la Oficina</label>
@@ -298,18 +308,18 @@
             <textarea class="form-input" id="cot-notas" rows="2" placeholder="Ej: Incluye soporte prioritario primer mes..."></textarea>
           </div>
           <div class="form-group">
-            <label class="form-label">Nombre del representante legal</label>
-            <input class="form-input" id="cot-representante" placeholder="Ej: Juan García" oninput="calcCotizacion()">
+            <label class="form-label">Nombre del representante / dueño</label>
+            <input class="form-input" id="cot-representante" placeholder="Ej: María González">
           </div>
           <div class="form-group">
             <label class="form-label">Teléfono / WhatsApp</label>
-            <input class="form-input" id="cot-telefono" placeholder="(000) 000-0000" oninput="calcCotizacion()">
+            <input class="form-input" id="cot-telefono" placeholder="(000) 000-0000">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
             <button class="btn btn-primary" onclick="generarCotizacionPDF()" style="padding:12px;font-size:13px">
               📄 Cotización PDF
             </button>
-            <button class="btn" onclick="generarContratoPDF()" style="padding:12px;font-size:13px;background:rgba(184,134,11,0.2);color:#FBBF24;border:1px solid rgba(184,134,11,0.4)">
+            <button class="btn" onclick="generarContratoPDF()" style="padding:12px;font-size:13px;background:rgba(184,134,11,0.15);color:#FBBF24;border:1px solid rgba(184,134,11,0.4)">
               📝 Contrato PDF
             </button>
           </div>
@@ -1156,7 +1166,6 @@ window.generarCotizacionPDF = function() {
   const pdf = new jsPDF({unit:'mm',format:'letter'});
   const W=215.9,M=14,tW=W-M*2; let y=0;
 
-  // Header azul marino con logo y dorado
   pdf.setFillColor(15,23,42); pdf.rect(0,0,W,47,'F');
   pdf.setFillColor(184,134,11); pdf.rect(0,47,W,2,'F');
   try { pdf.addImage('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABXAHgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD7KooooAKKKKAOd8Xar4o0xDLoPhWHXUWPcUGprbyluflUMhU9urDrXz/d/tf2FpdzWl18PdThuIJGjlje/jDI6nDKRt4IIIr6hPSvzP8Aj0oX42eM1UAD+2rjgf79duDpQqtqSObETlTScWfX3gb45+K/G+nNqXhj4O61fWSuY/tB1SCKMsOoBcDOO+M1o618WfHmiQNc6p8D/Ewt0GXks76C6Kj1xHk1Z/ZDRV/Z58LkKAWW4Y+5+0SV6xj2rKo4Rm48u3qaQUnFO54Z4X/al+GWq3C22ptqugTE7WN9a5jVvQtGWx+IFe06RqWnavp8Oo6VfW19ZzLuint5BIjj2YcGvm79tj4W6VceF5viNpFrHa6nYun9peWoUXMLMF3t/tqSPm6kE56CvMv2TE+J+ieIYdW0eB7bwhPKF1FtRZo7SdfWEYJeb+75YOeh4rSVGlKl7WLtbuZxqTU+Rq/ofbmp6rpumRGTUL63tVH/AD1kC5/DqaXR9StNWsVvbCRpbd2ISQoVDYOCRntnvXIeLPDEni6zkvfscVhcqALZnUCZ+RkyEdBjOF6jv6V2Wl2cGnadb2Nsu2GCMRoPYDFeTTqVZ1XdWj08zulGCgrPUs0UUV1GQUUUUAFFFFABRRRQAhr80fj5/wAlt8af9hq4/wDQq/S418F+IvhlrPxA+PXjmaKaPS9Cs9bn+36rcKfKh+b7ij/lpIeyj8cV24KpGm5Sm7JI5sTBzSUVqfTv7Iv/ACbx4W/653H/AKUSV6DrviPRtFwt/eokrfdhT55G+ijmvL/hvY6lD4VsPBXgaS6sdA01WibU7vBnkLMXYjGACSxOB045FeiaF4a0LwzbyXp2tOqlp767cF/cljworyJYqWJm3QXu33e3yXX8DujRVKKVR69l+pna1qWp6ro13LNpNtpuipC0txPqsYkYxqNxIg6cAZ+Y18gfEr9ofV9WL2vg6O60yMqU/tW6dWvmQ9ogvyWykdk+b/aruv2qvj9pmqaNd+BPA14LuK5Hl6lqUR/dlO8MR/iz0ZhxjIGckj5SxXsYHL0l7Stq+l/8tv1PPxOLfw09F5f5n3v+xPrF1q3wQhju5nmew1G5tlZ2LNtJEgyT1/1hr2+vEf2KNIn0v4FWdxOmw6le3F4gPXYWCKfxEefxr26uevb2srdzelfkVwooorE0CiiigAooooAKKKKAK+oXdvYWU15dyrFBChd3PYCvA/FXiLT7yPUtf1Y/2V4X0stdTRwKA0ju3AAHDTyscZPTJ9K6r426+0l3F4ft3xHGBNc47sfur+A5/EV81ftTazJaWXhrwVbsVi+zDWL4A/fmmysQP+7GvH++a8yCeY436qn7kdZefkdcn9Uw/tvtPby8z6T8KeNb7Uv2Y7vxxptrb6TdLpd9cWcMKhkt/KaURj5vvEBFyT1OT3rwvw58Mfip8b/AFv4p1v4lb4rxpDaafd7zEwRyhYrHhV5HZTgYr0r4X/8AJjU3/YB1P/0Oak/Zv01tY/Z78NajoF75et6Q9zGu1+/nOxhYdOQwPPqOxr3Kk5YalKVKN7Pby8jzYxVacVN7o8N8M/AHV7HVryf4kXUWgaNpu+ScxzK0lxEnLSIRkJF0+dhkkhVUt0xvBvgAfF/4q3Nt4J0KTQvCyTKJZSWdbS3UAZZmJzM4BO3PVvQE19m33wu0vxPoMdr4zmvL6S4nW61CGO4MSXDL9yNyuCUTqFBAzz2GO08O6Ho/h3SYdJ0LTbXTrGEfJBbxhEHvgdSe5PJopY+rKHPPRvp2X6sJ4WClyx2XXv8A8Ak0PTLLRdGs9I06EQWdlAkEEY6KigAD8hV2iiuY3CiiigAooooAKKRiQpIGT6VxvgL4gWfjDXtf0e00fUrObQbn7JevcmLYJv7q7XJbgZzjFNRbVxXOzpKKWkM8D8UaB4m1HxFqN7/YeoOJrhypEJI25wuPwArxv9pn4beOdY8c6brOjeFNa1GC50W1jk+z2jOYZYgY2RsDg8Aj1Br7gpK5cuwqwNaVWLu5dzbF1niaag1ax8xfC+98Q2X7NWr/AA81nwP4tsdYi0+9trPOjzNHc+bvZAGVSFOXwd2B3zXj3wo0348/DXWxqPh7wT4k8qQgXdlNYOYLlR2Ydj6MOR9OK+3vHPjHRfBlnYXWttcrHf38VhD5Fu0p82QnbkL0HHWug4r1ViXFP3dJHC6Kdtdjkvhn4wvvFulvLqnhDXvDN9Cq+fb6lbFEJOf9W/Rxx6AjIyK66quqXYsNPnvDC8qQIZHVCN20DJxkgdKxU8W250OLXH0zUE02RA/nAI2xSfvFQ27H4VwVK9OMrPTr8jqhTk1odJRUVrcQ3VtFc28iyQyqHR16MD0NPkdI0aSR1RFGSzHAAq7pq5I6isjxNraaHBazSWsk63FyluCjAbWc4BOe30rWpKcXJxW6G4tK4tFFFUIQ9K8K+CZuF8YfGxrWf7POPELmOXYH2MIiQcHg/Q17q2cHGM9s1554K+HN94Z1Pxjfp4jiupfFFy13KG0/atvKQVyuJPmUA9Dzx161pCSUWmRJNtHl48bfEj/hmuz+Lh8YKb62UTy6eNNhFvdJ9pMRVzjcDg8FSoGOmea7DxH4g8Z+GPiB4Cln8SDUdN8UXrWd5pz2USR25aIurQuo3jHT52bNXP8AhTz/APChj8Jv+EmP2Qjy/t32Eeb5fm+bt278Z3d/Tt3rZ8W/D688Qah4Nvn1+O3l8MXS3aBbHctzIE2c/vPlXGeBnk9a1c4X+/p06EKMrfcc8NZ8Z6x8efEngi38VNpulWujW97A0NhC00TSPghWcEHp1YHjoM81z3hjxD8R/EPwx8X6m/jUWWpeEr7ULOOe302E/bjbDeGmVgQAR8uE2+uT0r0rTPAlxY/FrVfHw1lJG1HT47A2ZtMLGkZyhD78k568YPtWb4Y+GV1ofhDxh4fXxGlx/wAJNd3V3JObDabd7hdsgVfM+YY6ZPB65pc8Lfd0+8bjK/3nLeMPiH4ob4NfD3xjp93DY3mtX+mw30a26SI6zn59u7O3ocY6Z/GuhufEet6x8aNd8GNq8vh/TtK0iG7tnhSPzbx5Cd0u6RWBjjxjaB16noKj1P4Rz3vwz8L+CP8AhJhHF4eure4juhp4LzeQSYwy78DryR17Yrk/FVprPiv4y+JLHTPFWhabLpdpaQPaeINIiulbcjO0lqrsCsZ3YY5OWGD90VS5Jbef5ifMjofgpqes+IvhFq/ijXdR1C8vNQW6TMrgWzJF5iLLbxgDy0cAHGTkjOa6Dw6uq3/wvstK0/T/AJrmy8n7RNKojVWyC2ASx4zxiqPwqvfFuvaB4j0HxDd6TcJY3P2Cz1fTbUx293EYgW2Rk4yhYoSDtyCOcGu78MaW2i6JbaWbn7QtuuxH2bSR7jJ5rzcTRlPEN7KzWnnY6qVRRpedzDt7a40aK20QaytvBb2KrAIED3EsgzucqVPyDjGPXk1ha9q9/rHwlt9TmuPLmkmSKcRqAsn73ac+g4zgV1knh6dPEt3rVlqZgN5CkU8bQB+F6bCT8v5EVTTwYo8GyeGpNRdohL5kEwiAaM794yM4bn6Vx1KFZqUIqys1v6W6m8akE1JvW6f+ZV+JMM8Ogacj3b3Mn9r2xEkqqMfMccKBxVr7bq2neOdP0ufUTe2moQSuVeFVMTpz8pUDg+hzVrWfD17q+m2treaupkgukuTItqAGKdABu4Hryfwqe+0SW68S6drRvVRrKN0EQhyH3jDZOePb+taSpVPaOcU18PX7+vYlTjy8r8/+AbdFFFegcwVBI12PuRQH/elI/wDZaKKTVwIWfVf4bay/G4f/AOIrJ8Z3esWfg7ULu3lgsr2JQY5Ix5yqu5cnDAc4yOhx1w3QlFEI2ktQk9DJ8Sax4ih+F1pq1qJLTVHFq05dondEZ0Ehzt2E7STwv0HarHiW98RyeC9Kn8OySSahcyW+9y0SM6EZfl0KqT67T9KKK12V/MjrYdeaj4kh+HFhrVuq3erQW8FzdW6qiC6wB5sYLHahILYOcAgc4o1rS7yXw5pDaraafqerJcWiXMstrE4AaVBNsDDAG0tjHPHrRRSuOw3xXf6ppviTRrS3kntNJmXy1+yRQsZJ964jcSfdj2ZOV568jABb4y1XWbHxp4dtba4eHS7outzsEZLvvjCqdyk4wX6Y+vSiinHoJj/FGp63aeOvD9nZSO9jdFluLdFjUnnly7ZJCjqo2k9ieldLO+pCUiC3tHi7F52VvyCn+dFFRNXSKjpcEfUv4razH0nb/wCIqaJpyf3kcSj/AGXJ/oKKKhRt1KuSUUUVQj//2Q==','JPEG',M,5,22,22); } catch(e){}
@@ -1174,7 +1183,6 @@ window.generarCotizacionPDF = function() {
   pdf.setFont('helvetica','normal'); pdf.text(new Date().toLocaleDateString('es'),W-M-16,41);
   y=56;
 
-  // Desglose instalación
   pdf.setFillColor(239,246,255); pdf.rect(M,y,tW,7,'F');
   pdf.setDrawColor(30,64,175); pdf.setLineWidth(0.3); pdf.rect(M,y,tW,7,'S');
   pdf.setTextColor(30,64,175); pdf.setFontSize(9); pdf.setFont('helvetica','bold');
@@ -1189,7 +1197,6 @@ window.generarCotizacionPDF = function() {
     y+=7;
   });
 
-  // Total instalación con dorado
   pdf.setFillColor(15,23,42); pdf.rect(M,y,tW,9,'F');
   pdf.setDrawColor(184,134,11); pdf.setLineWidth(1); pdf.rect(M,y,tW,9,'S');
   pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(11);
@@ -1198,14 +1205,12 @@ window.generarCotizacionPDF = function() {
   pdf.text('$'+d.totalInst.toLocaleString(),W-M-3,y+6,{align:'right'});
   y+=16;
 
-  // Plan mensual — solo info del cliente, sin ganancias
   pdf.setFillColor(15,23,42); pdf.rect(M,y,tW,8,'F');
   pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(9);
   pdf.text('PLAN '+PLAN_NOMBRE[d.plan].toUpperCase()+' — MENSUAL',M+4,y+5.5); y+=11;
-  [
-    ['Mensualidad','$'+d.mensual.toLocaleString()+'/mes'],
-    ['Facturación anual estimada','$'+(d.mensual*12).toLocaleString()+'/año'],
-    ['Inversión total primer año','$'+(d.totalInst+d.mensual*12).toLocaleString()],
+  [['Mensualidad','$'+d.mensual.toLocaleString()+'/mes'],
+   ['Facturación anual','$'+(d.mensual*12).toLocaleString()+'/año'],
+   ['Inversión total primer año','$'+(d.totalInst+d.mensual*12).toLocaleString()],
   ].forEach(([label,val],i)=>{
     if(i%2===0){pdf.setFillColor(248,250,252);pdf.rect(M,y-1,tW,7,'F');}
     pdf.setTextColor(71,85,105); pdf.setFont('helvetica','normal'); pdf.setFontSize(9);
@@ -1215,41 +1220,34 @@ window.generarCotizacionPDF = function() {
   });
   y+=8;
 
-  // Lo que incluye
   pdf.setFillColor(239,246,255); pdf.rect(M,y,tW,7,'F');
   pdf.setTextColor(30,64,175); pdf.setFont('helvetica','bold'); pdf.setFontSize(9);
   pdf.text('LO QUE INCLUYE TU PLAN',M+4,y+5); y+=10;
-  const incluyeBasico=['Monitor de casos de inmigración completo','Portal del cliente con link único','Pagos, cobros y nómina integrados','Dashboard con estadísticas en tiempo real','Usuarios ilimitados'];
-  const incluyePro=[...incluyeBasico,'Formulario I-589 digital (cliente → oficina → USCIS)','App móvil instalable (PWA)','Alertas automáticas con botón WhatsApp','Chat cliente-oficina','Historial de cambios completo'];
-  const incluyePrem=[...incluyePro,'Módulo de Notaría completo','Módulo de Taxes','Módulo de Seguros','WhatsApp automático (Twilio)','Soporte prioritario 7 días'];
-  const incluye=d.plan==='basic'?incluyeBasico:d.plan==='professional'?incluyePro:incluyePrem;
-  incluye.forEach((item,i)=>{
+  const iB=['Monitor de casos completo','Portal del cliente con link único','Pagos, cobros y nómina','Dashboard con estadísticas','Usuarios ilimitados'];
+  const iP=[...iB,'Formulario I-589 digital','App móvil (PWA)','Alertas automáticas WhatsApp','Chat cliente-oficina','Historial de cambios'];
+  const iPr=[...iP,'Módulo Notaría','Módulo Taxes','Módulo Seguros','WhatsApp automático (Twilio)'];
+  const inc=d.plan==='basic'?iB:d.plan==='professional'?iP:iPr;
+  inc.forEach((item,i)=>{
     if(i%2===0){pdf.setFillColor(248,250,252);pdf.rect(M,y-1,tW,6,'F');}
-    pdf.setTextColor(22,163,74); pdf.setFont('helvetica','bold'); pdf.setFontSize(9);
-    pdf.text('✓',M+3,y+3.5);
-    pdf.setTextColor(15,23,42); pdf.setFont('helvetica','normal');
-    pdf.text(item,M+9,y+3.5); y+=6;
-  });
-  y+=6;
+    pdf.setTextColor(22,163,74);pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.text('✓',M+3,y+3.5);
+    pdf.setTextColor(15,23,42);pdf.setFont('helvetica','normal');pdf.text(item,M+9,y+3.5);y+=6;
+  }); y+=6;
 
-  // Notas
   if(d.notas){
-    pdf.setFillColor(255,251,235); pdf.rect(M,y,tW,16,'F');
-    pdf.setDrawColor(184,134,11); pdf.setLineWidth(0.3); pdf.rect(M,y,tW,16,'S');
-    pdf.setTextColor(180,83,9); pdf.setFont('helvetica','bold'); pdf.setFontSize(9);
-    pdf.text('NOTAS ADICIONALES:',M+3,y+5);
-    pdf.setFont('helvetica','normal'); pdf.setTextColor(71,85,105);
-    pdf.text(pdf.splitTextToSize(d.notas,tW-10),M+3,y+11); y+=20;
+    pdf.setFillColor(255,251,235);pdf.rect(M,y,tW,16,'F');
+    pdf.setDrawColor(184,134,11);pdf.setLineWidth(0.3);pdf.rect(M,y,tW,16,'S');
+    pdf.setTextColor(180,83,9);pdf.setFont('helvetica','bold');pdf.setFontSize(9);
+    pdf.text('NOTAS:',M+3,y+5);
+    pdf.setFont('helvetica','normal');pdf.setTextColor(71,85,105);
+    pdf.text(pdf.splitTextToSize(d.notas,tW-10),M+3,y+11);y+=20;
   }
 
-  // Footer
-  pdf.setFillColor(15,23,42); pdf.rect(0,270,W,17,'F');
-  pdf.setFillColor(184,134,11); pdf.rect(0,270,W,1,'F');
-  pdf.setTextColor(255,255,255); pdf.setFontSize(9); pdf.setFont('helvetica','bold');
+  pdf.setFillColor(15,23,42);pdf.rect(0,270,W,17,'F');
+  pdf.setFillColor(184,134,11);pdf.rect(0,270,W,1,'F');
+  pdf.setTextColor(255,255,255);pdf.setFontSize(9);pdf.setFont('helvetica','bold');
   pdf.text('immigpath.com',W/2,277,{align:'center'});
-  pdf.setFont('helvetica','normal'); pdf.setTextColor(168,196,224); pdf.setFontSize(8);
+  pdf.setFont('helvetica','normal');pdf.setTextColor(168,196,224);pdf.setFontSize(8);
   pdf.text('Esta cotización es válida por 30 días | Contáctenos por WhatsApp para contratar',W/2,283,{align:'center'});
-
   pdf.save('Cotizacion-ImmigPath-'+d.nombre.replace(/[^a-zA-Z0-9]/g,'-')+'.pdf');
   showToast('✓ PDF de cotización generado','success');
 };
@@ -1260,123 +1258,277 @@ window.generarContratoPDF = function() {
   const d = window._cotData;
   if(!d){showToast('Completa los datos primero','error');return;}
   if(!d.nombre.trim()){showToast('Agrega el nombre de la oficina','error');return;}
-  const representante = document.getElementById('cot-representante')?.value||'_________________________';
-  const telefono = document.getElementById('cot-telefono')?.value||'_________________________';
+
+  const rep    = document.getElementById('cot-representante')?.value||'_______________________';
+  const tel    = document.getElementById('cot-telefono')?.value||'_______________________';
+  const ein    = document.getElementById('immig-ein')?.value||'Pending — EIN pending registration';
+  const dirImm = document.getElementById('immig-direccion')?.value||'Florida, United States';
+  const emailImm = document.getElementById('immig-email')?.value||'plataforma-migracion@outlook.com';
+  const telImm = document.getElementById('immig-tel')?.value||'';
+
   const {jsPDF} = window.jspdf;
   const pdf = new jsPDF({unit:'mm',format:'letter'});
-  const W=215.9,M=18,tW=W-M*2; let y=0;
+  const W=215.9, M=16, tW=W-M*2;
+  let y=0;
   const fecha = new Date().toLocaleDateString('es',{year:'numeric',month:'long',day:'numeric'});
+  const fechaEn = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const contratoNum = 'IMP-'+Date.now().toString().slice(-6);
 
-  // Header
-  pdf.setFillColor(15,23,42); pdf.rect(0,0,W,40,'F');
-  pdf.setFillColor(184,134,11); pdf.rect(0,40,W,2,'F');
-  try { pdf.addImage('data:image/jpeg;base64,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','JPEG',M,5,18,18); } catch(e){}
-  pdf.setTextColor(255,255,255); pdf.setFontSize(16); pdf.setFont('helvetica','bold');
-  pdf.text('ImmigPath Services',M+23,13);
-  pdf.setFontSize(8); pdf.setFont('helvetica','normal'); pdf.setTextColor(184,134,11);
-  pdf.text('S E R V I C E S  |  immigpath.com',M+23,18);
-  pdf.setTextColor(168,196,224); pdf.setFontSize(8);
-  pdf.text('Contrato de Prestación de Servicios de Software',M+23,24);
-  pdf.setFillColor(30,58,95); pdf.rect(0,30,W,10,'F');
-  pdf.setTextColor(255,255,255); pdf.setFontSize(8); pdf.setFont('helvetica','bold');
-  pdf.text('CONTRATO DE SERVICIOS — '+d.nombre.toUpperCase(),W/2,37,{align:'center'});
-  y=50;
-
-  // Función para texto con wrap
-  function addText(text, x, yPos, maxW, fontSize=9, bold=false, color=[15,23,42]){
-    pdf.setFontSize(fontSize); pdf.setFont('helvetica',bold?'bold':'normal');
-    pdf.setTextColor(...color);
-    const lines = pdf.splitTextToSize(text, maxW);
-    pdf.text(lines, x, yPos);
-    return yPos + (lines.length * (fontSize*0.4));
+  function addPage(){
+    pdf.addPage();
+    // Mini header en páginas siguientes
+    pdf.setFillColor(15,23,42); pdf.rect(0,0,W,12,'F');
+    pdf.setFillColor(184,134,11); pdf.rect(0,12,W,1,'F');
+    pdf.setTextColor(255,255,255); pdf.setFontSize(8); pdf.setFont('helvetica','bold');
+    pdf.text('ImmigPath Services — Contrato de Servicios #'+contratoNum,M,9);
+    pdf.setFont('helvetica','normal'); pdf.setTextColor(184,134,11);
+    pdf.text(d.nombre,W-M,9,{align:'right'});
+    y=18;
   }
 
-  function sectionHeader(text, yPos){
-    pdf.setFillColor(15,23,42); pdf.rect(M,yPos,tW,7,'F');
-    pdf.setFillColor(184,134,11); pdf.rect(M,yPos+6,tW,1,'F');
+  function checkPage(needed=20){
+    if(y+needed>268){ addPage(); }
+  }
+
+  function sectionBilingue(esText, enText, yPos){
+    pdf.setFillColor(15,23,42); pdf.rect(M,yPos,tW,8,'F');
+    pdf.setFillColor(184,134,11); pdf.rect(M,yPos+7,tW,1,'F');
     pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(9);
-    pdf.text(text,M+3,yPos+5);
-    return yPos+11;
+    pdf.text(esText,M+3,yPos+5.5);
+    pdf.setTextColor(184,134,11); pdf.setFontSize(7.5);
+    pdf.text('/ '+enText,M+3+pdf.getTextWidth(esText)+2,yPos+5.5);
+    return yPos+12;
   }
 
-  // PARTES
-  y = sectionHeader('PARTES CONTRATANTES', y);
-  y = addText('PROVEEDOR: ImmigPath Services, plataforma de gestión de casos de inmigración, en adelante "ImmigPath".',M,y,tW); y+=3;
-  y = addText('CLIENTE: '+d.nombre+', representado por '+representante+', en adelante "El Cliente".',M,y,tW); y+=3;
-  y = addText('Teléfono/WhatsApp: '+telefono+' | Fecha: '+fecha,M,y,tW); y+=8;
+  function addBilingual(esText, enText, x, yPos, maxW, size=8.5){
+    pdf.setFontSize(size); pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42);
+    const linesEs = pdf.splitTextToSize(esText, maxW);
+    pdf.text(linesEs, x, yPos);
+    const h1 = linesEs.length*(size*0.38);
+    pdf.setTextColor(100,116,139); pdf.setFontSize(size-1);
+    const linesEn = pdf.splitTextToSize(enText, maxW);
+    pdf.text(linesEn, x, yPos+h1+1);
+    return yPos + h1 + (linesEn.length*((size-1)*0.38)) + 4;
+  }
+
+  // ══ PÁGINA 1 ══════════════════════════════════════════════════════════════
+  // Header
+  pdf.setFillColor(15,23,42); pdf.rect(0,0,W,50,'F');
+  pdf.setFillColor(184,134,11); pdf.rect(0,50,W,2,'F');
+  try { pdf.addImage('data:image/jpeg;base64,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','JPEG',M,6,24,24); } catch(e){}
+  pdf.setTextColor(255,255,255); pdf.setFontSize(18); pdf.setFont('helvetica','bold');
+  pdf.text('ImmigPath Services',M+30,15);
+  pdf.setFontSize(8); pdf.setFont('helvetica','normal'); pdf.setTextColor(184,134,11);
+  pdf.text('S E R V I C E S  |  immigpath.com',M+30,21);
+  pdf.setTextColor(168,196,224); pdf.setFontSize(9);
+  pdf.text('Contrato de Prestación de Servicios de Software',M+30,27);
+  pdf.text('Software Services Agreement',M+30,33);
+  pdf.setFillColor(30,58,95); pdf.rect(0,38,W,12,'F');
+  pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(9);
+  pdf.text('Contrato #'+contratoNum,M,45);
+  pdf.text('Fecha / Date: '+fecha,W-M,45,{align:'right'});
+  y=58;
+
+  // PARTES CONTRATANTES
+  y = sectionBilingue('PARTES CONTRATANTES','CONTRACTING PARTIES',y);
+  
+  // ImmigPath
+  pdf.setFillColor(239,246,255); pdf.rect(M,y,tW,28,'F');
+  pdf.setDrawColor(30,64,175); pdf.setLineWidth(0.3); pdf.rect(M,y,tW,28,'S');
+  pdf.setTextColor(30,64,175); pdf.setFont('helvetica','bold'); pdf.setFontSize(8.5);
+  pdf.text('PROVEEDOR / SERVICE PROVIDER:',M+3,y+5);
+  pdf.setTextColor(15,23,42); pdf.setFont('helvetica','normal'); pdf.setFontSize(8);
+  pdf.text('ImmigPath Services',M+3,y+11);
+  pdf.text('EIN: '+ein,M+3,y+16);
+  pdf.text('Dirección / Address: '+dirImm,M+3,y+21);
+  pdf.text('Email: '+emailImm+(telImm?' | Tel: '+telImm:''),M+3,y+26);
+  y+=32;
+
+  // Cliente
+  pdf.setFillColor(248,250,252); pdf.rect(M,y,tW,28,'F');
+  pdf.setDrawColor(200,200,200); pdf.setLineWidth(0.3); pdf.rect(M,y,tW,28,'S');
+  pdf.setTextColor(30,64,175); pdf.setFont('helvetica','bold'); pdf.setFontSize(8.5);
+  pdf.text('CLIENTE / CLIENT:',M+3,y+5);
+  pdf.setTextColor(15,23,42); pdf.setFont('helvetica','normal'); pdf.setFontSize(8);
+  pdf.text('Nombre / Name: '+d.nombre,M+3,y+11);
+  pdf.text('Representante / Representative: '+rep,M+3,y+16);
+  pdf.text('Tel/WhatsApp: '+tel,M+3,y+21);
+  pdf.text('Plan contratado / Contracted Plan: '+PLAN_NOMBRE[d.plan]+' — $'+d.mensual.toLocaleString()+'/mes',M+3,y+26);
+  y+=34;
 
   // OBJETO
-  y = sectionHeader('OBJETO DEL CONTRATO', y);
-  y = addText('ImmigPath Services se compromete a proporcionar acceso a su plataforma de gestión de casos de inmigración bajo el Plan '+PLAN_NOMBRE[d.plan]+', incluyendo todos los módulos y funcionalidades descritos en la cotización adjunta.',M,y,tW); y+=8;
-
-  // SERVICIOS
-  y = sectionHeader('SERVICIOS CONTRATADOS', y);
-  const incluyeBasico=['Monitor de casos de inmigración completo','Portal del cliente con link único','Pagos, cobros y nómina','Dashboard con estadísticas','Usuarios ilimitados'];
-  const incluyePro=[...incluyeBasico,'Formulario I-589 digital','App móvil (PWA)','Alertas WhatsApp','Chat cliente-oficina','Historial de cambios'];
-  const incluyePrem=[...incluyePro,'Módulo de Notaría','Módulo de Taxes','Módulo de Seguros','WhatsApp automático (Twilio)'];
-  const incluye=d.plan==='basic'?incluyeBasico:d.plan==='professional'?incluyePro:incluyePrem;
-  incluye.forEach(item=>{
-    pdf.setTextColor(22,163,74); pdf.setFont('helvetica','bold'); pdf.setFontSize(9);
-    pdf.text('•',M+2,y);
-    pdf.setTextColor(15,23,42); pdf.setFont('helvetica','normal');
-    pdf.text(item,M+7,y); y+=5;
-  }); y+=4;
+  checkPage(35);
+  y = sectionBilingue('OBJETO DEL CONTRATO','SUBJECT MATTER',y);
+  y = addBilingual(
+    'ImmigPath Services proveerá al Cliente acceso a su plataforma de gestión de casos de inmigración, incluyendo todos los módulos del Plan '+PLAN_NOMBRE[d.plan]+' descritos en la cotización. El servicio es de tipo SaaS (Software as a Service) bajo modalidad de suscripción mensual.',
+    'ImmigPath Services will provide the Client access to its immigration case management platform, including all modules of the '+PLAN_NOMBRE[d.plan]+' Plan described in the quote. The service is SaaS-based under a monthly subscription model.',
+    M,y,tW
+  );
 
   // TÉRMINOS ECONÓMICOS
-  y = sectionHeader('TÉRMINOS ECONÓMICOS', y);
+  checkPage(50);
+  y = sectionBilingue('TÉRMINOS ECONÓMICOS','FINANCIAL TERMS',y);
   [
-    ['Cuota de instalación (pago único)','$'+d.totalInst.toLocaleString()],
-    ['Mensualidad Plan '+PLAN_NOMBRE[d.plan],'$'+d.mensual.toLocaleString()+'/mes'],
-    ['Forma de pago','Zelle, transferencia bancaria o tarjeta'],
-    ['Vencimiento mensual','Mismo día del mes de contratación'],
+    ['Cuota de instalación (pago único) / Installation fee (one-time)','$'+d.totalInst.toLocaleString()],
+    ['Mensualidad / Monthly fee','$'+d.mensual.toLocaleString()+'/mes'],
+    ['Forma de pago / Payment method','Zelle, ACH, tarjeta / Card'],
+    ['Fecha de cobro / Billing date','Mismo día del mes / Same day monthly'],
+    ['Mora / Late fee','15 días de gracia / 15-day grace period'],
   ].forEach(([label,val],i)=>{
-    if(i%2===0){pdf.setFillColor(248,250,252);pdf.rect(M,y-1,tW,6,'F');}
-    pdf.setTextColor(71,85,105); pdf.setFont('helvetica','normal'); pdf.setFontSize(8.5);
-    pdf.text(label,M+2,y+3);
-    pdf.setTextColor(15,23,42); pdf.setFont('helvetica','bold');
-    pdf.text(val,W-M-2,y+3,{align:'right'}); y+=6;
-  }); y+=6;
+    if(i%2===0){pdf.setFillColor(248,250,252);pdf.rect(M,y-1,tW,7,'F');}
+    pdf.setTextColor(71,85,105);pdf.setFont('helvetica','normal');pdf.setFontSize(8);
+    pdf.text(label,M+2,y+4);
+    pdf.setTextColor(15,23,42);pdf.setFont('helvetica','bold');
+    pdf.text(val,W-M-2,y+4,{align:'right'});y+=7;
+  }); y+=4;
 
-  // TÉRMINOS Y CONDICIONES
-  y = sectionHeader('TÉRMINOS Y CONDICIONES', y);
-  const terminos = [
-    '1. DURACIÓN: El contrato es mensual con renovación automática. Cualquiera de las partes puede cancelar con 15 días de anticipación.',
-    '2. DATOS: ImmigPath garantiza la confidencialidad de los datos almacenados en la plataforma bajo las políticas de Firebase/Google.',
-    '3. SOPORTE: ImmigPath proporcionará soporte técnico por WhatsApp en horario de lunes a viernes 9am-6pm EST.',
-    '4. ACTUALIZACIONES: Las mejoras globales del sistema se aplican sin costo adicional. Modificaciones personalizadas tienen costo según tabla de cambios.',
-    '5. SUSPENSIÓN: El servicio puede suspenderse tras 15 días de mora en el pago mensual, sin eliminar los datos del cliente.',
-    '6. PROPIEDAD: Los datos ingresados pertenecen al cliente. ImmigPath no comparte ni vende información de terceros.',
+  // DURACIÓN Y CANCELACIÓN
+  checkPage(40);
+  y = sectionBilingue('DURACIÓN Y CANCELACIÓN','TERM AND CANCELLATION',y);
+  y = addBilingual(
+    'El contrato tiene vigencia mensual con renovación automática. Cualquiera de las partes puede cancelar con 15 días calendario de anticipación, sin penalidad, notificando por escrito o WhatsApp.',
+    'The contract has a monthly term with automatic renewal. Either party may cancel with 15 calendar days advance notice, without penalty, by written or WhatsApp notification.',
+    M,y,tW
+  );
+
+  // ══ PÁGINA 2 ══════════════════════════════════════════════════════════════
+  addPage();
+
+  // OBLIGACIONES IMMIG
+  y = sectionBilingue('OBLIGACIONES DE IMMIG PATH','IMMIG PATH OBLIGATIONS',y);
+  const oblImm = [
+    ['Proporcionar acceso continuo a la plataforma con disponibilidad mínima del 99%.','Provide continuous platform access with minimum 99% uptime.'],
+    ['Mantener la confidencialidad y seguridad de todos los datos del cliente.','Maintain confidentiality and security of all client data.'],
+    ['Proveer soporte técnico por WhatsApp de lunes a viernes, 9am-6pm EST.','Provide technical support via WhatsApp Monday to Friday, 9am-6pm EST.'],
+    ['Aplicar mejoras globales del sistema sin costo adicional.','Apply global system improvements at no additional cost.'],
+    ['Realizar respaldos automáticos de datos mediante Firebase/Google Cloud.','Perform automatic data backups via Firebase/Google Cloud.'],
+    ['Notificar con 30 días de anticipación cualquier cambio en precios o términos.','Notify any price or term changes with 30 days advance notice.'],
   ];
-  terminos.forEach(t=>{ y = addText(t,M,y,tW,8); y+=3; }); y+=4;
+  oblImm.forEach(([es,en])=>{ checkPage(15); y=addBilingual('• '+es,'  '+en,M,y,tW); });
+  y+=4;
 
-  // FIRMAS
-  y = sectionHeader('FIRMAS Y ACEPTACIÓN', y);
+  // OBLIGACIONES CLIENTE
+  checkPage(20);
+  y = sectionBilingue('OBLIGACIONES DEL CLIENTE','CLIENT OBLIGATIONS',y);
+  const oblCli = [
+    ['Realizar los pagos mensuales en la fecha acordada.','Make monthly payments on the agreed date.'],
+    ['Utilizar la plataforma de conformidad con las leyes aplicables.','Use the platform in compliance with applicable laws.'],
+    ['No compartir credenciales de acceso con personas no autorizadas.','Not share access credentials with unauthorized persons.'],
+    ['Notificar a ImmigPath de cualquier uso no autorizado de su cuenta.','Notify ImmigPath of any unauthorized use of their account.'],
+  ];
+  oblCli.forEach(([es,en])=>{ checkPage(15); y=addBilingual('• '+es,'  '+en,M,y,tW); });
+  y+=4;
+
+  // PROPIEDAD INTELECTUAL
+  checkPage(25);
+  y = sectionBilingue('PROPIEDAD INTELECTUAL','INTELLECTUAL PROPERTY',y);
+  y = addBilingual(
+    'El software, diseño y código de ImmigPath son propiedad exclusiva de ImmigPath Services. Los datos ingresados por el cliente son de su exclusiva propiedad. ImmigPath no vende, comparte ni utiliza los datos del cliente para fines ajenos al servicio.',
+    'The software, design and code of ImmigPath are the exclusive property of ImmigPath Services. Data entered by the client is their exclusive property. ImmigPath does not sell, share or use client data for purposes other than the service.',
+    M,y,tW
+  );
+
+  // CONFIDENCIALIDAD
+  checkPage(25);
+  y = sectionBilingue('CONFIDENCIALIDAD','CONFIDENTIALITY',y);
+  y = addBilingual(
+    'Ambas partes se comprometen a mantener la más estricta confidencialidad sobre la información intercambiada en virtud de este contrato. Esta obligación permanece vigente por 2 años después de la terminación del contrato.',
+    'Both parties agree to maintain the strictest confidentiality regarding information exchanged under this agreement. This obligation remains in effect for 2 years after contract termination.',
+    M,y,tW
+  );
+
+  // LIMITACIÓN DE RESPONSABILIDAD
+  checkPage(25);
+  y = sectionBilingue('LIMITACIÓN DE RESPONSABILIDAD','LIMITATION OF LIABILITY',y);
+  y = addBilingual(
+    'ImmigPath no será responsable por pérdidas indirectas, lucro cesante o daños consecuentes. La responsabilidad máxima de ImmigPath se limita al monto de los últimos 3 meses de servicio pagados por el cliente.',
+    'ImmigPath shall not be liable for indirect losses, lost profits or consequential damages. ImmigPath maximum liability is limited to the amount of the last 3 months of service paid by the client.',
+    M,y,tW
+  );
+
+  // SUSPENSIÓN DEL SERVICIO
+  checkPage(20);
+  y = sectionBilingue('SUSPENSIÓN DEL SERVICIO','SERVICE SUSPENSION',y);
+  y = addBilingual(
+    'El servicio podrá suspenderse tras 15 días de mora en el pago mensual, previa notificación. Durante la suspensión, los datos se conservan por 60 días. Pasado este período sin regularización, los datos podrán eliminarse.',
+    'Service may be suspended after 15 days of payment default, with prior notification. During suspension, data is retained for 60 days. After this period without regularization, data may be deleted.',
+    M,y,tW
+  );
+
+  // LEY APLICABLE
+  checkPage(20);
+  y = sectionBilingue('LEY APLICABLE Y JURISDICCIÓN','GOVERNING LAW AND JURISDICTION',y);
+  y = addBilingual(
+    'Este contrato se rige por las leyes del Estado de Florida, Estados Unidos. Cualquier disputa será sometida a arbitraje en el condado de Miami-Dade, Florida, antes de recurrir a instancias judiciales.',
+    'This agreement is governed by the laws of the State of Florida, United States. Any dispute shall be submitted to arbitration in Miami-Dade County, Florida, prior to judicial proceedings.',
+    M,y,tW
+  );
+
+  // ══ FIRMAS ════════════════════════════════════════════════════════════════
+  checkPage(80);
+  y = sectionBilingue('ACEPTACIÓN Y FIRMAS','ACCEPTANCE AND SIGNATURES',y);
   y+=6;
-  // Líneas de firma
-  pdf.setDrawColor(15,23,42); pdf.setLineWidth(0.3);
-  pdf.line(M,y+15,M+70,y+15);
-  pdf.line(W-M-70,y+15,W-M,y+15);
-  pdf.setTextColor(71,85,105); pdf.setFontSize(8); pdf.setFont('helvetica','normal');
-  pdf.text('Firma del Cliente',M,y+20);
-  pdf.text(d.nombre,M,y+25); pdf.text(representante,M,y+30);
-  pdf.text('Firma ImmigPath Services',W-M-70,y+20);
-  pdf.text('ImmigPath Services',W-M-70,y+25);
-  pdf.text('plataforma-migracion@outlook.com',W-M-70,y+30);
-  y+=36;
-  pdf.setFontSize(7.5); pdf.setTextColor(150,150,150);
-  pdf.text('Fecha: ___________________',M,y);
-  pdf.text('Fecha: ___________________',W-M-70,y);
 
-  // Footer
-  pdf.setFillColor(15,23,42); pdf.rect(0,270,W,17,'F');
-  pdf.setFillColor(184,134,11); pdf.rect(0,270,W,1,'F');
-  pdf.setTextColor(255,255,255); pdf.setFontSize(8); pdf.setFont('helvetica','bold');
-  pdf.text('immigpath.com',W/2,277,{align:'center'});
-  pdf.setFont('helvetica','normal'); pdf.setTextColor(168,196,224); pdf.setFontSize(7.5);
-  pdf.text('Este contrato es vinculante una vez firmado por ambas partes',W/2,283,{align:'center'});
+  pdf.setFontSize(8.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(71,85,105);
+  pdf.text('Al firmar este documento, ambas partes declaran haber leído, entendido y aceptado todos los términos.',M,y);
+  pdf.setFontSize(7.5); pdf.setTextColor(100,116,139);
+  pdf.text('By signing this document, both parties declare to have read, understood and accepted all terms.',M,y+5);
+  y+=14;
+
+  // Cajas de firma
+  const fw = (tW-10)/2;
+
+  // ImmigPath
+  pdf.setFillColor(248,250,252); pdf.rect(M,y,fw,50,'F');
+  pdf.setDrawColor(15,23,42); pdf.setLineWidth(0.3); pdf.rect(M,y,fw,50,'S');
+  pdf.setFillColor(15,23,42); pdf.rect(M,y,fw,7,'F');
+  pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(8);
+  pdf.text('IMMIG PATH SERVICES',M+fw/2,y+5,{align:'center'});
+  pdf.setTextColor(71,85,105); pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5);
+  pdf.text('Firma / Signature:',M+3,y+16);
+  pdf.setDrawColor(15,23,42); pdf.setLineWidth(0.3); pdf.line(M+3,y+26,M+fw-3,y+26);
+  pdf.text('Nombre / Name: ImmigPath Services',M+3,y+31);
+  pdf.text('Email: '+emailImm,M+3,y+37);
+  pdf.text('Fecha / Date: ___________________',M+3,y+43);
+  pdf.text('Cargo / Title: Proveedor de Servicios',M+3,y+49);
+
+  // Cliente
+  const cx = M+fw+10;
+  pdf.setFillColor(248,250,252); pdf.rect(cx,y,fw,50,'F');
+  pdf.setDrawColor(15,23,42); pdf.setLineWidth(0.3); pdf.rect(cx,y,fw,50,'S');
+  pdf.setFillColor(30,58,95); pdf.rect(cx,y,fw,7,'F');
+  pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(8);
+  pdf.text('CLIENTE / CLIENT',cx+fw/2,y+5,{align:'center'});
+  pdf.setTextColor(71,85,105); pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5);
+  pdf.text('Firma / Signature:',cx+3,y+16);
+  pdf.setDrawColor(15,23,42); pdf.setLineWidth(0.3); pdf.line(cx+3,y+26,cx+fw-3,y+26);
+  pdf.text('Nombre / Name: '+rep,cx+3,y+31);
+  pdf.text('Empresa / Company: '+d.nombre,cx+3,y+37);
+  pdf.text('Fecha / Date: ___________________',cx+3,y+43);
+  pdf.text('Tel/WhatsApp: '+tel,cx+3,y+49);
+  y+=60;
+
+  // Número de contrato y validez
+  pdf.setFillColor(239,246,255); pdf.rect(M,y,tW,10,'F');
+  pdf.setTextColor(30,64,175); pdf.setFont('helvetica','bold'); pdf.setFontSize(8);
+  pdf.text('Contrato #'+contratoNum+' | Este contrato es válido una vez firmado por ambas partes.',M+4,y+4);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(71,85,105); pdf.setFontSize(7.5);
+  pdf.text('Contract #'+contratoNum+' | This contract is valid once signed by both parties.',M+4,y+8.5);
+
+  // Footer todas las páginas
+  const totalPages = pdf.internal.getNumberOfPages();
+  for(let i=1;i<=totalPages;i++){
+    pdf.setPage(i);
+    pdf.setFillColor(15,23,42); pdf.rect(0,272,W,15,'F');
+    pdf.setFillColor(184,134,11); pdf.rect(0,272,W,0.8,'F');
+    pdf.setTextColor(255,255,255); pdf.setFontSize(7.5); pdf.setFont('helvetica','bold');
+    pdf.text('ImmigPath Services | immigpath.com | '+emailImm,W/2,278,{align:'center'});
+    pdf.setFont('helvetica','normal'); pdf.setTextColor(168,196,224); pdf.setFontSize(7);
+    pdf.text('Contrato #'+contratoNum+' — Pág '+i+' de '+totalPages+' | Florida, United States',W/2,283,{align:'center'});
+  }
 
   pdf.save('Contrato-ImmigPath-'+d.nombre.replace(/[^a-zA-Z0-9]/g,'-')+'.pdf');
-  showToast('✓ Contrato generado y descargado','success');
+  showToast('✓ Contrato bilingüe generado','success');
 };
 
 window.showSection = function(section, btn) {
