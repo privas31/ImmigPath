@@ -475,8 +475,6 @@ function render(c){
 
   if(!(c.casos||[]).length) html=`<div style="text-align:center;padding:30px;color:#94A3B8;font-size:14px">No hay casos registrados aún.</div>`;
   document.getElementById("casos").innerHTML=html;
-  // Mostrar estado del I-589 si ya fue guardado
-  renderI589Status(c);
 }
 
 // Exponer setLang globalmente
@@ -490,6 +488,7 @@ window.setLang = function(l){
     : "background:transparent;color:#A8C4E0;font-weight:400;padding:6px 14px;border:none;cursor:pointer;font-size:12px";
   if(clientData) render(clientData);
 };
+
 
 // Cargar datos
 if(!clientId){
@@ -515,12 +514,153 @@ if(!clientId){
     }
     render(clientData);
     document.getElementById("main").style.display="block";
+    // Pequeño delay para que el DOM esté listo
+    setTimeout(()=>{ if(window.renderI589Status) window.renderI589Status(clientData); }, 50);
   }).catch(e=>{
     console.error("Error:",e);
     document.getElementById("loading").style.display="none";
     document.getElementById("error").style.display="flex";
   });
 }
+// ── I-589 funciones ───────────────────────────────────────────────────────────
+window.renderI589Status = function(c){
+  const prev = document.getElementById("i589-section");
+  if(prev) prev.remove();
+
+  const container = document.getElementById("casos");
+  const draft = c.i589Draft;
+  const statusMap = {
+    pendiente_revision: { label:"⏳ Pendiente de revisión",  color:"#D97706", bg:"#FFFBEB", border:"#FDE68A" },
+    en_revision:        { label:"🔍 En revisión por la oficina", color:"#2563EB", bg:"#EFF6FF", border:"#BFDBFE" },
+    aprobado:           { label:"✅ Aprobado — listo para enviar", color:"#16A34A", bg:"#F0FDF4", border:"#BBF7D0" },
+    devuelto:           { label:"↩️ Devuelto — requiere correcciones", color:"#DC2626", bg:"#FEF2F2", border:"#FECACA" },
+  };
+
+  let inner = "";
+  if(!draft){
+    inner = `
+      <button class="i589-btn" onclick="openI589()">
+        📄 Completar formulario I-589 (Asilo)
+      </button>
+      <div style="font-size:11px;color:#94A3B8;text-align:center;margin-top:8px">
+        Tu oficina revisará el formulario antes de enviarlo a USCIS
+      </div>`;
+  } else {
+    const st = statusMap[draft.status] || statusMap.pendiente_revision;
+    inner = `
+      <div class="i589-saved">
+        <div style="font-size:24px">${st.label.split(" ")[0]}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:#0F172A">Formulario I-589</div>
+          <div style="font-size:12px;color:${st.color};font-weight:600;margin-top:2px">${st.label}</div>
+          <div style="font-size:11px;color:#94A3B8;margin-top:2px">Guardado el ${new Date(draft.savedAt).toLocaleDateString("es")}</div>
+          ${draft.status==="devuelto" && draft.comentarioOficina
+            ? `<div style="margin-top:6px;background:#FEF2F2;border-radius:6px;padding:8px;font-size:12px;color:#DC2626"><strong>Nota de la oficina:</strong> ${draft.comentarioOficina}</div>`
+            : ""}
+        </div>
+        <button onclick="openI589()" style="background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+          ${draft.status==="devuelto"?"✏️ Corregir":"✏️ Editar"}
+        </button>
+      </div>`;
+  }
+
+  const section = document.createElement("div");
+  section.id = "i589-section";
+  section.style.cssText = "margin-top:24px;";
+  section.innerHTML = `<div class="section-label">📄 Formulario I-589</div>${inner}`;
+  container.parentNode.insertBefore(section, container.nextSibling);
+}
+
+window.openI589 = function(){
+  if(clientData){
+    const parts = (clientData.nombre||"").trim().split(" ");
+    document.getElementById("f-apellido").value     = parts.length>1 ? parts.slice(-1)[0] : "";
+    document.getElementById("f-nombre").value       = parts.length>1 ? parts.slice(0,-1).join(" ") : clientData.nombre||"";
+    document.getElementById("f-telefono").value     = clientData.telefono||"";
+    document.getElementById("f-email").value        = clientData.email||"";
+    document.getElementById("f-pais-nac").value     = clientData.paisOrigen||"";
+    document.getElementById("f-nacionalidad").value = clientData.paisOrigen||"";
+    document.getElementById("f-alien").value        = clientData.alienNum||"";
+  }
+  if(clientData && clientData.i589Draft){
+    const d = clientData.i589Draft;
+    ["apellido","nombre","alias","sexo","dob","ciudad-nac","pais-nac",
+     "nacionalidad","pasaporte","fecha-entrada","como-entro","direccion",
+     "telefono","email","alien","q1","q2","q3","q4","q5"].forEach(k=>{
+      const el = document.getElementById("f-"+k);
+      if(el && d[k] !== undefined) el.value = d[k];
+    });
+  }
+  document.getElementById("i589-modal").classList.add("open");
+  document.body.style.overflow = "hidden";
+};
+
+window.closeI589 = function(){
+  document.getElementById("i589-modal").classList.remove("open");
+  document.body.style.overflow = "";
+};
+
+window.saveI589 = async function(){
+  const required = ["f-apellido","f-nombre","f-sexo","f-dob","f-ciudad-nac",
+                    "f-pais-nac","f-nacionalidad","f-fecha-entrada","f-como-entro","f-direccion"];
+  let valid = true;
+  required.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el || !el.value.trim()){
+      if(el) el.style.borderColor = "#EF4444";
+      valid = false;
+    } else {
+      if(el) el.style.borderColor = "#E2E8F0";
+    }
+  });
+  if(!valid){ alert("Por favor completa todos los campos obligatorios (*)"); return; }
+
+  const btn = document.querySelector(".i589-btn-save");
+  btn.textContent = "Guardando...";
+  btn.disabled = true;
+
+  const draft = {
+    apellido:        document.getElementById("f-apellido").value.trim(),
+    nombre:          document.getElementById("f-nombre").value.trim(),
+    alias:           document.getElementById("f-alias").value.trim(),
+    sexo:            document.getElementById("f-sexo").value,
+    dob:             document.getElementById("f-dob").value,
+    "ciudad-nac":    document.getElementById("f-ciudad-nac").value.trim(),
+    "pais-nac":      document.getElementById("f-pais-nac").value.trim(),
+    nacionalidad:    document.getElementById("f-nacionalidad").value.trim(),
+    pasaporte:       document.getElementById("f-pasaporte").value.trim(),
+    "fecha-entrada": document.getElementById("f-fecha-entrada").value,
+    "como-entro":    document.getElementById("f-como-entro").value,
+    direccion:       document.getElementById("f-direccion").value.trim(),
+    telefono:        document.getElementById("f-telefono").value.trim(),
+    email:           document.getElementById("f-email").value.trim(),
+    alien:           document.getElementById("f-alien").value.trim(),
+    q1:              document.getElementById("f-q1").value.trim(),
+    q2:              document.getElementById("f-q2").value.trim(),
+    q3:              document.getElementById("f-q3").value.trim(),
+    q4:              document.getElementById("f-q4").value.trim(),
+    q5:              document.getElementById("f-q5").value.trim(),
+    savedAt:         new Date().toISOString(),
+    status:          "pendiente_revision",
+  };
+
+  try {
+    await setDoc(doc(db,"clientes",clientId), { i589Draft: draft }, { merge: true });
+    clientData.i589Draft = draft;
+    closeI589();
+    renderI589Status(clientData);
+    const toast = document.createElement("div");
+    toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.2)";
+    toast.textContent = "✅ Guardado — tu oficina lo revisará pronto";
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(), 4000);
+  } catch(err){
+    alert("Error al guardar: " + err.message);
+    btn.textContent = "💾 Guardar y enviar a mi oficina";
+    btn.disabled = false;
+  }
+};
+
 </script>
 </body>
 </html>
