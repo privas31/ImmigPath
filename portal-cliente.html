@@ -85,13 +85,6 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
 .form-dropdown-item.disabled:hover{background:none;}
 .form-dropdown-soon{font-size:10px;margin-left:auto;color:#94A3B8;font-style:italic;}
 </style>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0F172A">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ImmigPath">
-  <link rel="apple-touch-icon" href="/pwa-icons/icon-192x192.png">
 </head>
 <body>
 
@@ -772,16 +765,33 @@ window.saveI589=async function(){
   }
 };
 
-</script>
+// ── Menú Formularios ─────────────────────────────────────────────────────────
+window.toggleFormMenu = function(){
+  const dd    = document.getElementById('form-dropdown');
+  const arrow = document.getElementById('form-menu-arrow');
+  dd.classList.toggle('open');
+  if(arrow) arrow.style.transform = dd.classList.contains('open') ? 'rotate(180deg)' : '';
+};
 
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('ImmigPath PWA ready'))
-      .catch(e => console.log('SW error:', e));
-  });
-}
+document.addEventListener('click', function(e){
+  const wrap = document.querySelector('.form-menu-wrap');
+  if(wrap && !wrap.contains(e.target)){
+    document.getElementById('form-dropdown')?.classList.remove('open');
+    const arrow = document.getElementById('form-menu-arrow');
+    if(arrow) arrow.style.transform = '';
+  }
+});
+
+window.openFormulario = function(tipo){
+  document.getElementById('form-dropdown')?.classList.remove('open');
+  const arrow = document.getElementById('form-menu-arrow');
+  if(arrow) arrow.style.transform = '';
+  if(tipo === 'asilo') {
+    if(window.openI589) openI589();
+    else console.error('openI589 no definida');
+  }
+};
+
 </script>
 </body>
 </html>
