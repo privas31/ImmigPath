@@ -221,6 +221,10 @@ function App(){
   const[equipo,setEquipo]=useState([]);const[showTeam,setShowTeam]=useState(false);const[newMember,setNewMember]=useState("");
   const[showDashboard,setShowDashboard]=useState(false);
   const[showNomina,setShowNomina]=useState(false);
+  const[showI589Review,setShowI589Review]=useState(false);
+  const[i589Cliente,setI589Cliente]=useState(null);
+  const[i589Comentario,setI589Comentario]=useState("");
+  const[i589Saving,setI589Saving]=useState(false);
 
   const[showPagosConfig,setShowPagosConfig]=useState(false);
   const[showCobrar,setShowCobrar]=useState(false);
@@ -943,6 +947,7 @@ const loadTeam=async()=>{
                           <button onClick={e=>{e.stopPropagation();openHistorial(c);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F8FAFC"} onMouseLeave={e=>e.target.style.background="none"}>
                             <span>📋</span> Ver historial de cambios
                           </button>
+                          {c.i589Draft&&<button onClick={e=>{e.stopPropagation();setI589Cliente(c);setI589Comentario("");setShowI589Review(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#7C3AED",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F5F3FF"} onMouseLeave={e=>e.target.style.background="none"}><span>📄</span> Revisar I-589{c.i589Draft?.status==="pendiente_revision"&&<span style={{marginLeft:"auto",background:"#FEF3C7",color:"#D97706",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:10}}>NUEVO</span>}</button>}
                           <button onClick={e=>{e.stopPropagation();const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>{prompt("Copia este link:",link);});setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F8FAFC"} onMouseLeave={e=>e.target.style.background="none"}>
                             <span>🔗</span> Copiar link del portal
                           </button>
@@ -1480,6 +1485,117 @@ const loadTeam=async()=>{
         </div>
       );
     })()}
+
+
+    {showI589Review&&i589Cliente&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:200,padding:16,overflowY:"auto"}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:620,boxShadow:"0 20px 60px rgba(0,0,0,0.3)",marginTop:20,marginBottom:20}}>
+          
+          {/* Header */}
+          <div style={{background:"linear-gradient(135deg,#0F172A,#1E3A5F)",borderRadius:"16px 16px 0 0",padding:22,color:"#fff"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div>
+                <div style={{fontSize:11,color:"#A8C4E0",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>Revisión — Formulario USCIS</div>
+                <div style={{fontSize:18,fontWeight:800}}>I-589 — Solicitud de Asilo</div>
+                <div style={{fontSize:13,color:"#A8C4E0",marginTop:4}}>{i589Cliente.nombre}</div>
+              </div>
+              <button onClick={()=>setShowI589Review(false)} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,color:"#fff",padding:"8px 12px",cursor:"pointer",fontSize:16}}>✕</button>
+            </div>
+            {/* Estado actual */}
+            {(()=>{
+              const stMap={pendiente_revision:{c:"#D97706",bg:"rgba(253,230,138,0.2)",label:"⏳ Pendiente de revisión"},en_revision:{c:"#60A5FA",bg:"rgba(96,165,250,0.2)",label:"🔍 En revisión"},aprobado:{c:"#34D399",bg:"rgba(52,211,153,0.2)",label:"✅ Aprobado"},devuelto:{c:"#F87171",bg:"rgba(248,113,113,0.2)",label:"↩️ Devuelto"}};
+              const st=stMap[i589Cliente.i589Draft?.status]||stMap.pendiente_revision;
+              return <div style={{marginTop:12,background:st.bg,borderRadius:8,padding:"8px 12px",display:"inline-flex",alignItems:"center",gap:8}}><span style={{fontSize:13,fontWeight:700,color:st.c}}>{st.label}</span><span style={{fontSize:11,color:"#94A3B8"}}>Enviado el {new Date(i589Cliente.i589Draft?.savedAt||"").toLocaleDateString("es")}</span></div>;
+            })()}
+          </div>
+
+          {/* Cuerpo */}
+          <div style={{padding:22,maxHeight:"55vh",overflowY:"auto"}}>
+            
+            {/* Parte A */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#1E40AF",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:12,paddingBottom:6,borderBottom:"2px solid #DBEAFE"}}>📋 Parte A — Información del Solicitante</div>
+              {[
+                ["Nombre completo", (i589Cliente.i589Draft?.nombre||"")+" "+(i589Cliente.i589Draft?.apellido||"")],
+                ["Alias", i589Cliente.i589Draft?.alias||"—"],
+                ["Sexo", i589Cliente.i589Draft?.sexo==="M"?"Masculino":i589Cliente.i589Draft?.sexo==="F"?"Femenino":"—"],
+                ["Fecha de nacimiento", i589Cliente.i589Draft?.dob||"—"],
+                ["Ciudad de nacimiento", i589Cliente.i589Draft?.["ciudad-nac"]||"—"],
+                ["País de nacimiento", i589Cliente.i589Draft?.["pais-nac"]||"—"],
+                ["Nacionalidad", i589Cliente.i589Draft?.nacionalidad||"—"],
+                ["Pasaporte", i589Cliente.i589Draft?.pasaporte||"—"],
+                ["Fecha de entrada EE.UU.", i589Cliente.i589Draft?.["fecha-entrada"]||"—"],
+                ["Cómo entró", i589Cliente.i589Draft?.["como-entro"]||"—"],
+                ["Dirección actual", i589Cliente.i589Draft?.direccion||"—"],
+                ["Teléfono", i589Cliente.i589Draft?.telefono||"—"],
+                ["Email", i589Cliente.i589Draft?.email||"—"],
+                ["Número Alien", i589Cliente.i589Draft?.alien||"—"],
+              ].map(([label,val])=>(
+                <div key={label} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #F1F5F9",gap:12}}>
+                  <span style={{fontSize:12,color:"#64748B",flexShrink:0}}>{label}</span>
+                  <span style={{fontSize:13,fontWeight:600,color:"#0F172A",textAlign:"right"}}>{val}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Narrativa */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#92400E",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:12,paddingBottom:6,borderBottom:"2px solid #FED7AA"}}>🕊️ ¿Por qué necesita protección?</div>
+              {[
+                ["1. ¿Qué le pasó o qué teme?", i589Cliente.i589Draft?.q1],
+                ["2. ¿Quién le amenazó?", i589Cliente.i589Draft?.q2],
+                ["3. ¿Cuándo ocurrió?", i589Cliente.i589Draft?.q3],
+                ["4. ¿Por qué fue elegido/a?", i589Cliente.i589Draft?.q4],
+                ["5. ¿Familiares en peligro?", i589Cliente.i589Draft?.q5],
+              ].map(([label,val])=>val&&(
+                <div key={label} style={{marginBottom:14}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:5}}>{label}</div>
+                  <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"10px 12px",fontSize:13,color:"#0F172A",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{val}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Comentario de la oficina */}
+            <div style={{background:"#F8FAFC",borderRadius:10,padding:14,border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:8}}>💬 Nota / comentario para el cliente (opcional)</div>
+              <textarea value={i589Comentario} onChange={e=>setI589Comentario(e.target.value)} rows={3} placeholder="Ej: Falta información sobre la fecha exacta del incidente..." style={{width:"100%",border:"1px solid #E2E8F0",borderRadius:8,padding:"9px 11px",fontSize:13,color:"#0F172A",resize:"vertical",outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            </div>
+          </div>
+
+          {/* Footer con acciones */}
+          <div style={{padding:"14px 22px",borderTop:"1px solid #F1F5F9",display:"flex",gap:10,flexWrap:"wrap"}}>
+            <button onClick={()=>setShowI589Review(false)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer",fontSize:13,color:"#64748B"}}>Cerrar</button>
+            <div style={{flex:1}}/>
+            <button disabled={i589Saving} onClick={async()=>{
+              setI589Saving(true);
+              const{db,doc,updateDoc}=window._firebase;
+              try{
+                await updateDoc(doc(db,"clientes",i589Cliente.id),{"i589Draft.status":"devuelto","i589Draft.comentarioOficina":i589Comentario});
+                showToastFn("↩️ Formulario devuelto al cliente");
+                setShowI589Review(false);
+                loadCases();
+              }catch(e){showToastFn("Error: "+e.message,"error");}
+              setI589Saving(false);
+            }} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #FECACA",background:"#FEF2F2",color:"#DC2626",cursor:"pointer",fontSize:13,fontWeight:600,opacity:i589Saving?0.6:1}}>
+              ↩️ Devolver con nota
+            </button>
+            <button disabled={i589Saving} onClick={async()=>{
+              setI589Saving(true);
+              const{db,doc,updateDoc}=window._firebase;
+              try{
+                await updateDoc(doc(db,"clientes",i589Cliente.id),{"i589Draft.status":"aprobado","i589Draft.comentarioOficina":""});
+                showToastFn("✅ I-589 aprobado");
+                setShowI589Review(false);
+                loadCases();
+              }catch(e){showToastFn("Error: "+e.message,"error");}
+              setI589Saving(false);
+            }} style={{padding:"9px 16px",borderRadius:9,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,opacity:i589Saving?0.6:1}}>
+              ✅ Aprobar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {showHistorial&&historialCliente&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
