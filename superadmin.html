@@ -814,7 +814,7 @@ window.createOffice = async function() {
     const uid = userCred.user.uid;
     const isDemo = document.getElementById('type-demo')?.checked !== false && document.getElementById('type-active')?.checked !== true;
     const demoEnd = document.getElementById('new-office-demo-end')?.value || '';
-    const officeRef = const officeRef2 = await addDoc(collection(db,'offices'), {
+    const officeRef2 = await addDoc(collection(db,'offices'), {
       name, ownerName:owner, email, phone, plan, isActive:true,
       enabledModules:modules,
       stats:{totalClients:0,activeCases:0,totalCases:0},
