@@ -310,8 +310,31 @@
       </div>
       <div class="form-group">
         <label class="form-label">Password inicial del Admin *</label>
-        <input class="form-input" id="new-office-pass" type="password" placeholder="Minimo 8 caracteres">
+        <input class="form-input" id="new-office-pass" type="password" placeholder="Minimo 8 caracteres" oninput="updateAccessInfo()">
       </div>
+
+      <!-- CREDENCIALES DE ACCESO -->
+      <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;padding:14px;margin-bottom:4px">
+        <div style="font-size:11px;font-weight:800;color:var(--accent2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">🔐 Credenciales de Acceso del Cliente</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <div style="font-size:10px;color:#64748B;margin-bottom:4px;text-transform:uppercase;font-weight:700">Email de Acceso</div>
+            <input id="new-office-access-email" type="email" placeholder="mismo email o uno distinto" oninput="updateAccessInfo()" style="font-size:12px;font-weight:600;color:#E2E8F0;background:rgba(255,255,255,0.05);border:1px solid rgba(99,102,241,0.3);border-radius:6px;padding:7px 10px;font-family:monospace;width:100%;box-sizing:border-box;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:#64748B;margin-bottom:4px;text-transform:uppercase;font-weight:700">Contraseña</div>
+            <div id="cred-pass" style="font-size:13px;font-weight:600;color:#E2E8F0;background:rgba(255,255,255,0.05);border-radius:6px;padding:7px 10px;font-family:monospace">— completa arriba —</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748B;margin-bottom:4px;text-transform:uppercase;font-weight:700">Link de Acceso al Monitor</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div id="cred-link" style="flex:1;font-size:12px;color:#A5B4FC;background:rgba(255,255,255,0.05);border-radius:6px;padding:7px 10px;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— se genera al crear la oficina —</div>
+            <button onclick="const l=document.getElementById('cred-link');navigator.clipboard.writeText(l.textContent).then(()=>showToast('Link copiado ✓','success')).catch(()=>prompt('Copia este link:',l.textContent))" style="background:rgba(99,102,241,0.2);color:var(--accent2);border:1px solid rgba(99,102,241,0.3);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap">Copiar</button>
+          </div>
+        </div>
+      </div>
+
       <div class="form-group">
         <label class="form-label">Tipo de acceso</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -339,7 +362,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-office')">Cancelar</button>
-      <button class="btn btn-primary" onclick="createOffice()">Crear Oficina</button>
+      <button class="btn btn-primary" id="btn-create-office" onclick="createOffice()">Crear Oficina</button>
     </div>
   </div>
 </div>
@@ -770,6 +793,7 @@ window.createOffice = async function() {
   const email = document.getElementById('new-office-email').value.trim();
   const phone = document.getElementById('new-office-phone').value.trim();
   const plan  = document.getElementById('new-office-plan').value;
+  const accessEmail = document.getElementById('new-office-access-email')?.value.trim() || email;
   const pass  = document.getElementById('new-office-pass').value;
   if (!name||!owner||!email||!pass) { showToast('Completa todos los campos requeridos','error'); return; }
   if (pass.length < 8) { showToast('La contraseña debe tener mínimo 8 caracteres','error'); return; }
@@ -790,13 +814,29 @@ window.createOffice = async function() {
       createdAt:serverTimestamp(), createdBy:currentUser.uid,
     });
     await setDoc(doc(db,'users',uid), {
-      uid, email, displayName:owner, role:'office_admin',
+      uid, email: accessEmail, displayName:owner, role:'office_admin',
       officeId:officeRef.id, moduleAccess:modules,
       isActive:true, createdAt:serverTimestamp(),
     });
-    closeModal('modal-new-office');
-    showToast('✓ Oficina "'+name+'" creada', 'success');
-    loadDashboard();
+    // Mostrar link de acceso generado
+    const accessLink = window.location.origin + (plan==='basic' ? '/app-basico.html' : '/app.html') + '?o=' + officeRef.id;
+    const linkEl = document.getElementById('cred-link');
+    if (linkEl) {
+      linkEl.textContent = accessLink;
+      linkEl.style.border = '2px solid #818CF8';
+      linkEl.style.color = '#A5B4FC';
+      linkEl.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+    // Cambiar botón a "Listo - Cerrar"
+    const createBtn = document.getElementById('btn-create-office');
+    if (createBtn) {
+      createBtn.textContent = 'Listo — Cerrar';
+      createBtn.onclick = () => { closeModal('modal-new-office'); loadDashboard(); };
+    } else {
+      closeModal('modal-new-office');
+      loadDashboard();
+    }
+    showToast('✓ Oficina "'+name+'" creada — copia el link antes de cerrar', 'success');
   } catch(err) { showToast('Error: '+err.message,'error'); }
 };
 
@@ -902,6 +942,18 @@ window.saveEditOffice = async function(id) {
   } catch(err) {
     showToast('Error: '+err.message, 'error');
   }
+};
+
+window.updateAccessInfo = function() {
+  const adminEmail = document.getElementById('new-office-email')?.value || '';
+  const pass = document.getElementById('new-office-pass')?.value || '';
+  const accessEmailEl = document.getElementById('new-office-access-email');
+  if (accessEmailEl && (!accessEmailEl.value || accessEmailEl.dataset.synced === 'true')) {
+    accessEmailEl.value = adminEmail;
+    accessEmailEl.dataset.synced = 'true';
+  }
+  const passEl = document.getElementById('cred-pass');
+  if (passEl) passEl.textContent = pass || '— completa arriba —';
 };
 
 window.toggleOffice = async function(id, isActive) {
