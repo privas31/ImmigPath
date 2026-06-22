@@ -369,7 +369,7 @@
 
 <script type="module">
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -387,6 +387,27 @@ const db = getFirestore(app);
 
 let currentUser = null;
 let officesCache = [];
+
+// ── Persistencia de sesión ────────────────────────────────────────────────────
+setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Persistence error:', e));
+
+onAuthStateChanged(auth, async (user) => {
+  if(user) {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if(userDoc.exists() && userDoc.data().role === 'superadmin') {
+        currentUser = { uid: user.uid, ...userDoc.data() };
+        const adminNameEl = document.getElementById('admin-name');
+        const avatarEl = document.getElementById('avatar-initials');
+        if(adminNameEl) adminNameEl.textContent = currentUser.displayName || 'Super Admin';
+        if(avatarEl) avatarEl.textContent = (currentUser.displayName || 'SA').substring(0,2).toUpperCase();
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        loadDashboard();
+      }
+    } catch(e) { console.warn('Auth state check error:', e); }
+  }
+});
 
 // ── Cargar branding al inicio ─────────────────────────────────────────────
 async function loadBrandingConfig() {
