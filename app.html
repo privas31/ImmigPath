@@ -916,8 +916,14 @@ const loadTeam=async()=>{
                     <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
                       <span style={{fontWeight:700,fontSize:15,color:"#0F172A"}}>{c.nombre}</span>
                       <Badge cfg={scfg} label={scfg.label}/>
-                      {[...new Set((c.casos||[]).map(ca=>ca.sistema))].map(s=>{const sys=SISTEMAS[s];return sys?<span key={s} style={{background:sys.bg,color:sys.color,border:`1px solid ${sys.border}`,borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:600}}>{sys.icon} {sys.label}</span>:null;})}
-                      {(c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("I-765")&&ca.tieneEAD==="si")&&<span style={{background:"#F0FDF4",color:"#15803D",border:"1px solid #BBF7D0",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:600}}>💼 EAD</span>}
+                      {(()=>{
+                        const tieneUSCIS=(c.casos||[]).some(ca=>ca.sistema==="uscis"||ca.sistema==="foia");
+                        const tieneEOIR=(c.casos||[]).some(ca=>ca.sistema==="eoir");
+                        return <>
+                          {tieneUSCIS&&<span style={{background:"#F0F9FF",color:"#0369A1",border:"1px solid #BAE6FD",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:700}}>🏛 USCIS</span>}
+                          {tieneEOIR&&<span style={{background:"#F5F3FF",color:"#7C3AED",border:"1px solid #DDD6FE",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:700}}>⚖️ EOIR</span>}
+                        </>;
+                      })()}
                     </div>
                     <div style={{display:"flex",gap:10,marginTop:3,flexWrap:"wrap",alignItems:"center"}}>
                       {c.paisOrigen&&<span style={{fontSize:12,color:"#64748B"}}>{getFlag(c.paisOrigen)} {c.paisOrigen}</span>}
