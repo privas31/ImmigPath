@@ -290,8 +290,8 @@
         <div class="form-group">
           <label class="form-label">Plan</label>
           <select class="form-input" id="new-office-plan" onchange="updatePlanModules(this.value)">
-            <option value="basic">Basico — $199/mes (Inmigracion)</option>
-            <option value="professional" selected>Profesional — $467/mes (Inmigracion + Notaria + 1TB)</option>
+            <option value="basic">Básico — $249/mes (Monitor simple, Pagos, Nómina)</option>
+            <option value="professional" selected>Profesional — $697/mes (Monitor completo, I-589, PWA, Alertas)</option>
             <option value="premium">Premium — $647/mes (Todo + Automatizaciones)</option>
           </select>
           <div id="plan-desc" style="font-size:11px;color:var(--text2);margin-top:6px;padding:8px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
@@ -310,29 +310,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Password inicial del Admin *</label>
-        <input class="form-input" id="new-office-pass" type="password" placeholder="Minimo 8 caracteres" oninput="updateAccessInfo()">
-      </div>
-      <div class="form-group">
-        <div style="background:#0F172A;border-radius:10px;padding:14px;border:1px solid rgba(99,102,241,0.3)">
-          <div style="font-size:11px;font-weight:700;color:#818CF8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Credenciales de acceso del cliente</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-            <div>
-              <div style="font-size:10px;color:#64748B;margin-bottom:3px">EMAIL DE ACCESO</div>
-              <div id="cred-email" style="font-size:13px;font-weight:600;color:#E2E8F0;background:rgba(255,255,255,0.05);border-radius:6px;padding:7px 10px;font-family:monospace">— completa el email arriba —</div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:#64748B;margin-bottom:3px">CONTRASENA</div>
-              <div id="cred-pass" style="font-size:13px;font-weight:600;color:#E2E8F0;background:rgba(255,255,255,0.05);border-radius:6px;padding:7px 10px;font-family:monospace">— completa la contrasena —</div>
-            </div>
-          </div>
-          <div>
-            <div style="font-size:10px;color:#64748B;margin-bottom:3px">LINK DE ACCESO AL MONITOR</div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <div id="cred-link" style="font-size:11px;color:#818CF8;background:rgba(99,102,241,0.1);border-radius:6px;padding:7px 10px;font-family:monospace;flex:1;word-break:break-all">— se genera al crear la oficina —</div>
-              <button onclick="copyCredLink()" style="background:rgba(99,102,241,0.2);color:#818CF8;border:1px solid rgba(99,102,241,0.3);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;white-space:nowrap">Copiar</button>
-            </div>
-          </div>
-        </div>
+        <input class="form-input" id="new-office-pass" type="password" placeholder="Minimo 8 caracteres">
       </div>
       <div class="form-group">
         <label class="form-label">Tipo de acceso</label>
@@ -369,7 +347,7 @@
 <script type="module">
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
@@ -457,21 +435,6 @@ window.previewLogo = function() {
   };
   setTimeout(setDefaultDemoDate, 500);
 })();
-
-window.updateAccessInfo = function() {
-  const email = document.getElementById('new-office-email')?.value || '';
-  const pass = document.getElementById('new-office-pass')?.value || '';
-  const emailEl = document.getElementById('cred-email');
-  const passEl = document.getElementById('cred-pass');
-  if (emailEl) emailEl.textContent = email || '— completa el email arriba —';
-  if (passEl) passEl.textContent = pass || '— completa la contrasena —';
-};
-
-window.copyCredLink = function() {
-  const link = document.getElementById('cred-link')?.textContent || '';
-  if (link.includes('—')) { showToast('Primero crea la oficina para obtener el link', 'error'); return; }
-  navigator.clipboard.writeText(link).then(() => showToast('Link copiado ✓')).catch(() => {});
-};
 
 window.setAccessType = function(type) {
   document.getElementById('type-demo').checked = type === 'demo';
@@ -574,7 +537,7 @@ async function loadDashboard() {
     officesCache.forEach(o => { clients += (o.stats?.totalClients||0); cases += (o.stats?.activeCases||0); });
     const cliEl=document.getElementById('stat-clients'); if(cliEl) cliEl.textContent = clients;
     const casEl=document.getElementById('stat-cases'); if(casEl) casEl.textContent = cases;
-    const planPrices = {basic:199, professional:467, premium:647};
+    const planPrices = {basic:249, professional:697, premium:1299};
     const planCosts = {basic:30, professional:51, premium:91};
     const activeOffices = officesCache.filter(o=>o.isActive);
     const totalRevenue = activeOffices.reduce((s,o)=>s+(planPrices[o.plan]||199),0);
@@ -702,10 +665,9 @@ function renderOfficesTable(offices) {
         })()}</td>
       <td>
         <div class="actions">
-          <button class="action-btn" onclick="window.open('/app.html?o=${o.id}','_blank')" title="Entrar al monitor de esta oficina" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
+          <button class="action-btn" onclick="window.open(getMonitorUrl(o),'_blank')" title="Entrar al monitor de esta oficina" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
           <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
           <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
-          <button class="action-btn" onclick="confirmDeleteOffice('${o.id}','${o.name.replace(/'/g,"\'")}','${o.adminEmail||o.email||''}')" style="background:rgba(239,68,68,0.12);color:#f87171;border-color:rgba(239,68,68,0.3)">Eliminar</button>
         </div>
       </td>
     </tr>`).join('');
@@ -751,10 +713,9 @@ function renderOfficesFullTable(offices) {
         return '<span class="badge badge-green">Activa</span>';
       })()}</td>
       <td>
-        <button class="action-btn" onclick="window.open('/app.html?o=${o.id}','_blank')" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
+        <button class="action-btn" onclick="window.open(getMonitorUrl(o),'_blank')" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
         <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
         <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
-        <button class="action-btn" onclick="confirmDeleteOffice('${o.id}','${o.name.replace(/'/g,"\'")}','${o.adminEmail||o.email||''}')" style="background:rgba(239,68,68,0.12);color:#f87171;border-color:rgba(239,68,68,0.3)">Eliminar</button>
       </td>
     </tr>`).join('');
 }
@@ -762,10 +723,11 @@ function renderOfficesFullTable(offices) {
 function renderModulePills(modules) {
   const map = {immigration:'mod-imm',taxes:'mod-tax',insurance:'mod-ins',notary:'mod-not'};
   const labels = {immigration:'Imm',taxes:'Tax',insurance:'Seg',notary:'Not'};
-  const planLabels = {basic:'$199',professional:'$467',premium:'$647'};
+  const planLabels = {basic:'$249',professional:'$697',premium:'$1,299'};
   return modules.map(m => `<span class="mod ${map[m]||''}">${labels[m]||m}</span>`).join('');
 }
 function getPlanBadge(plan) { return {basic:'badge-gray',professional:'badge-purple',premium:'badge-yellow'}[plan]||'badge-gray'; }
+function getMonitorUrl(office) { return office.plan==='basic' ? '/app-basico.html?o='+office.id : '/app.html?o='+office.id; }
 
 // ── Editar módulos de una oficina ─────────────────────────────────────────────
 window.editOfficeModules = function(officeId) {
@@ -816,24 +778,18 @@ window.createOffice = async function() {
     const uid = userCred.user.uid;
     const isDemo = document.getElementById('type-demo')?.checked !== false && document.getElementById('type-active')?.checked !== true;
     const demoEnd = document.getElementById('new-office-demo-end')?.value || '';
-    const officeRef2 = await addDoc(collection(db,'offices'), {
+    const officeRef = await addDoc(collection(db,'offices'), {
       name, ownerName:owner, email, phone, plan, isActive:true,
       enabledModules:modules,
       stats:{totalClients:0,activeCases:0,totalCases:0},
       isDemo: isDemo,
       demoEndsAt: isDemo ? demoEnd : null,
       accessType: isDemo ? 'demo' : 'active',
-      adminEmail: email,
-      adminPass: pass,
       createdAt:serverTimestamp(), createdBy:currentUser.uid,
     });
-    // Mostrar link de acceso generado
-    const accessLink = window.location.origin + '/app.html?o=' + officeRef2.id;
-    const linkEl = document.getElementById('cred-link');
-    if (linkEl) linkEl.textContent = accessLink;
     await setDoc(doc(db,'users',uid), {
       uid, email, displayName:owner, role:'office_admin',
-      officeId:officeRef2.id, moduleAccess:modules,
+      officeId:officeRef.id, moduleAccess:modules,
       isActive:true, createdAt:serverTimestamp(),
     });
     closeModal('modal-new-office');
@@ -843,106 +799,106 @@ window.createOffice = async function() {
 };
 
 
-// ── Eliminar Oficina ──────────────────────────────────────────────────────────
-window.confirmDeleteOffice = function(id, name, adminEmail) {
-  const existing = document.getElementById('modal-confirm-delete');
-  if (existing) existing.remove();
+// ── Editar Oficina ────────────────────────────────────────────────────────────
+window.openEditOffice = function(id) {
+  const o = officesCache.find(x => x.id === id);
+  if(!o) return;
+  const existing = document.getElementById('modal-edit-office');
+  if(existing) existing.remove();
 
   const modal = document.createElement('div');
-  modal.id = 'modal-confirm-delete';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:9999';
+  modal.id = 'modal-edit-office';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px';
   modal.innerHTML = `
-    <div style="background:#1E293B;border:1px solid rgba(239,68,68,0.4);border-radius:14px;padding:28px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-        <div style="width:42px;height:42px;border-radius:10px;background:rgba(239,68,68,0.15);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🗑️</div>
+    <div style="background:#1E293B;border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:28px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-weight:800;font-size:16px;color:#F1F5F9">✏️ Editar Oficina</div>
+        <button onclick="document.getElementById('modal-edit-office').remove()" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:6px 10px;cursor:pointer">✕</button>
+      </div>
+      <div style="display:grid;gap:14px">
         <div>
-          <div style="font-weight:700;font-size:16px;color:#F1F5F9">Eliminar Oficina</div>
-          <div style="font-size:12px;color:#94A3B8">Esta acción no se puede deshacer</div>
+          <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Nombre de la Oficina *</label>
+          <input id="edit-office-name" type="text" value="${o.name||''}" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Nombre del Dueño *</label>
+          <input id="edit-office-owner" type="text" value="${o.ownerName||''}" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Email del Admin *</label>
+          <input id="edit-office-email" type="email" value="${o.adminEmail||o.email||''}" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Teléfono</label>
+          <input id="edit-office-phone" type="text" value="${o.phone||''}" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Plan</label>
+          <select id="edit-office-plan" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none">
+            <option value="basic" ${o.plan==='basic'?'selected':''}>Básico — $249/mes</option>
+            <option value="professional" ${o.plan==='professional'||!o.plan?'selected':''}>Profesional — $697/mes</option>
+            <option value="premium" ${o.plan==='premium'?'selected':''}>Premium — $1,299/mes</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Tipo de acceso</label>
+          <select id="edit-office-access" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none">
+            <option value="demo" ${o.accessType==='demo'?'selected':''}>Demo gratuito (15 días)</option>
+            <option value="active" ${o.accessType==='active'?'selected':''}>Cliente activo</option>
+          </select>
         </div>
       </div>
-      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px;margin-bottom:20px">
-        <div style="font-weight:600;color:#F1F5F9;font-size:14px">${name}</div>
-        <div style="font-size:11px;color:#94A3B8;margin-top:3px">Se eliminará el registro completo de esta oficina</div>
-      </div>
-      <div style="margin-bottom:16px">
-        <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:6px">Ingresa tu contraseña de superadmin para confirmar:</label>
-        <div style="position:relative">
-          <input id="delete-pass-input" type="password" placeholder="Tu contraseña..." autocomplete="current-password"
-            style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 38px 10px 12px;color:#F1F5F9;font-size:13px;outline:none"
-            onkeydown="if(event.key==='Enter') executeDeleteOffice('${id}','${name}','${adminEmail||''}')">
-          <span onclick="const i=document.getElementById('delete-pass-input');i.type=i.type==='password'?'text':'password'"
-            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:15px;color:#64748B;user-select:none">👁</span>
-        </div>
-        <div id="delete-pass-error" style="color:#f87171;font-size:11px;margin-top:5px;display:none">Contraseña incorrecta</div>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="document.getElementById('modal-confirm-delete').remove()"
-          style="padding:9px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94A3B8;cursor:pointer;font-size:13px">
-          Cancelar
-        </button>
-        <button id="btn-confirm-delete" onclick="executeDeleteOffice('${id}','${name}','${adminEmail||''}')"
-          style="padding:9px 18px;border-radius:8px;background:rgba(239,68,68,0.2);color:#f87171;cursor:pointer;font-size:13px;font-weight:600;border:1px solid rgba(239,68,68,0.4)">
-          Eliminar
-        </button>
+      <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+        <button onclick="document.getElementById('modal-edit-office').remove()" style="padding:9px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94A3B8;cursor:pointer;font-size:13px">Cancelar</button>
+        <button onclick="saveEditOffice('${o.id}')" style="padding:9px 18px;border-radius:8px;border:none;background:#1E40AF;color:#fff;cursor:pointer;font-size:13px;font-weight:700">Guardar cambios</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
-  // Focus al input de contraseña
-  setTimeout(() => document.getElementById('delete-pass-input')?.focus(), 50);
 };
 
-window.executeDeleteOffice = async function(id, name, adminEmail) {
-  const passInput = document.getElementById('delete-pass-input');
-  const passError = document.getElementById('delete-pass-error');
-  const btn = document.getElementById('btn-confirm-delete');
-  const pass = passInput?.value || '';
+window.saveEditOffice = async function(id) {
+  const name  = document.getElementById('edit-office-name')?.value.trim();
+  const owner = document.getElementById('edit-office-owner')?.value.trim();
+  const email = document.getElementById('edit-office-email')?.value.trim();
+  const phone = document.getElementById('edit-office-phone')?.value.trim();
+  const plan  = document.getElementById('edit-office-plan')?.value;
+  const accessType = document.getElementById('edit-office-access')?.value;
 
-  if (!pass) {
-    passInput.style.borderColor = '#f87171';
-    passError.textContent = 'Ingresa tu contraseña';
-    passError.style.display = 'block';
-    return;
-  }
-
-  if (btn) { btn.textContent = 'Verificando...'; btn.disabled = true; }
-  passError.style.display = 'none';
+  if(!name || !owner || !email) { showToast('Completa los campos obligatorios','error'); return; }
 
   try {
-    // Verificar contraseña maestra del superadmin
-    if (pass !== 'ImmigPath2024!') {
-      throw { code: 'auth/wrong-password' };
-    }
+    // Actualizar link de acceso según el nuevo plan
+    const monitorPath = plan === 'basic' ? '/app-basico.html' : '/app.html';
+    const newAccessLink = window.location.origin + monitorPath + '?o=' + id;
 
-    if (btn) btn.textContent = 'Eliminando...';
+    await updateDoc(doc(db,'offices',id), {
+      name, ownerName:owner, adminEmail:email, phone, plan, accessType,
+      accessLink: newAccessLink
+    });
 
-    // Eliminar documento de Firestore /offices
-    await deleteDoc(doc(db, 'offices', id));
-
-    // Eliminar documento(s) en /users con ese officeId
+    // Actualizar también en el documento del usuario admin
     try {
       const usersQ = query(collection(db,'users'), where('officeId','==',id));
       const snap = await getDocs(usersQ);
       for (const userDoc of snap.docs) {
-        await deleteDoc(doc(db,'users',userDoc.id));
+        await updateDoc(doc(db,'users',userDoc.id), { plan });
       }
     } catch(e) { /* ignorar */ }
 
-    document.getElementById('modal-confirm-delete')?.remove();
-    showToast('\u2713 Oficina "'+name+'" eliminada', 'success');
-    loadDashboard();
+    document.getElementById('modal-edit-office')?.remove();
+    showToast('✓ Oficina actualizada — link de acceso actualizado', 'success');
 
+    // Mostrar nuevo link
+    const linkMsg = document.createElement('div');
+    linkMsg.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:14px 20px;border-radius:10px;font-size:12px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.3);max-width:420px;text-align:center';
+    linkMsg.innerHTML = '🔗 Nuevo link: <strong style="color:#818CF8">' + newAccessLink + '</strong><br><button onclick="navigator.clipboard.writeText(\'' + newAccessLink + '\').then(()=>this.textContent=\'✓ Copiado!\');setTimeout(()=>this.parentElement.remove(),1500)" style="margin-top:8px;background:#1E40AF;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer">Copiar link</button>';
+    document.body.appendChild(linkMsg);
+    setTimeout(() => linkMsg.remove(), 8000);
+
+    loadDashboard();
   } catch(err) {
-    if (btn) { btn.textContent = 'Eliminar'; btn.disabled = false; }
-    if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-      passInput.style.borderColor = '#f87171';
-      passError.textContent = 'Contraseña incorrecta';
-      passError.style.display = 'block';
-      passInput.value = '';
-      passInput.focus();
-    } else {
-      showToast('Error: '+err.message, 'error');
-    }
+    showToast('Error: '+err.message, 'error');
   }
 };
 
