@@ -318,7 +318,7 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div>
               <div style="font-size:10px;color:#64748B;margin-bottom:3px">EMAIL DE ACCESO</div>
-              <div id="cred-email" style="font-size:13px;font-weight:600;color:#E2E8F0;background:rgba(255,255,255,0.05);border-radius:6px;padding:7px 10px;font-family:monospace">— completa el email arriba —</div>
+              <input id="new-office-access-email" type="email" placeholder="mismo email o uno distinto" oninput="updateAccessInfo()" style="font-size:13px;font-weight:600;color:#E2E8F0;background:rgba(255,255,255,0.05);border:1px solid rgba(99,102,241,0.3);border-radius:6px;padding:7px 10px;font-family:monospace;width:100%;box-sizing:border-box;outline:none">
             </div>
             <div>
               <div style="font-size:10px;color:#64748B;margin-bottom:3px">CONTRASENA</div>
@@ -361,7 +361,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-office')">Cancelar</button>
-      <button class="btn btn-primary" onclick="createOffice()">Crear Oficina</button>
+      <button class="btn btn-primary" id="btn-create-office" onclick="createOffice()">Crear Oficina</button>
     </div>
   </div>
 </div>
@@ -459,11 +459,15 @@ window.previewLogo = function() {
 })();
 
 window.updateAccessInfo = function() {
-  const email = document.getElementById('new-office-email')?.value || '';
+  const adminEmail = document.getElementById('new-office-email')?.value || '';
   const pass = document.getElementById('new-office-pass')?.value || '';
-  const emailEl = document.getElementById('cred-email');
+  // Si el campo de acceso está vacío o coincide con el email anterior, sincronizar
+  const accessEmailEl = document.getElementById('new-office-access-email');
+  if (accessEmailEl && (!accessEmailEl.value || accessEmailEl.dataset.synced === 'true')) {
+    accessEmailEl.value = adminEmail;
+    accessEmailEl.dataset.synced = 'true';
+  }
   const passEl = document.getElementById('cred-pass');
-  if (emailEl) emailEl.textContent = email || '— completa el email arriba —';
   if (passEl) passEl.textContent = pass || '— completa la contrasena —';
 };
 
@@ -805,6 +809,7 @@ window.createOffice = async function() {
   const phone = document.getElementById('new-office-phone').value.trim();
   const plan  = document.getElementById('new-office-plan').value;
   const pass  = document.getElementById('new-office-pass').value;
+  const accessEmail = document.getElementById('new-office-access-email')?.value.trim() || email;
   if (!name||!owner||!email||!pass) { showToast('Completa todos los campos requeridos','error'); return; }
   if (pass.length < 8) { showToast('La contraseña debe tener mínimo 8 caracteres','error'); return; }
   const modules = ['mod-imm','mod-tax','mod-ins','mod-not'].filter(id => document.getElementById(id).checked)
@@ -821,7 +826,7 @@ window.createOffice = async function() {
       isDemo: isDemo,
       demoEndsAt: isDemo ? demoEnd : null,
       accessType: isDemo ? 'demo' : 'active',
-      adminEmail: email,
+      adminEmail: accessEmail,
       adminPass: pass,
       createdAt:serverTimestamp(), createdBy:currentUser.uid,
     });
@@ -830,13 +835,27 @@ window.createOffice = async function() {
     const linkEl = document.getElementById('cred-link');
     if (linkEl) linkEl.textContent = accessLink;
     await setDoc(doc(db,'users',uid), {
-      uid, email, displayName:owner, role:'office_admin',
+      uid, email: accessEmail, displayName:owner, role:'office_admin',
       officeId:officeRef2.id, moduleAccess:modules,
       isActive:true, createdAt:serverTimestamp(),
     });
-    closeModal('modal-new-office');
-    showToast('✓ Oficina "'+name+'" creada', 'success');
-    loadDashboard();
+    // No cerrar el modal aún — mostrar el link para que lo puedan copiar
+    showToast('✓ Oficina "'+name+'" creada — copia el link antes de cerrar', 'success');
+    // Resaltar la sección de link
+    const linkSection = document.getElementById('cred-link');
+    if (linkSection) {
+      linkSection.style.border = '2px solid #818CF8';
+      linkSection.style.color = '#A5B4FC';
+      linkSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    // Cambiar botón de crear a "Listo / Cerrar"
+    const createBtn = document.getElementById('btn-create-office');
+    if (createBtn) {
+      createBtn.textContent = 'Listo — Cerrar';
+      createBtn.onclick = () => { closeModal('modal-new-office'); loadDashboard(); };
+    } else {
+      loadDashboard();
+    }
   } catch(err) { showToast('Error: '+err.message,'error'); }
 };
 
@@ -860,7 +879,20 @@ window.showSection = function(section, btn) {
   btn?.classList.add('active');
 };
 
-window.openModal  = id => document.getElementById(id)?.classList.remove('hidden');
+window.openModal = function(id) {
+  document.getElementById(id)?.classList.remove('hidden');
+  if (id === 'modal-new-office') {
+    // Reset estado del modal al abrir
+    const linkEl = document.getElementById('cred-link');
+    if (linkEl) { linkEl.textContent = '— se genera al crear la oficina —'; linkEl.style.border=''; linkEl.style.color=''; }
+    const accessEmailEl = document.getElementById('new-office-access-email');
+    if (accessEmailEl) { accessEmailEl.value = ''; accessEmailEl.dataset.synced = 'false'; }
+    const passEl = document.getElementById('cred-pass');
+    if (passEl) passEl.textContent = '— completa la contrasena —';
+    const createBtn = document.getElementById('btn-create-office');
+    if (createBtn) { createBtn.textContent = 'Crear Oficina'; createBtn.onclick = createOffice; }
+  }
+};
 window.closeModal = id => document.getElementById(id)?.classList.add('hidden');
 
 function showToast(msg, type='success') {
