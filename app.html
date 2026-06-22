@@ -177,7 +177,7 @@ function LoginScreen({onLogin}){
       }
       onLogin(cred.user,userData,officeInfo);
     }catch(e){setErr("Email o contraseña incorrectos");}setLoading(false);};
-  return(<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0F172A 0%,#1E40AF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+  return(<div onClick={()=>setOpenMenuId(null)} style={{minHeight:"100vh",background:"linear-gradient(135deg,#0F172A 0%,#1E40AF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
     <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:400,padding:36,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
       <div style={{textAlign:"center",marginBottom:28}}>
         <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}>
@@ -209,6 +209,9 @@ function App(){
   const[confirmDelete,setConfirmDelete]=useState(null);const[expandedId,setExpandedId]=useState(null);const[activeCasoTab,setActiveCasoTab]=useState({});
   const[showPDF,setShowPDF]=useState(false);
   const[showHistorial,setShowHistorial]=useState(false);
+  const[openMenuId,setOpenMenuId]=useState(null);
+  const[lang,setLang]=useState("es");
+  const t=(es,en)=>lang==="es"?es:en;
   const[historialCliente,setHistorialCliente]=useState(null);
   const[historialData,setHistorialData]=useState([]);const[pdfOpts,setPdfOpts]=useState({sistema:"todos",estado:"todos"});
   const[showAddUser,setShowAddUser]=useState(false);const[newUserEmail,setNewUserEmail]=useState("");const[newUserPass,setNewUserPass]=useState("");const[addUserMsg,setAddUserMsg]=useState("");
@@ -842,15 +845,19 @@ const loadTeam=async()=>{
               📊 Dashboard
               {(stats.alertas.length>0||stats.vencidos.length>0)&&<span style={{position:"absolute",top:-6,right:-6,background:"#EF4444",color:"#fff",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{stats.alertas.length+stats.vencidos.length}</span>}
             </button>
-            {isAdmin&&<button onClick={()=>setShowNomina(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>💰 Nomina</button>}
+            {isAdmin&&<button onClick={()=>setShowNomina(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>💰 {t("Nomina","Payroll")}</button>}
             {isAdmin&&<button onClick={()=>setShowPagosConfig(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>⚙️ Pagos</button>}
             {isAdmin&&<button onClick={()=>setShowPagosReporte(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📊 Cobros</button>}
-            {enabledModules.includes("notary")&&<a href="/notaria.html" style={{background:"rgba(196,132,252,0.2)",color:"#E9D5FF",border:"1px solid rgba(196,132,252,0.4)",borderRadius:8,padding:"8px 13px",fontSize:12,fontWeight:600,textDecoration:"none",display:"inline-flex",alignItems:"center"}}>Notaria</a>}
+            {enabledModules.includes("notary")&&<a href="/notaria.html" style={{background:"rgba(196,132,252,0.2)",color:"#E9D5FF",border:"1px solid rgba(196,132,252,0.4)",borderRadius:8,padding:"8px 13px",fontSize:12,fontWeight:600,textDecoration:"none",display:"inline-flex",alignItems:"center"}}>{t("Notaria","Notary")}</a>}
             {isAdmin&&<button onClick={()=>setShowTeam(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>👥 Equipo</button>}
             {isAdmin&&<button onClick={()=>setShowAddUser(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔐 Usuarios</button>}
             {isAdmin&&<button onClick={()=>setShowPDF(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 PDF</button>}
-            <button onClick={openAdd} style={{background:"#fff",color:"#1E40AF",border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>+ Nuevo cliente</button>
-            <button onClick={handleLogout} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer"}}>Salir</button>
+            <button onClick={openAdd} style={{background:"#fff",color:"#1E40AF",border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>{t("+ Nuevo cliente","+ New client")}</button>
+            <div style={{display:"flex",gap:4}}>
+              <button onClick={()=>setLang("es")} style={{background:lang==="es"?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.08)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:"6px 0 0 6px",padding:"5px 9px",fontSize:11,cursor:"pointer",fontWeight:lang==="es"?700:400}}>ES</button>
+              <button onClick={()=>setLang("en")} style={{background:lang==="en"?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.08)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:"0 6px 6px 0",padding:"5px 9px",fontSize:11,cursor:"pointer",fontWeight:lang==="en"?700:400}}>EN</button>
+            </div>
+            <button onClick={handleLogout} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer"}}>{t("Salir","Logout")}</button>
           </div>
         </div>
         
@@ -928,19 +935,37 @@ const loadTeam=async()=>{
                   </div>
                   <div style={{display:"flex",gap:6}}>
                     <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}} title="Editar">✏️</button>
-                    <button onClick={e=>{e.stopPropagation();openHistorial(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}} title="Ver historial">📋</button>
-                    <button title="Copiar link del cliente" onClick={e=>{e.stopPropagation();const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>{prompt("Copia este link:",link);});}} style={{background:"#EFF6FF",color:"#1D4ED8",border:"1px solid #BFDBFE",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔗</button>
-                    <button title="Enviar WhatsApp al cliente" onClick={e=>{
-                      e.stopPropagation();
-                      const tel=(c.telefono||"").replace(/[^0-9]/g,"");
-                      if(!tel){showToastFn("Sin telefono registrado","error");return;}
-                      const nombre=c.nombre||"cliente";
-                      const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigracion";
-                      const estado=(c.casos||[]).map(ca=>ca.estatusUSCIS||ca.estatusEOIR||"").filter(Boolean).join(", ");
-                      const oficina=officeData?.name||"nuestra oficina";
-                      const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualizacion de su proceso. Para mas informacion contactenos. — "+oficina;
-                      window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");
-                    }} style={{background:"#F0FDF4",color:"#16A34A",border:"1px solid #BBF7D0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}} title="WhatsApp">💬</button>
+                    <div style={{position:"relative"}}>
+                      <button onClick={e=>{e.stopPropagation();setOpenMenuId(openMenuId===c.id?null:c.id);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}} title="Mas acciones">⋯</button>
+                      {openMenuId===c.id&&(
+                        <div onClick={e=>e.stopPropagation()} style={{position:"absolute",right:0,top:"110%",background:"#fff",borderRadius:10,boxShadow:"0 8px 32px rgba(0,0,0,0.15)",border:"1px solid #E2E8F0",zIndex:50,minWidth:200,overflow:"hidden"}}>
+                          <div style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",borderBottom:"1px solid #F1F5F9"}}>Acciones</div>
+                          <button onClick={e=>{e.stopPropagation();openHistorial(c);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F8FAFC"} onMouseLeave={e=>e.target.style.background="none"}>
+                            <span>📋</span> Ver historial de cambios
+                          </button>
+                          <button onClick={e=>{e.stopPropagation();const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>{prompt("Copia este link:",link);});setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F8FAFC"} onMouseLeave={e=>e.target.style.background="none"}>
+                            <span>🔗</span> Copiar link del portal
+                          </button>
+                          <button onClick={e=>{
+                            e.stopPropagation();
+                            const tel=(c.telefono||"").replace(/[^0-9]/g,"");
+                            if(!tel){showToastFn("Sin telefono registrado","error");setOpenMenuId(null);return;}
+                            const nombre=c.nombre||"cliente";
+                            const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigracion";
+                            const oficina=officeData?.name||"nuestra oficina";
+                            const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualizacion de su proceso. Para mas informacion contactenos. — "+oficina;
+                            window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");
+                            setOpenMenuId(null);
+                          }} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F8FAFC"} onMouseLeave={e=>e.target.style.background="none"}>
+                            <span>💬</span> Enviar WhatsApp
+                          </button>
+                          <div style={{height:"1px",background:"#F1F5F9"}}></div>
+                          <button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#EF4444",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#FEF2F2"} onMouseLeave={e=>e.target.style.background="none"}>
+                            <span>🗑</span> Eliminar cliente
+                          </button>
+                        </div>
+                      )}
+                    </div>
                 {isAdmin&&<button title="Cobrar cliente" onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{background:"#F0FDF4",color:"#16A34A",border:"1px solid #BBF7D0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}}>💳</button>}
                     {isAdmin&&<button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);}} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}}>🗑</button>}
                   </div>
@@ -1397,7 +1422,7 @@ const loadTeam=async()=>{
 
         {showTeam&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
       <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:420,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
-        <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Equipo</h2>
+        <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>{t("Equipo","Team")}</h2>
         <div style={{display:"flex",gap:8,marginBottom:12}}>
           <input value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder="Nombre..." style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
           <button onClick={addMember} style={{padding:"9px 16px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontWeight:600,fontSize:14,cursor:"pointer"}}>+ Agregar</button>
