@@ -899,14 +899,7 @@ const loadTeam=async()=>{
     
     <div style={{maxWidth:1080,margin:"14px auto 40px",padding:"0 20px"}}>
 
-      {loading?<div style={{textAlign:"center",padding:60,color:"#94A3B8"}}>⏳ Cargando...</div>:filtered.length===0?(
-        <div style={{textAlign:"center",padding:60,color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px solid #E2E8F0"}}>
-          <div style={{fontSize:40,marginBottom:10}}>📭</div><div>Sin clientes en esta categoría</div>
-          <button onClick={openAdd} style={{marginTop:16,background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:14,cursor:"pointer",fontWeight:600}}>+ Agregar primer cliente</button>
-        </div>
-      ):(
-        <>
-        {(stats.vencidos.length>0||stats.alertas1dia.length>0||stats.alertas3dias.length>0)&&(
+      {!loading&&(stats.vencidos.length>0||stats.alertas1dia.length>0||stats.alertas3dias.length>0)&&(
           <div style={{marginBottom:16,borderRadius:12,overflow:"hidden",border:"1px solid #FECACA"}}>
             {stats.vencidos.length>0&&(
               <div style={{background:"#FEF2F2",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,borderBottom:stats.alertas1dia.length>0||stats.alertas3dias.length>0?"1px solid #FECACA":"none"}}>
@@ -966,7 +959,14 @@ const loadTeam=async()=>{
               </div>
             )}
           </div>
-        )}
+      )}
+
+      {loading?<div style={{textAlign:"center",padding:60,color:"#94A3B8"}}>⏳ Cargando...</div>:filtered.length===0?(
+        <div style={{textAlign:"center",padding:60,color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px solid #E2E8F0"}}>
+          <div style={{fontSize:40,marginBottom:10}}>📭</div><div>Sin clientes en esta categoría</div>
+          <button onClick={openAdd} style={{marginTop:16,background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:14,cursor:"pointer",fontWeight:600}}>+ Agregar primer cliente</button>
+        </div>
+      ):(
         <div style={{display:"grid",gap:10}}>
           {filtered.map(c=>{
             const st=getStatusCliente(c);const scfg=STATUS_CONFIG[st];const pf=getProximaFecha(c);const dias=pf?getDias(pf):null;const exp=expandedId===c.id;
@@ -1196,7 +1196,6 @@ const loadTeam=async()=>{
             );
           })}
         </div>
-        </>
       )}
     </div>
 
