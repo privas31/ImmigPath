@@ -666,6 +666,7 @@ function renderOfficesTable(offices) {
       <td>
         <div class="actions">
           <button class="action-btn" onclick="window.open(getMonitorUrl(o),'_blank')" title="Entrar al monitor de esta oficina" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
+          <button class="action-btn" onclick="openEditOffice('${o.id}')" style="background:rgba(251,191,36,0.12);color:#FBBF24;border-color:rgba(251,191,36,0.3)">✏️ Editar</button>
           <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
           <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
         </div>
@@ -714,6 +715,7 @@ function renderOfficesFullTable(offices) {
       })()}</td>
       <td>
         <button class="action-btn" onclick="window.open(getMonitorUrl(o),'_blank')" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
+        <button class="action-btn" onclick="openEditOffice('${o.id}')" style="background:rgba(251,191,36,0.12);color:#FBBF24;border-color:rgba(251,191,36,0.3)">✏️ Editar</button>
         <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
         <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
       </td>
