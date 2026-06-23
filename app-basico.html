@@ -74,12 +74,12 @@ const SISTEMAS = {
 const FOIA_ESTADOS = ["Enviado","En proceso","Respuesta recibida","Cerrado"];
 const PROCESOS_COMUNES = ["Asilo (I-589)","Permiso de trabajo (I-765)","Ajuste de estatus (I-485)","Peticion familiar (I-130)","Advance Parole (I-131)","Naturalizacion (N-400)","Renovar Green Card (I-90)","Cancelacion de deportación","FOIA","Consultoria","Otro"];
 const STATUS_CONFIG = {
-  vencido:{label:"Vencida",color:"#DC2626",bg:"#FEF2F2",border:"#FECACA",icon:"🔴"},
-  hoy:{label:"Hoy",color:"#EA580C",bg:"#FFF7ED",border:"#FED7AA",icon:"🟠"},
-  urgente:{label:"Urgente",color:"#D97706",bg:"#FFFBEB",border:"#FDE68A",icon:"🟡"},
-  proximo:{label:"Proxima",color:"#2563EB",bg:"#EFF6FF",border:"#BFDBFE",icon:"🔵"},
-  ok:{label:"Al dia",color:"#16A34A",bg:"#F0FDF4",border:"#BBF7D0",icon:"🟢"},
-  pendiente:{label:"Pendiente",color:"#6B7280",bg:"#F9FAFB",border:"#E5E7EB",icon:"⚪"},
+  vencido:{label:t("Vencida","Overdue"),color:"#DC2626",bg:"#FEF2F2",border:"#FECACA",icon:"🔴"},
+  hoy:{label:t("Hoy","Today"),color:"#EA580C",bg:"#FFF7ED",border:"#FED7AA",icon:"🟠"},
+  urgente:{label:t("Urgente","Urgent"),color:"#D97706",bg:"#FFFBEB",border:"#FDE68A",icon:"🟡"},
+  proximo:{label:t("Próxima","Upcoming"),color:"#2563EB",bg:"#EFF6FF",border:"#BFDBFE",icon:"🔵"},
+  ok:{label:t("Al día","On Track"),color:"#16A34A",bg:"#F0FDF4",border:"#BBF7D0",icon:"🟢"},
+  pendiente:{label:t("Pendiente","Pending"),color:"#6B7280",bg:"#F9FAFB",border:"#E5E7EB",icon:"⚪"},
 };
 
 //  Helpers 
@@ -122,7 +122,7 @@ function ProcesosEditor({procesos,onChange}){
       <div style={{fontSize:12,fontWeight:700,color:"#D97706"}}>💰 Pagos de este proceso</div>
       <button onClick={add} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>+ Agregar pago</button>
     </div>
-    {procesos.length===0&&<div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:"6px 0"}}>Sin pagos registrados</div>}
+    {procesos.length===0&&<div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:"6px 0"}}>{t("Sin pagos registrados","No payments recorded")}</div>}
     {procesos.map((p,i)=>(
       <div key={p.id||i} style={{background:"#fff",borderRadius:7,padding:"9px 11px",marginBottom:7,border:"1px solid #FDE68A"}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
@@ -186,13 +186,13 @@ function LoginScreen({onLogin}){
             :<div style={{fontSize:48}}>⚖️</div>
           }
         </div>
-        <h1 style={{fontSize:22,fontWeight:800,color:"#0F172A",margin:0}}>{loginName||"Monitor de Inmigracion"}</h1>
-        <p style={{fontSize:13,color:"#64748B",marginTop:6}}>Ingresa con tu cuenta para continuar</p>
+        <h1 style={{fontSize:22,fontWeight:800,color:"#0F172A",margin:0}}>{loginName||t("Monitor de Inmigración","Immigration Monitor")}</h1>
+        <p style={{fontSize:13,color:"#64748B",marginTop:6}}>{t("Ingresa con tu cuenta para continuar","Sign in to continue")}</p>
       </div>
-      <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" onKeyDown={e=>e.key==="Enter"&&login()} style={{width:"100%",padding:"11px 13px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/></div>
-      <div style={{marginBottom:20}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Contraseña</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&login()} style={{width:"100%",padding:"11px 13px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/></div>
+      <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>{t("Email","Email")}</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" onKeyDown={e=>e.key==="Enter"&&login()} style={{width:"100%",padding:"11px 13px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/></div>
+      <div style={{marginBottom:20}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>{t("Contraseña","Password")}</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&login()} style={{width:"100%",padding:"11px 13px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/></div>
       {err&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#DC2626",marginBottom:16}}>⚠️ {err}</div>}
-      <button onClick={login} disabled={loading} style={{width:"100%",padding:"12px",borderRadius:9,border:"none",background:loading?"#E5E7EB":"#1E40AF",color:loading?"#9CA3AF":"#fff",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>{loading?"Ingresando...":"Ingresar →"}</button>
+      <button onClick={login} disabled={loading} style={{width:"100%",padding:"12px",borderRadius:9,border:"none",background:loading?"#E5E7EB":"#1E40AF",color:loading?"#9CA3AF":"#fff",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>{loading ? t("Ingresando...","Signing in...") : t("Ingresar →","Sign in →")}</button>
     </div></div>);
 }
 
@@ -230,7 +230,7 @@ function App(){
   const[showCobrar,setShowCobrar]=useState(false);
   const[cobrarCliente,setCobrarCliente]=useState(null);
   const[cobrarMonto,setCobrarMonto]=useState("");
-  const[cobrarConcepto,setCobrarConcepto]=useState("");
+  const[cobrar{t("Concepto","Description")},setCobrar{t("Concepto","Description")}]=useState("");
   const[cobrarMetodo,setCobrarMetodo]=useState("zelle");
   const[cobrarSaving,setCobrarSaving]=useState(false);
   const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:""});
@@ -350,7 +350,7 @@ const descargarReciboPDF=async(pago)=>{
   addSec("INFORMACION DEL CLIENTE");
   addRow2("Nombre",pago.nombreCliente||"—");
   addSec("DETALLE DEL PAGO");
-  addRow2("Concepto",pago.concepto||"—");
+  addRow2("{t("Concepto","Description")}",pago.concepto||"—");
   addRow2("Metodo de pago",pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta");
   addRow2("Fecha",new Date(pago.fecha).toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}));
   addRow2("Registrado por",pago.registradoPor||"—");
@@ -449,7 +449,7 @@ const generarReciboPDF=async(pago)=>{
   addSec("INFORMACION DEL CLIENTE");
   addRow("Nombre",pago.nombreCliente);
   addSec("DETALLE DEL PAGO");
-  addRow("Concepto",pago.concepto);
+  addRow("{t("Concepto","Description")}",pago.concepto);
   addRow("Metodo de pago",pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta");
   addRow("Fecha",new Date().toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}));
   y+=4;
@@ -699,7 +699,7 @@ const loadTeam=async()=>{
                   pdfdoc.setTextColor(255,255,255);
                   pdfdoc.setFontSize(12);
                   pdfdoc.setFont("helvetica","bold");
-                  pdfdoc.text(cleanTxt(officeData?.name||"Monitor de Inmigracion"), M, 10);
+                  pdfdoc.text(cleanTxt(officeData?.name||t("Monitor de Inmigración","Immigration Monitor")), M, 10);
                   // Subtitulo
                   pdfdoc.setFontSize(7.5);
                   pdfdoc.setFont("helvetica","normal");
@@ -735,7 +735,7 @@ const loadTeam=async()=>{
                     let tiempoStr="—";
                     if(dias!==null){
                       if(dias<0) tiempoStr="Hace "+Math.abs(dias)+"d";
-                      else if(dias===0) tiempoStr="Hoy";
+                      else if(dias===0) tiempoStr=t("Hoy","Today");
                       else tiempoStr="+"+dias+"d";
                     }
                     // Fecha de ingreso del cliente al sistema
@@ -830,86 +830,143 @@ const loadTeam=async()=>{
   //  PERMISOS POR ROL 
   const isAdmin = userData?.role==="office_admin" || userData?.role==="superadmin";
 
-  return(<div style={{fontFamily:"'Segoe UI',Inter,sans-serif",minHeight:"100vh",background:"#F1F5F9"}}>
+  // ── SIDEBAR NAV ITEMS (Básico) ────────────────────────────────────────────
+  const navItems = [
+    {id:"monitor",    label:t("Monitor Oficina","Office Monitor"),  icon:"🖥"},
+    {id:"dashboard",  label:t("Dashboard","Dashboard"),             icon:"📊", badge:(stats.alertas.length+stats.vencidos.length)||null, onClick:()=>setShowDashboard(true)},
+    {id:"clientes",   label:t("Clientes","Clients"),                icon:"👥"},
+    {id:"formularios",label:t("Formularios","Forms"),               icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
+    {id:"nomina",     label:t("Nómina","Payroll"),                  icon:"💵", onClick:()=>isAdmin&&setShowNomina(true)},
+    {id:"pagos",      label:t("Pagos","Payments"),                  icon:"💳", onClick:()=>isAdmin&&setShowPagosConfig(true)},
+    {id:"cobros",     label:t("Cobros","Collections"),              icon:"💰", onClick:()=>isAdmin&&setShowPagosReporte(true)},
+    {id:"equipo",     label:t("Equipo","Team"),                     icon:"🤝", onClick:()=>isAdmin&&setShowTeam(true)},
+    {id:"usuarios",   label:t("Usuarios","Users"),                  icon:"🔐", onClick:()=>isAdmin&&setShowAddUser(true)},
+    {id:"reportes",   label:t("Reportes","Reports"),                icon:"📈", onClick:()=>isAdmin&&setShowPDF(true)},
+  ];
+  const [activeNav, setActiveNav] = React.useState("monitor");
 
-    
-    <div style={{background:"linear-gradient(135deg,#0F172A 0%,#1E40AF 100%)",padding:"18px 24px 0",color:"#fff"}}>
-      <div style={{maxWidth:1080,margin:"0 auto"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10,marginBottom:16}}>
+  return(<div style={{fontFamily:"'Segoe UI',Inter,system-ui,sans-serif",minHeight:"100vh",background:"#F8FAFC",display:"flex"}}>
+
+    {/* ── SIDEBAR ── */}
+    <div style={{width:240,minHeight:"100vh",background:"#0F172A",display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:40,flexShrink:0}}>
+      {/* Logo + Plan badge */}
+      <div style={{padding:"24px 20px 16px",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+          {officeLogo
+            ?<img src={officeLogo} alt="Logo" style={{height:36,width:36,borderRadius:10,objectFit:"contain",background:"rgba(255,255,255,0.1)",padding:3}}/>
+            :<div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#3B82F6,#1E40AF)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>⚖️</div>
+          }
           <div>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              {officeLogo?<img src={officeLogo} alt="Logo" style={{height:36,width:36,borderRadius:8,objectFit:"contain",background:"rgba(255,255,255,0.1)",padding:2}}/>:<span style={{fontSize:28}}>⚖️</span>}
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <h1 style={{margin:0,fontSize:19,fontWeight:700}}>Monitor de Casos de Inmigracion</h1>
-                <span style={{background:"rgba(99,102,241,0.25)",color:"#A5B4FC",border:"1px solid rgba(99,102,241,0.4)",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700,letterSpacing:"0.04em"}}>PLAN BÁSICO</span>
-              </div>
-            </div>
-            <p style={{margin:"3px 0 0",fontSize:12,opacity:0.65}}>🏢 {officeName} &nbsp;·&nbsp; 👤 {user.email} &nbsp;·&nbsp; <span style={{background:isAdmin?"rgba(255,255,255,0.2)":"rgba(255,200,0,0.2)",borderRadius:20,padding:"1px 8px",fontSize:11}}>{isAdmin?"👑 Admin":"👩 Empleada"}</span></p>
+            <div style={{fontWeight:800,fontSize:15,color:"#fff",letterSpacing:"-0.01em"}}>{officeName||"ImmigPath"}</div>
+            <div style={{fontSize:10,color:"#64748B",fontWeight:500,textTransform:"uppercase",letterSpacing:"0.06em"}}>SERVICES</div>
           </div>
-          <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-            <button onClick={()=>{setShowBorradores(true);loadBorradores();}} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600,position:"relative"}}>
-              📋 Formularios
-              {borradoresPendientes>0&&<span style={{position:"absolute",top:-6,right:-6,background:"#EF4444",color:"#fff",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{borradoresPendientes}</span>}
-            </button>
-            <button onClick={()=>setShowDashboard(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600,position:"relative"}}>
-              📊 Dashboard
-              {(stats.alertas.length>0||stats.vencidos.length>0)&&<span style={{position:"absolute",top:-6,right:-6,background:"#EF4444",color:"#fff",borderRadius:"50%",width:18,height:18,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{stats.alertas.length+stats.vencidos.length}</span>}
-            </button>
-            {isAdmin&&<button onClick={()=>setShowNomina(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>💰 {t("Nomina","Payroll")}</button>}
-            {isAdmin&&<button onClick={()=>setShowPagosConfig(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>⚙️ Pagos</button>}
-            {isAdmin&&<button onClick={()=>setShowPagosReporte(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📊 Cobros</button>}
+        </div>
+        <div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(99,102,241,0.2)",border:"1px solid rgba(99,102,241,0.35)",borderRadius:6,padding:"3px 10px"}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:"#818CF8",display:"inline-block"}}/>
+          <span style={{fontSize:10,fontWeight:700,color:"#A5B4FC",letterSpacing:"0.05em"}}>PLAN BÁSICO</span>
+        </div>
+      </div>
 
-            {isAdmin&&<button onClick={()=>setShowTeam(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>👥 Equipo</button>}
-            {isAdmin&&<button onClick={()=>setShowAddUser(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔐 Usuarios</button>}
-            {isAdmin&&<button onClick={()=>setShowPDF(true)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 13px",fontSize:12,cursor:"pointer",fontWeight:600}}>📄 PDF</button>}
-            <button onClick={openAdd} style={{background:"#fff",color:"#1E40AF",border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>{t("+ Nuevo cliente","+ New client")}</button>
-            <div style={{display:"flex",gap:4}}>
-              <button onClick={()=>setLang("es")} style={{background:lang==="es"?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.08)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:"6px 0 0 6px",padding:"5px 9px",fontSize:11,cursor:"pointer",fontWeight:lang==="es"?700:400}}>ES</button>
-              <button onClick={()=>setLang("en")} style={{background:lang==="en"?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.08)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:"0 6px 6px 0",padding:"5px 9px",fontSize:11,cursor:"pointer",fontWeight:lang==="en"?700:400}}>EN</button>
-            </div>
-            <button onClick={handleLogout} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer"}}>{t("Salir","Logout")}</button>
-          </div>
-        </div>
-        
-        <div style={{display:"flex",gap:0,borderBottom:"2px solid rgba(255,255,255,0.15)"}}>
-          {[{key:"todos",label:"Todos",icon:"🗂"},{key:"uscis",label:"USCIS",icon:"🏛"},{key:"eoir",label:"EOIR",icon:"⚖️"},{key:"foia",label:"FOIA",icon:"📂"}].map(t=>(
-            <button key={t.key} onClick={()=>setFiltroSistema(t.key)} style={{background:"transparent",border:"none",color:filtroSistema===t.key?"#fff":"rgba(255,255,255,0.55)",fontWeight:filtroSistema===t.key?700:400,fontSize:13,padding:"10px 16px",cursor:"pointer",borderBottom:filtroSistema===t.key?"2px solid #fff":"2px solid transparent",marginBottom:"-2px",whiteSpace:"nowrap"}}>
-              {t.icon} {t.label} <span style={{background:"rgba(255,255,255,0.18)",borderRadius:20,padding:"1px 7px",fontSize:11,marginLeft:4}}>{cnt("todos",t.key==="todos"?"todos":t.key)}</span>
+      {/* Nav items */}
+      <nav style={{flex:1,padding:"12px 0",overflowY:"auto"}}>
+        {navItems.map(n=>{
+          const active = activeNav===n.id;
+          return(
+            <button key={n.id} onClick={()=>{setActiveNav(n.id);n.onClick&&n.onClick();}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 20px",background:active?"rgba(59,130,246,0.15)":"transparent",border:"none",borderLeft:active?"3px solid #3B82F6":"3px solid transparent",color:active?"#fff":"#94A3B8",fontSize:13,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
+              <span style={{fontSize:15,width:20,textAlign:"center"}}>{n.icon}</span>
+              <span style={{flex:1}}>{n.label}</span>
+              {n.badge>0&&<span style={{background:"#EF4444",color:"#fff",borderRadius:20,padding:"1px 6px",fontSize:10,fontWeight:700,minWidth:18,textAlign:"center"}}>{n.badge}</span>}
             </button>
-          ))}
+          );
+        })}
+      </nav>
+
+      {/* User footer */}
+      <div style={{padding:"16px 20px",borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#3B82F6,#7C3AED)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:700,flexShrink:0}}>
+            {(user?.email||"U")[0].toUpperCase()}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:"#E2E8F0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.displayName||user?.email?.split("@")[0]||"Usuario"}</div>
+            <div style={{fontSize:10,color:"#64748B"}}>{isAdmin?t("Administradora","Administrator"):t("Empleada","Employee")}</div>
+          </div>
+          <button onClick={handleLogout} title={t("Salir","Logout")} style={{background:"rgba(255,255,255,0.06)",border:"none",borderRadius:6,padding:"5px 7px",cursor:"pointer",color:"#64748B",fontSize:11}}>↩</button>
         </div>
-        <div style={{display:"flex",gap:7,padding:"12px 0",flexWrap:"wrap"}}>
-          {[["vencido","🔴","Vencidas"],["hoy","🟠","Hoy"],["urgente","🟡","Urgentes"],["proximo","🔵","Proximas"],["ok","🟢","Al dia"],["pendiente","⚪","Sin fecha"]].map(([k,icon,label])=>(
-            <div key={k} onClick={()=>setFiltroStatus(filtroStatus===k?"todos":k)} style={{background:filtroStatus===k?"rgba(255,255,255,0.25)":"rgba(255,255,255,0.1)",borderRadius:8,padding:"6px 12px",cursor:"pointer",border:filtroStatus===k?"1px solid rgba(255,255,255,0.5)":"1px solid transparent",display:"flex",alignItems:"center",gap:5}}>
-              <span style={{fontSize:13}}>{icon}</span><span style={{fontSize:17,fontWeight:700}}>{cnt(k,filtroSistema==="todos"?"todos":filtroSistema)}</span><span style={{fontSize:10,opacity:0.8}}>{label}</span>
-            </div>
-          ))}
+        <div style={{display:"flex",gap:4,justifyContent:"flex-end"}}>
+          <button onClick={()=>setLang("es")} style={{background:lang==="es"?"rgba(59,130,246,0.3)":"rgba(255,255,255,0.06)",color:lang==="es"?"#93C5FD":"#475569",border:"none",borderRadius:"4px 0 0 4px",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="es"?700:400}}>ES</button>
+          <button onClick={()=>setLang("en")} style={{background:lang==="en"?"rgba(59,130,246,0.3)":"rgba(255,255,255,0.06)",color:lang==="en"?"#93C5FD":"#475569",border:"none",borderRadius:"0 4px 4px 0",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="en"?700:400}}>EN</button>
         </div>
       </div>
     </div>
 
-    
-    <div style={{maxWidth:1080,margin:"0 auto",padding:"14px 20px 0"}}>
-      <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-        <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Nombre, A#, recibo, FOIA tracking, encargada, país..." style={{flex:1,minWidth:200,padding:"9px 14px",borderRadius:8,border:"1px solid #CBD5E1",fontSize:14,background:"#fff",outline:"none"}}/>
-        <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #CBD5E1",fontSize:13,background:"#fff",cursor:"pointer"}}><option value="fecha">Por fecha</option><option value="nombre">Por nombre</option></select>
-        <select value={filtroStatus} onChange={e=>setFiltroStatus(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #CBD5E1",fontSize:13,background:"#fff",cursor:"pointer"}}>
-          <option value="todos">Todos los estados</option><option value="vencido">🔴 Vencidas</option><option value="hoy">🟠 Hoy</option><option value="urgente">🟡 Urgentes</option><option value="proximo">🔵 Proximas</option><option value="ok">🟢 Al dia</option><option value="pendiente">⚪ Sin fecha</option>
+    {/* ── MAIN CONTENT ── */}
+    <div style={{marginLeft:240,flex:1,minWidth:0}}>
+
+      {/* ── TOP BAR ── */}
+      <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"0 32px",display:"flex",alignItems:"center",gap:12,height:64,position:"sticky",top:0,zIndex:30}}>
+        {/* System tabs */}
+        <div style={{display:"flex",gap:0,marginRight:8}}>
+          {[{key:"todos",label:t("Todos","All"),icon:"🗂"},{key:"uscis",label:"USCIS",icon:"🏛"},{key:"eoir",label:"EOIR",icon:"⚖️"},{key:"foia",label:"FOIA",icon:"📂"}].map(tab=>(
+            <button key={tab.key} onClick={()=>setFiltroSistema(tab.key)} style={{background:"transparent",border:"none",borderBottom:filtroSistema===tab.key?"2px solid #2563EB":"2px solid transparent",color:filtroSistema===tab.key?"#2563EB":"#94A3B8",fontWeight:filtroSistema===tab.key?600:400,fontSize:13,padding:"0 14px",height:64,cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5}}>
+              <span>{tab.icon}</span><span>{tab.label}</span>
+              <span style={{background:filtroSistema===tab.key?"#EFF6FF":"#F1F5F9",color:filtroSistema===tab.key?"#2563EB":"#94A3B8",borderRadius:20,padding:"1px 7px",fontSize:11,fontWeight:600}}>{cnt("todos",tab.key==="todos"?"todos":tab.key)}</span>
+            </button>
+          ))}
+        </div>
+        {/* Search */}
+        <div style={{flex:1,position:"relative"}}>
+          <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#94A3B8",fontSize:14}}>🔍</span>
+          <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder={t("Buscar por nombre, A#, recibo, FOIA tracking, encargada, país...","Search by name, A#, receipt, FOIA tracking, agent, country...")} style={{width:"100%",padding:"9px 14px 9px 36px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#F8FAFC",outline:"none",boxSizing:"border-box"}}/>
+        </div>
+        <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#fff",cursor:"pointer",color:"#374151"}}>
+          <option value="fecha">{t("Por fecha","By date")}</option>
+          <option value="nombre">{t("Por nombre","By name")}</option>
         </select>
+        <select value={filtroStatus} onChange={e=>setFiltroStatus(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#fff",cursor:"pointer",color:"#374151"}}>
+          <option value="todos">{t("Todos los estados","All statuses")}</option>
+          <option value="vencido">🔴 {t("Vencidas","Overdue")}</option>
+          <option value="hoy">🟠 {t("Hoy","Today")}</option>
+          <option value="urgente">🟡 {t("Urgentes","Urgent")}</option>
+          <option value="proximo">🔵 {t("Próximas","Upcoming")}</option>
+          <option value="ok">🟢 {t("Al día","On track")}</option>
+          <option value="pendiente">⚪ {t("Sin fecha","No date")}</option>
+        </select>
+        <button onClick={openAdd} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          + {t("Nuevo Cliente","New Client")}
+        </button>
       </div>
-    </div>
 
-    
-    <div style={{maxWidth:1080,margin:"14px auto 40px",padding:"0 20px"}}>
+      {/* ── STATUS CHIPS ── */}
+      <div style={{background:"#fff",borderBottom:"1px solid #F1F5F9",padding:"0 32px",display:"flex",gap:6,overflowX:"auto"}}>
+        {[["vencido","🔴",t("Vencidas","Overdue"),"#FEF2F2","#DC2626"],["hoy","🟠",t("Hoy","Today"),"#FFF7ED","#EA580C"],["urgente","🟡",t("Urgentes","Urgent"),"#FFFBEB","#D97706"],["proximo","🔵",t("Próximas","Upcoming"),"#EFF6FF","#2563EB"],["ok","🟢",t("Al día","On Track"),"#F0FDF4","#16A34A"],["pendiente","⚪",t("Sin fecha","No Date"),"#F8FAFC","#64748B"]].map(([k,icon,label,bg,color])=>(
+          <button key={k} onClick={()=>setFiltroStatus(filtroStatus===k?"todos":k)} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:filtroStatus===k?bg:"transparent",border:"none",borderBottom:filtroStatus===k?"2px solid "+color:"2px solid transparent",color:filtroStatus===k?color:"#94A3B8",cursor:"pointer",fontSize:12,fontWeight:filtroStatus===k?700:400,whiteSpace:"nowrap",flexShrink:0}}>
+            <span>{icon}</span>
+            <span style={{fontWeight:700,fontSize:14}}>{cnt(k,filtroSistema==="todos"?"todos":filtroSistema)}</span>
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
 
+      {/* ── PAGE CONTENT ── */}
+      <div style={{padding:"24px 32px 48px"}}>
 
-            {loading?<div style={{textAlign:"center",padding:60,color:"#94A3B8"}}>⏳ Cargando...</div>:filtered.length===0?(
-        <div style={{textAlign:"center",padding:60,color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px solid #E2E8F0"}}>
-          <div style={{fontSize:40,marginBottom:10}}>📭</div><div>Sin clientes en esta categoría</div>
-          <button onClick={openAdd} style={{marginTop:16,background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:14,cursor:"pointer",fontWeight:600}}>+ Agregar primer cliente</button>
+    {loading?<div style={{textAlign:"center",padding:80,color:"#94A3B8",fontSize:14}}>⏳ {t("Cargando...","Loading...")}</div>:filtered.length===0?(
+        <div style={{textAlign:"center",padding:80,color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px solid #E2E8F0"}}>
+          <div style={{fontSize:48,marginBottom:12}}>📭</div>
+          <div style={{fontSize:15,fontWeight:600,marginBottom:4,color:"#475569"}}>{t("Sin clientes en esta categoría","No clients in this category")}</div>
+          <div style={{fontSize:13,color:"#94A3B8",marginBottom:20}}>{t("Ajusta los filtros o agrega un nuevo cliente","Adjust filters or add a new client")}</div>
+          <button onClick={openAdd} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:14,cursor:"pointer",fontWeight:600}}>+ {t("Agregar primer cliente","Add first client")}</button>
         </div>
       ):(
-        <div style={{display:"grid",gap:10}}>
+        <div style={{display:"grid",gap:8}}>
+          {filtered.length===0?(
+            <div style={{textAlign:"center",padding:80,color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px solid #E2E8F0"}}>
+              <div style={{fontSize:48,marginBottom:12}}>📭</div>
+              <div style={{fontSize:15,fontWeight:600,marginBottom:4,color:"#475569"}}>{t("Sin clientes en esta categoría","No clients in this category")}</div>
+              <button onClick={openAdd} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:14,cursor:"pointer",fontWeight:600,marginTop:16}}>+ {t("Agregar primer cliente","Add first client")}</button>
+            </div>
+          ):(
           {filtered.map(c=>{
             const st=getStatusCliente(c);const scfg=STATUS_CONFIG[st];const pf=getProximaFecha(c);const dias=pf?getDias(pf):null;const exp=expandedId===c.id;
             const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
@@ -917,51 +974,58 @@ const loadTeam=async()=>{
             const pct=getPct(totalP,pagadoP);const pc=pagoColor(pct);
             const casoTab=activeCasoTab[c.id]||0;
             return(
-              <div key={c.id} style={{background:"#fff",borderRadius:12,border:`1px solid ${scfg.border}`,borderLeft:`4px solid ${scfg.color}`,boxShadow:"0 1px 4px rgba(0,0,0,0.05)",overflow:"hidden"}}>
-                <div style={{padding:"13px 16px",display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",cursor:"pointer"}} onClick={()=>{const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}}>
-                  <div style={{flex:1,minWidth:180}}>
-                    <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
+              <div key={c.id} style={{background:"#fff",borderRadius:12,border:"1px solid #E2E8F0",borderLeft:`4px solid ${scfg.color}`,boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden",transition:"box-shadow 0.15s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.08)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,0.04)"}>
+                <div style={{padding:"16px 20px",display:"flex",gap:16,alignItems:"center",cursor:"pointer"}} onClick={()=>{const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}}>
+                  {/* Avatar */}
+                  <div style={{width:44,height:44,borderRadius:"50%",background:`linear-gradient(135deg,${scfg.color}22,${scfg.color}44)`,border:`2px solid ${scfg.color}33`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:scfg.color,flexShrink:0}}>
+                    {c.nombre.split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
+                  </div>
+                  {/* Main info */}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
                       <span style={{fontWeight:700,fontSize:15,color:"#0F172A"}}>{c.nombre}</span>
                       <Badge cfg={scfg} label={scfg.label}/>
                       {(()=>{
                         const tieneUSCIS=(c.casos||[]).some(ca=>ca.sistema==="uscis"||ca.sistema==="foia");
                         const tieneEOIR=(c.casos||[]).some(ca=>ca.sistema==="eoir");
                         return <>
-                          {tieneUSCIS&&<span style={{background:"#F0F9FF",color:"#0369A1",border:"1px solid #BAE6FD",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:700}}>🏛 USCIS</span>}
-                          {tieneEOIR&&<span style={{background:"#F5F3FF",color:"#7C3AED",border:"1px solid #DDD6FE",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:700}}>⚖️ EOIR</span>}
+                          {tieneUSCIS&&<span style={{background:"#F0F9FF",color:"#0369A1",border:"1px solid #BAE6FD",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:600}}>🏛 USCIS</span>}
+                          {tieneEOIR&&<span style={{background:"#F5F3FF",color:"#7C3AED",border:"1px solid #DDD6FE",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:600}}>⚖️ EOIR</span>}
                         </>;
                       })()}
                     </div>
-                    <div style={{display:"flex",gap:10,marginTop:3,flexWrap:"wrap",alignItems:"center"}}>
-                      {c.paisOrigen&&<span style={{fontSize:12,color:"#64748B"}}>{getFlag(c.paisOrigen)} {c.paisOrigen}</span>}
-                      {c.alienNum&&<span style={{fontSize:12,color:"#64748B"}}>🪪 <span style={{fontFamily:"monospace",fontWeight:600}}>{fmtA(c.alienNum)}</span></span>}
-                      {c.telefono&&<span style={{fontSize:12,color:"#64748B"}}>📱 {c.telefono}</span>}
-                      {c.email&&<span style={{fontSize:12,color:"#64748B"}}>📧 {c.email}</span>}
-                      {c.encargada&&<span style={{fontSize:12,color:"#7C3AED",fontWeight:600,background:"#F5F3FF",borderRadius:20,padding:"1px 8px"}}>👩 {c.encargada}</span>}
+                    <div style={{display:"flex",gap:16,flexWrap:"wrap",alignItems:"center"}}>
+                      {c.paisOrigen&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>{getFlag(c.paisOrigen)} {c.paisOrigen}</span>}
+                      {c.telefono&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>📱 {c.telefono}</span>}
+                      {c.email&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>✉️ {c.email}</span>}
+                      {c.alienNum&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>🪪 <span style={{fontFamily:"monospace",fontWeight:600}}>{fmtA(c.alienNum)}</span></span>}
+                      {c.encargada&&<span style={{fontSize:12,color:"#7C3AED",fontWeight:600,background:"#F5F3FF",borderRadius:20,padding:"2px 10px",display:"flex",alignItems:"center",gap:4}}>👤 {c.encargada}</span>}
                     </div>
-                    {isAdmin&&totalP>0&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8}}>
-                      <div style={{flex:1,background:"#F1F5F9",borderRadius:20,height:6,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`}}/></div>
+                    {isAdmin&&totalP>0&&<div style={{marginTop:8,display:"flex",alignItems:"center",gap:8,maxWidth:320}}>
+                      <div style={{flex:1,background:"#F1F5F9",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`,transition:"width 0.3s"}}/></div>
                       <span style={{fontSize:11,fontWeight:700,color:pc,whiteSpace:"nowrap"}}>{pct!==null?`${pct}%`:"—"}</span>
                       <span style={{fontSize:11,color:"#94A3B8",whiteSpace:"nowrap"}}>{fmtMoney(pagadoP)} / {fmtMoney(totalP)}</span>
                     </div>}
                   </div>
-                  <div style={{textAlign:"center",minWidth:95}}>
-                    <div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.04em"}}>Proxima fecha</div>
-                    <div style={{fontWeight:700,color:"#0F172A",fontSize:15}}>{pf?fmt(pf):"—"}</div>
-                    {dias!==null&&<div style={{fontSize:11,color:scfg.color,fontWeight:600,marginTop:1}}>{dias<0?`Hace ${Math.abs(dias)}d`:dias===0?"HOY!":`En ${dias}d`}</div>}
+                  {/* Próxima fecha — right column */}
+                  <div style={{textAlign:"right",minWidth:110,flexShrink:0,padding:"0 8px",borderLeft:"1px solid #F1F5F9"}}>
+                    <div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4}}>{t("Próxima fecha","Next date")}</div>
+                    <div style={{fontWeight:700,color:pf?scfg.color:"#CBD5E1",fontSize:16}}>{pf?fmt(pf):"—"}</div>
+                    {dias!==null&&<div style={{fontSize:11,color:scfg.color,fontWeight:600,marginTop:2,background:scfg.bg,borderRadius:6,padding:"2px 6px",display:"inline-block"}}>{dias<0?t(`Hace ${Math.abs(dias)}d`,`${Math.abs(dias)}d ago`):dias===0?t("HOY!","TODAY!"):t(`En ${dias}d`,`In ${dias}d`)}</div>}
                   </div>
-                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer"}} title="Editar">✏️</button>
+                  {/* Actions */}
+                  <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                    <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"7px 10px",fontSize:12,cursor:"pointer"}} title="Editar">✏️</button>
                     <div style={{position:"relative"}}>
                       <button onClick={e=>{e.stopPropagation();setOpenMenuId(openMenuId===c.id?null:c.id);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"5px 9px",fontSize:12,cursor:"pointer",fontWeight:600}} title="Mas acciones">⋯</button>
                       {openMenuId===c.id&&(
                         <div onClick={e=>e.stopPropagation()} style={{position:"absolute",right:0,top:"110%",background:"#fff",borderRadius:10,boxShadow:"0 8px 32px rgba(0,0,0,0.15)",border:"1px solid #E2E8F0",zIndex:50,minWidth:200,overflow:"hidden"}}>
-                          <div style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",borderBottom:"1px solid #F1F5F9"}}>Acciones</div>
+                          <div style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",borderBottom:"1px solid #F1F5F9"}}>{ t("Acciones","Actions") }</div>
 
 
 
 
-                          {isAdmin&&<button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#16A34A",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F0FDF4"} onMouseLeave={e=>e.target.style.background="none"}>
+                          {isAdmin&&<button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrar{t("Concepto","Description")}("");setCobrarMetodo("zelle");setShowCobrar(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#16A34A",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F0FDF4"} onMouseLeave={e=>e.target.style.background="none"}>
                             <span>💳</span> Cobrar cliente
                           </button>}
                           <div style={{height:"1px",background:"#F1F5F9"}}></div>
@@ -989,7 +1053,7 @@ const loadTeam=async()=>{
                       return(
                         <div style={{padding:"14px 16px"}}>
                           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:10,marginBottom:12}}>
-                            {ca.sistema==="uscis"&&ca.receiptNum&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>N° Recibo</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600,color:"#0369A1"}}>{ca.receiptNum}</div></div>}
+                            {ca.sistema==="uscis"&&ca.receiptNum&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>{t("N° Recibo","Receipt #")}</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600,color:"#0369A1"}}>{ca.receiptNum}</div></div>}
                             {ca.alienNum&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Número Alien</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600}}>{fmtA(ca.alienNum)}</div></div>}
                             {ca.sistema==="eoir"&&ca.corte&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Corte</div><div style={{fontSize:13,fontWeight:500}}>🏛️ {ca.corte}</div></div>}
                             {ca.sistema==="eoir"&&ca.juez&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Juez</div><div style={{fontSize:13,fontWeight:500}}>👨‍⚖️ {ca.juez}</div></div>}
@@ -1019,7 +1083,7 @@ const loadTeam=async()=>{
                                         <div style={{height:"100%",borderRadius:20,background:colorReloj,width:`${pctReloj}%`}}/>
                                       </div>
                                       <div style={{fontSize:11,color:colorReloj,fontWeight:700,marginTop:4}}>
-                                        {diasReloj>=180?`✅ Elegible para EAD — lleva ${diasReloj} dias`:`⏳ Faltan ${180-diasReloj} dias para aplicar al EAD`}
+                                        {diasReloj>=180?`✅ t("Elegible para EAD","Eligible for EAD") — lleva ${diasReloj} dias`:`⏳ Faltan ${180-diasReloj} dias para aplicar al EAD`}
                                       </div>
                                     </div>
                                   </div>
@@ -1099,27 +1163,28 @@ const loadTeam=async()=>{
           })}
         </div>
       )}
-    </div>
+      </div>
+    </div>{/* end main content */}
 
     
     {showAddUser&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
       <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:440,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-          <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>🔐 Agregar usuario</h2>
+          <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>{ t("🔐 Agregar usuario","🔐 Add user") }</h2>
           <button onClick={()=>{setShowAddUser(false);setAddUserMsg("");setNewUserName("");setNewUserEmail("");setNewUserPass("");setNewUserRole("employee");}} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer"}}>✕</button>
         </div>
         <div style={{background:"#F8FAFC",borderRadius:10,padding:"14px",marginBottom:16,border:"1px solid #E2E8F0",fontSize:12,color:"#64748B"}}>
-          Este usuario tendrá acceso solo a <strong style={{color:"#1E3A5F"}}>{officeData?.name}</strong>
+          { t("Este usuario tendrá acceso solo a","This user will only have access to") } <strong style={{color:"#1E3A5F"}}>{officeData?.name}</strong>
         </div>
-        <Field label="Nombre completo *" value={newUserName} onChange={setNewUserName} placeholder="Ej. Maria Garcia"/>
-        <Field label="Email *" value={newUserEmail} onChange={setNewUserEmail} placeholder="usuario@email.com" type="email"/>
-        <Field label="Contraseña temporal *" value={newUserPass} onChange={setNewUserPass} placeholder="Mínimo 6 caracteres" type="password"/>
+        <Field label={t("Nombre completo *","Full name *")} value={newUserName} onChange={setNewUserName} placeholder="Ej. Maria Garcia"/>
+        <Field label={t("Email *","Email *")} value={newUserEmail} onChange={setNewUserEmail} placeholder="usuario@email.com" type="email"/>
+        <Field label={t("Contraseña temporal *","Temporary password *")} value={newUserPass} onChange={setNewUserPass} placeholder={t("Mínimo 6 caracteres","Minimum 6 characters")} type="password"/>
         <div style={{marginBottom:16}}>
-          <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.04em"}}>Rol</label>
+          <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.04em"}}>{t("Rol","Role")}</label>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             {[
-              ["office_admin","👑 Admin","Acceso completo — nómina, cobros, usuarios","#1E3A5F","#EFF6FF","#BFDBFE"],
-              ["employee","👩 Empleada","Ver clientes y casos — sin pagos ni nómina","#7C3AED","#F5F3FF","#DDD6FE"],
+              ["office_admin",t("👑 Admin","👑 Admin"),t("Acceso completo — nómina, cobros, usuarios","Full access — payroll, collections, users"),"#1E3A5F","#EFF6FF","#BFDBFE"],
+              ["employee",t("👩 Employee","👩 Employee"),t("Ver clientes y casos — sin pagos ni nómina","View clients & cases — no payments or payroll"),"#7C3AED","#F5F3FF","#DDD6FE"],
             ].map(([val,label,desc,color,bg,border])=>(
               <button key={val} onClick={()=>setNewUserRole(val)} style={{padding:"10px",borderRadius:9,border:newUserRole===val?`2px solid ${color}`:`1px solid ${border}`,background:newUserRole===val?bg:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
                 <div style={{fontSize:13,fontWeight:700,color:newUserRole===val?color:"#374151"}}>{label}</div>
@@ -1130,9 +1195,9 @@ const loadTeam=async()=>{
         </div>
         {addUserMsg&&<div style={{padding:"10px 14px",borderRadius:8,background:addUserMsg.includes("✅")?"#F0FDF4":"#FEF2F2",border:`1px solid ${addUserMsg.includes("✅")?"#BBF7D0":"#FECACA"}`,fontSize:13,color:addUserMsg.includes("✅")?"#15803D":"#DC2626",marginBottom:14}}>{addUserMsg}</div>}
         <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-          <button onClick={()=>{setShowAddUser(false);setAddUserMsg("");setNewUserName("");setNewUserEmail("");setNewUserPass("");setNewUserRole("employee");}} style={{padding:"10px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
+          <button onClick={()=>{setShowAddUser(false);setAddUserMsg("");setNewUserName("");setNewUserEmail("");setNewUserPass("");setNewUserRole("employee");}} style={{padding:"10px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>{ t("Cancelar","Cancel") }</button>
           <button onClick={handleAddUser} disabled={addUserLoading||!newUserEmail||!newUserPass||!newUserName} style={{padding:"10px 20px",borderRadius:8,border:"none",background:(addUserLoading||!newUserEmail||!newUserPass||!newUserName)?"#E5E7EB":"#1E3A5F",color:(addUserLoading||!newUserEmail||!newUserPass||!newUserName)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(addUserLoading||!newUserEmail||!newUserPass||!newUserName)?"not-allowed":"pointer"}}>
-            {addUserLoading?"Creando...":"✅ Crear usuario"}
+            { addUserLoading ? t("Creando...","Creating...") : t("✅ Crear usuario","✅ Create user") }
           </button>
         </div>
       </div>
@@ -1143,12 +1208,12 @@ const loadTeam=async()=>{
     {showModal&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:580,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"94vh",overflowY:"auto"}}>
-          <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700,color:"#0F172A"}}>{editId?"Editar cliente":"Nuevo cliente"}</h2>
+          <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700,color:"#0F172A"}}>{ editId ? t("Editar cliente","Edit client") : t("Nuevo cliente","New client") }</h2>
           <div style={{background:"#F8FAFC",borderRadius:10,padding:"14px",marginBottom:16,border:"1px solid #E2E8F0"}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10,textTransform:"uppercase"}}>Informacion personal</div>
-            <Field label="Nombre completo *" value={formCliente.nombre} onChange={v=>setFormCliente(p=>({...p,nombre:v}))} placeholder="Nombre completo"/>
+            <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10,textTransform:"uppercase"}}>{ t("Información personal","Personal information") }</div>
+            <Field label={t("Nombre completo *","Full name *")} value={formCliente.nombre} onChange={v=>setFormCliente(p=>({...p,nombre:v}))} placeholder="Nombre completo"/>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <Field label="Numero Alien (A#)" value={formCliente.alienNum} onChange={v=>setFormCliente(p=>({...p,alienNum:v.replace(/[^\d-]/g,"")}))} placeholder="012-345-678" mono/>
+              <Field label={t("Número Alien (A#)","Alien Number (A#)")} value={formCliente.alienNum} onChange={v=>setFormCliente(p=>({...p,alienNum:v.replace(/[^\d-]/g,"")}))} placeholder="012-345-678" mono/>
               <div style={{marginBottom:11}}>
                 <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Pais de origen</label>
                 <select value={formCliente.paisOrigen} onChange={e=>setFormCliente(p=>({...p,paisOrigen:e.target.value}))} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,background:"#fff",cursor:"pointer"}}>
@@ -1157,29 +1222,29 @@ const loadTeam=async()=>{
               </div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <Field label="Telefono" value={formCliente.telefono||""} onChange={v=>setFormCliente(p=>({...p,telefono:v}))} placeholder="(407) 555-1234" type="tel"/>
+              <Field label={t("Teléfono","Phone")} value={formCliente.telefono||""} onChange={v=>setFormCliente(p=>({...p,telefono:v}))} placeholder="(407) 555-1234" type="tel"/>
               <Field label="Email" value={formCliente.email||""} onChange={v=>setFormCliente(p=>({...p,email:v}))} placeholder="cliente@email.com" type="email"/>
             </div>
             {isAdmin&&<div style={{marginBottom:11}}>
               <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Encargada</label>
               <select value={formCliente.encargada} onChange={e=>setFormCliente(p=>({...p,encargada:e.target.value}))} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,background:"#fff",cursor:"pointer"}}>
-                <option value="">Sin asignar</option>{equipo.map(m=><option key={m} value={m}>{m}</option>)}
+                <option value="">{t("Sin asignar","Unassigned")}</option>{equipo.map(m=><option key={m} value={m}>{m}</option>)}
               </select>
             </div>}
             <div>
               <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Notas generales</label>
-              <textarea value={formCliente.nota} onChange={e=>setFormCliente(p=>({...p,nota:e.target.value}))} placeholder="Observaciones del cliente..." rows={2} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,resize:"vertical",outline:"none"}}/>
+              <textarea value={formCliente.nota} onChange={e=>setFormCliente(p=>({...p,nota:e.target.value}))} placeholder={t("Observaciones del cliente...","Client notes...")} rows={2} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,resize:"vertical",outline:"none"}}/>
             </div>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#0F172A"}}>Casos del cliente</div>
-            <button onClick={addCaso} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>+ Agregar caso</button>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A"}}>{ t("Casos del cliente","Client cases") }</div>
+            <button onClick={addCaso} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>{ t("+ Agregar caso","+ Add case") }</button>
           </div>
-          {formCliente.casos.length===0&&<div style={{textAlign:"center",padding:"20px",color:"#94A3B8",fontSize:13,background:"#F8FAFC",borderRadius:10,border:"1px dashed #E2E8F0",marginBottom:14}}>Sin casos. Haz clic en "+ Agregar caso".</div>}
+          {formCliente.casos.length===0&&<div style={{textAlign:"center",padding:"20px",color:"#94A3B8",fontSize:13,background:"#F8FAFC",borderRadius:10,border:"1px dashed #E2E8F0",marginBottom:14}}>Sin casos. Haz clic en "{ t("+ Agregar caso","+ Add case") }".</div>}
           {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo} isAdmin={isAdmin}/>))}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
-            <button onClick={()=>setShowModal(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={handleSubmit} disabled={!formCliente.nombre||saving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(!formCliente.nombre||saving)?"#E5E7EB":"#1E40AF",color:(!formCliente.nombre||saving)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(!formCliente.nombre||saving)?"not-allowed":"pointer"}}>{saving?"Guardando...":editId?"Guardar cambios":"Agregar cliente"}</button>
+            <button onClick={()=>setShowModal(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>{ t("Cancelar","Cancel") }</button>
+            <button onClick={handleSubmit} disabled={!formCliente.nombre||saving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(!formCliente.nombre||saving)?"#E5E7EB":"#1E40AF",color:(!formCliente.nombre||saving)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(!formCliente.nombre||saving)?"not-allowed":"pointer"}}>{ saving ? t("Guardando...","Saving...") : editId ? t("Guardar cambios","Save changes") : t("Agregar cliente","Add client") }</button>
           </div>
         </div>
       </div>
@@ -1189,11 +1254,11 @@ const loadTeam=async()=>{
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:680,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-            <h2 style={{margin:0,fontSize:18,fontWeight:700}}>Formularios Recibidos</h2>
-            <button onClick={()=>setShowBorradores(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar</button>
+            <h2 style={{margin:0,fontSize:18,fontWeight:700}}>{ t("Formularios Recibidos","Received Forms") }</h2>
+            <button onClick={()=>setShowBorradores(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
           </div>
-          {borradoresLoading?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}>Cargando...</div>:
-          borradores.length===0?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}><div style={{fontSize:40,marginBottom:10}}>📭</div><div>No hay formularios pendientes</div></div>:(
+          {borradoresLoading?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}>{ t("Cargando...","Loading...") }</div>:
+          borradores.length===0?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}><div style={{fontSize:40,marginBottom:10}}>📭</div><div>{ t("No hay formularios pendientes","No pending forms") }</div></div>:(
             <div style={{display:"grid",gap:12}}>
               {borradores.map(b=>(
                 <div key={b.id} style={{background:"#F8FAFC",borderRadius:10,border:"1px solid #E2E8F0",padding:"16px",borderLeft:"4px solid #2563EB"}}>
@@ -1205,13 +1270,13 @@ const loadTeam=async()=>{
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <div style={{fontSize:11,color:"#94A3B8"}}>{new Date(b.fechaEnvio).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"})}</div>
                       <button onClick={()=>setBorradorExpanded(prev=>({...prev,[b.id]:!prev[b.id]}))} style={{background:"#EFF6FF",color:"#2563EB",border:"1px solid #BFDBFE",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>
-                        {borradorExpanded[b.id]?"Ocultar":"Ver detalles"}
+                        { borradorExpanded[b.id] ? t("Ocultar","Hide") : t("Ver detalles","View details") }
                       </button>
                     </div>
                   </div>
                   {borradorExpanded[b.id]&&<div style={{background:"#fff",borderRadius:8,border:"1px solid #E2E8F0",padding:"14px",marginBottom:12,fontSize:12}}>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 16px"}}>
-                      {[["Telefono",b.telefono],["Email",b.email],["Pais de origen",b.paisOrigen],["Num. Alien",b.alienNum],["Estatus migratorio",b.estatusMigratorio],["Fecha entrada EE.UU.",b.fechaEntrada],["Como entro",b.formaEntrada],["Orden deportacion",b.ordenDeportacion],["Estado civil",b.estadoCivil],["Tiene hijos",b.tieneHijos],["Familiares en EE.UU.",b.familiaUS]].filter(([,v])=>v).map(([label,val])=>(
+                      {[[t("Teléfono","Phone"),b.telefono],["Email",b.email],[t("País de origen","Country of origin"),b.paisOrigen],[t("Núm. Alien","Alien #"),b.alienNum],[t("Estatus migratorio","Immigration status"),b.estatusMigratorio],[t("Fecha entrada EE.UU.","US entry date"),b.fechaEntrada],[t("Cómo entró","How they entered"),b.formaEntrada],[t("Orden deportación","Deportation order"),b.ordenDeportacion],[t("Estado civil","Marital status"),b.estadoCivil],[t("Tiene hijos","Has children"),b.tieneHijos],[t("Familiares en EE.UU.","Family in US"),b.familiaUS]].filter(([,v])=>v).map(([label,val])=>(
                         <div key={label}>
                           <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10}}>{label}: </span>
                           <span style={{color:"#1E293B"}}>{val}</span>
@@ -1219,11 +1284,11 @@ const loadTeam=async()=>{
                       ))}
                     </div>
                     {b.tiposAyuda&&b.tiposAyuda.length>0&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
-                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10}}>Ayuda requerida: </span>
+                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10}}>{ t("Ayuda requerida: ","Help requested: ") }</span>
                       <span style={{color:"#1E3A5F",fontWeight:600}}>{b.tiposAyuda.join(" · ")}</span>
                     </div>}
                     {b.situacion&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
-                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10}}>Situacion: </span>
+                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10}}>{ t("Situación: ","Situation: ") }</span>
                       <span style={{color:"#374151",fontStyle:"italic"}}>"{b.situacion}"</span>
                     </div>}
                   </div>}
@@ -1239,9 +1304,9 @@ const loadTeam=async()=>{
                       pdoc.setFontSize(8);pdoc.setFont("helvetica","normal");pdoc.setTextColor(168,196,224);
                       pdoc.text("Recibido: "+new Date(b.fechaEnvio).toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),M,19);
                       const sections=[
-                        {title:"DATOS PERSONALES",rows:[["Nombre",b.nombre||"—"],["Telefono",b.telefono||"—"],["Email",b.email||"—"],["Pais de origen",b.paisOrigen||"—"],["Numero Alien",b.alienNum||"—"],["Estado civil",b.estadoCivil||"—"]]},
-                        {title:"HISTORIAL MIGRATORIO",rows:[["Estatus migratorio",b.estatusMigratorio||"—"],["Fecha entrada EE.UU.",b.fechaEntrada||"—"],["Como entro",b.formaEntrada||"—"],["Orden de deportacion",b.ordenDeportacion||"—"],["Proceso en corte EOIR",b.procesoEOIR||"—"]]},
-                        {title:"FAMILIA",rows:[["Tiene hijos",b.tieneHijos||"—"],["Familiares en EE.UU.",b.familiaUS||"—"]]},
+                        {title:"DATOS PERSONALES",rows:[["Nombre",b.nombre||"—"],[t("Teléfono","Phone"),b.telefono||"—"],["Email",b.email||"—"],[t("País de origen","Country of origin"),b.paisOrigen||"—"],["Numero Alien",b.alienNum||"—"],[t("Estado civil","Marital status"),b.estadoCivil||"—"]]},
+                        {title:"HISTORIAL MIGRATORIO",rows:[[t("Estatus migratorio","Immigration status"),b.estatusMigratorio||"—"],[t("Fecha entrada EE.UU.","US entry date"),b.fechaEntrada||"—"],[t("Cómo entró","How they entered"),b.formaEntrada||"—"],["Orden de deportacion",b.ordenDeportacion||"—"],["Proceso en corte EOIR",b.procesoEOIR||"—"]]},
+                        {title:"FAMILIA",rows:[[t("Tiene hijos","Has children"),b.tieneHijos||"—"],[t("Familiares en EE.UU.","Family in US"),b.familiaUS||"—"]]},
                         {title:"AYUDA REQUERIDA",rows:[["Servicios",(b.tiposAyuda||[]).join(", ")||"—"],["Situacion",b.situacion||"—"]]},
                       ];
                       let y=32;
@@ -1271,9 +1336,9 @@ const loadTeam=async()=>{
                       }
                       pdoc.save("intake-"+(b.nombre||"formulario").replace(/\s/g,"-")+".pdf");
                       showToastFn("PDF descargado");
-                    }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:7,padding:"8px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>Descargar PDF</button>
+                    }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:7,padding:"8px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>{ t("Descargar PDF","Download PDF") }</button>
                     <button onClick={()=>activarBorrador(b)} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"8px 16px",fontSize:12,cursor:"pointer",fontWeight:600}}>Activar como cliente</button>
-                    <button onClick={()=>rechazarBorrador(b.id)} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"8px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>Eliminar</button>
+                    <button onClick={()=>rechazarBorrador(b.id)} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"8px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>{ t("Eliminar","Remove") }</button>
                   </div>
                 </div>
               ))}
@@ -1282,7 +1347,7 @@ const loadTeam=async()=>{
           <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"14px",marginTop:16}}>
             <div style={{fontSize:12,fontWeight:700,color:"#1D4ED8",marginBottom:6}}>Link del formulario</div>
             <div style={{background:"#fff",border:"1px solid #BFDBFE",borderRadius:7,padding:"8px 12px",fontFamily:"monospace",fontSize:12,color:"#1D4ED8",wordBreak:"break-all"}}>{window.location.origin+"/formulario.html?o="+(officeData?.id||userData?.officeId||"")}</div>
-            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/formulario.html?o="+(officeData?.id||userData?.officeId||""));showToastFn("Link copiado");}} style={{marginTop:8,background:"#1E40AF",color:"#fff",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>Copiar link</button>
+            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/formulario.html?o="+(officeData?.id||userData?.officeId||""));showToastFn("Link copiado");}} style={{marginTop:8,background:"#1E40AF",color:"#fff",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>{t("Copiar link","Copy link")}</button>
           </div>
         </div>
       </div>
@@ -1297,7 +1362,7 @@ const loadTeam=async()=>{
               <h2 style={{margin:0,fontSize:20,fontWeight:800,color:"#0F172A"}}>{officeName}</h2>
               <div style={{fontSize:12,color:"#64748B",marginTop:3}}>Actualizado: {new Date().toLocaleDateString("es-US",{weekday:"long",day:"numeric",month:"long"})}</div>
             </div>
-            <button onClick={()=>setShowDashboard(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"9px 16px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar</button>
+            <button onClick={()=>setShowDashboard(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"9px 16px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
           </div>
 
           {/* Fila 1 — Metricas principales */}
@@ -1320,7 +1385,7 @@ const loadTeam=async()=>{
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
             <div style={{background:"#FEF2F2",borderRadius:12,padding:"16px",border:"1px solid #FECACA"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#DC2626"}}>🔴 Fechas vencidas</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#DC2626"}}>{t("🔴 Fechas vencidas","🔴 Overdue dates")}</div>
                 <div style={{fontSize:24,fontWeight:800,color:"#DC2626"}}>{stats.vencidos.length}</div>
               </div>
               {stats.vencidos.slice(0,3).map((c,i)=>(
@@ -1390,7 +1455,7 @@ const loadTeam=async()=>{
                 );
               })}
               {[...new Set(clientes.map(c=>c.encargada).filter(Boolean))].length===0&&(
-                <div style={{fontSize:13,color:"#94A3B8",textAlign:"center",padding:"16px 0"}}>Sin empleadas asignadas</div>
+                <div style={{fontSize:13,color:"#94A3B8",textAlign:"center",padding:"16px 0"}}>{t("Sin empleadas asignadas","No agents assigned")}</div>
               )}
             </div>
 
@@ -1398,14 +1463,14 @@ const loadTeam=async()=>{
 
           {/* Fila 4 — Clientes nuevos este mes */}
           <div style={{background:"#fff",borderRadius:12,padding:"18px",border:"1px solid #E2E8F0"}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:14}}>📅 Clientes nuevos este mes</div>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:14}}>{t("📅 Clientes nuevos este mes","📅 New clients this month")}</div>
             {(()=>{
               const inicioMes=new Date(new Date().getFullYear(),new Date().getMonth(),1);
               const nuevos=clientes.filter(c=>c.createdAt&&new Date(c.createdAt)>=inicioMes);
-              if(nuevos.length===0) return <div style={{fontSize:13,color:"#94A3B8",textAlign:"center",padding:"12px 0"}}>Sin clientes nuevos este mes</div>;
+              if(nuevos.length===0) return <div style={{fontSize:13,color:"#94A3B8",textAlign:"center",padding:"12px 0"}}>{t("Sin t("clientes nuevos","new clients") este mes","No new clients this month")}</div>;
               return(
                 <div>
-                  <div style={{fontSize:24,fontWeight:800,color:"#16A34A",marginBottom:10}}>{nuevos.length} clientes nuevos</div>
+                  <div style={{fontSize:24,fontWeight:800,color:"#16A34A",marginBottom:10}}>{nuevos.length} t("clientes nuevos","new clients")</div>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                     {nuevos.slice(0,6).map((c,i)=>(
                       <div key={i} style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:"6px 12px",fontSize:13,color:"#166534",fontWeight:500}}>
@@ -1428,17 +1493,17 @@ const loadTeam=async()=>{
         <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>{t("Equipo","Team")}</h2>
         <div style={{display:"flex",gap:8,marginBottom:12}}>
           <input value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder="Nombre..." style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
-          <button onClick={addMember} style={{padding:"9px 16px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontWeight:600,fontSize:14,cursor:"pointer"}}>+ Agregar</button>
+          <button onClick={addMember} style={{padding:"9px 16px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontWeight:600,fontSize:14,cursor:"pointer"}}>{ t("+ Agregar","+ Add") }</button>
         </div>
         <div style={{display:"grid",gap:8,marginBottom:16,maxHeight:220,overflowY:"auto"}}>
-          {equipo.length===0?<div style={{textAlign:"center",padding:16,color:"#94A3B8",fontSize:13}}>Sin miembros aun</div>:equipo.map((m,i)=>(
+          {equipo.length===0?<div style={{textAlign:"center",padding:16,color:"#94A3B8",fontSize:13}}>{ t("Sin miembros aún","No members yet") }</div>:equipo.map((m,i)=>(
             <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#F8FAFC",borderRadius:8,padding:"9px 13px",border:"1px solid #E2E8F0"}}>
               <span style={{fontWeight:500}}>👩 {m}</span>
-              <button onClick={()=>removeMember(i)} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:6,padding:"4px 9px",fontSize:12,cursor:"pointer"}}>Eliminar</button>
+              <button onClick={()=>removeMember(i)} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:6,padding:"4px 9px",fontSize:12,cursor:"pointer"}}>{ t("Eliminar","Remove") }</button>
             </div>
           ))}
         </div>
-        <button onClick={()=>setShowTeam(false)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer",fontWeight:600}}>Cerrar</button>
+        <button onClick={()=>setShowTeam(false)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
       </div>
     </div>)}
 
@@ -1452,9 +1517,9 @@ const loadTeam=async()=>{
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
           <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-              <h2 style={{margin:0,fontSize:18,fontWeight:800,color:"#0F172A"}}>Descargar PDF</h2>
+              <h2 style={{margin:0,fontSize:18,fontWeight:800,color:"#0F172A"}}>{ t("Descargar PDF","Download PDF") }</h2>
             </div>
-            <p style={{fontSize:13,color:"#64748B",margin:"0 0 20px"}}>Elige que clientes incluir</p>
+            <p style={{fontSize:13,color:"#64748B",margin:"0 0 20px"}}>{ t("Elige qué clientes incluir","Choose which clients to include") }</p>
             <div style={{marginBottom:16}}>
               <div style={{fontSize:11,fontWeight:700,color:"#374151",textTransform:"uppercase",marginBottom:10}}>SISTEMA</div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
@@ -1466,17 +1531,17 @@ const loadTeam=async()=>{
             <div style={{marginBottom:16}}>
               <div style={{fontSize:11,fontWeight:700,color:"#374151",textTransform:"uppercase",marginBottom:10}}>ESTADO</div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {[["todos","Todos","#1E40AF"],["vencido","Vencidas","#DC2626"],["urgente","Urgentes","#D97706"],["proximo","Proximas","#2563EB"],["ok","Al dia","#16A34A"]].map(([val,label,color])=>(
+                {[["todos","Todos","#1E40AF"],["vencido",t("Vencidas","Overdue"),"#DC2626"],["urgente",t("Urgentes","Urgent"),"#D97706"],["proximo",t("Próximas","Upcoming"),"#2563EB"],["ok",t("Al día","On Track"),"#16A34A"]].map(([val,label,color])=>(
                   <button key={val} onClick={()=>setPdfOpts(p=>({...p,estado:val}))} style={{padding:"8px 14px",borderRadius:8,border:pdfOpts.estado===val?"2px solid "+color:"1px solid #E2E8F0",background:pdfOpts.estado===val?"#F8FAFC":"#F8FAFC",color:pdfOpts.estado===val?color:"#64748B",fontWeight:pdfOpts.estado===val?700:400,fontSize:13,cursor:"pointer"}}>{label}</button>
                 ))}
               </div>
             </div>
             <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:13,color:"#475569"}}>
-              {pdfClientes.length} cliente{pdfClientes.length!==1?"s":""} en el reporte
+              {pdfClientes.length} {t("cliente","client")}{pdfClientes.length!==1?"s":""} {t("en el reporte","in the report")}
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-              <button onClick={()=>setShowPDF(false)} style={{padding:"10px 22px",borderRadius:9,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={()=>{generatePDF();setShowPDF(false);}} disabled={pdfClientes.length===0} style={{padding:"10px 22px",borderRadius:9,border:"none",background:pdfClientes.length===0?"#E5E7EB":"#1E40AF",color:pdfClientes.length===0?"#9CA3AF":"#fff",fontSize:14,fontWeight:700,cursor:pdfClientes.length===0?"not-allowed":"pointer"}}>Generar PDF</button>
+              <button onClick={()=>setShowPDF(false)} style={{padding:"10px 22px",borderRadius:9,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>{ t("Cancelar","Cancel") }</button>
+              <button onClick={()=>{generatePDF();setShowPDF(false);}} disabled={pdfClientes.length===0} style={{padding:"10px 22px",borderRadius:9,border:"none",background:pdfClientes.length===0?"#E5E7EB":"#1E40AF",color:pdfClientes.length===0?"#9CA3AF":"#fff",fontSize:14,fontWeight:700,cursor:pdfClientes.length===0?"not-allowed":"pointer"}}>{ t("Generar PDF","Generate PDF") }</button>
             </div>
           </div>
         </div>
@@ -1561,7 +1626,7 @@ const loadTeam=async()=>{
 
           {/* Footer con acciones */}
           <div style={{padding:"14px 22px",borderTop:"1px solid #F1F5F9",display:"flex",gap:10,flexWrap:"wrap"}}>
-            <button onClick={()=>setShowI589Review(false)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer",fontSize:13,color:"#64748B"}}>Cerrar</button>
+            <button onClick={()=>setShowI589Review(false)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer",fontSize:13,color:"#64748B"}}>{ t("Cerrar","Close") }</button>
             <div style={{flex:1}}/>
             <button disabled={i589Saving} onClick={async()=>{
               setI589Saving(true);
@@ -1602,12 +1667,12 @@ const loadTeam=async()=>{
               <h2 style={{fontSize:18,fontWeight:800,color:"#0F172A",margin:0}}>Historial de cambios</h2>
               <p style={{fontSize:13,color:"#64748B",marginTop:4}}>{historialCliente.nombre}</p>
             </div>
-            <button onClick={()=>setShowHistorial(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar</button>
+            <button onClick={()=>setShowHistorial(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
           </div>
           {historialData.length===0?(
             <div style={{textAlign:"center",padding:"32px 0",color:"#94A3B8"}}>
               <div style={{fontSize:36,marginBottom:8}}>📋</div>
-              <div style={{fontSize:14}}>Sin historial registrado aun</div>
+              <div style={{fontSize:14}}>{t("Sin historial","No history")} registrado aun</div>
               <div style={{fontSize:12,marginTop:6,color:"#CBD5E1"}}>Los cambios futuros apareceran aqui</div>
             </div>
           ):(
@@ -1694,11 +1759,11 @@ const loadTeam=async()=>{
           <div style={{background:"#F1F5F9",borderRadius:16,width:"100%",maxWidth:800,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
               <div>
-                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>📊 Reporte de Cobros</h2>
+                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>{t("📊 Reporte de Cobros","📊 Collections Report")}</h2>
                 <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>{officeName} — {new Date().toLocaleDateString("es-US",{month:"long",year:"numeric"})}</p>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button onClick={generarPDFCobros} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>📥 Descargar PDF</button>
+                <button onClick={generarPDFCobros} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>📥 { t("Descargar PDF","Download PDF") }</button>
                 <button onClick={()=>setShowPagosReporte(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar ✕</button>
               </div>
             </div>
@@ -1901,8 +1966,8 @@ const loadTeam=async()=>{
                   }
                   pdfdoc.save("nomina-"+nominaPeriodoInicio+"-al-"+nominaPeriodoFin+".pdf");
                   showToastFn("PDF de nomina descargado");
-                }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Descargar PDF</button>
-                <button onClick={()=>setShowNomina(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>Cerrar</button>
+                }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Descargar PDF","Download PDF") }</button>
+                <button onClick={()=>setShowNomina(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
               </div>
             </div>
 
@@ -2000,7 +2065,7 @@ const loadTeam=async()=>{
           </div>
           
           <div style={{background:"#F8FAFC",borderRadius:10,padding:"16px",marginBottom:14,border:"1px solid #E2E8F0"}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>🖼️ Logo de la oficina</div>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>🖼️ {t("Logo de la oficina","Office logo")}</div>
             <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
               {officeLogo?<img src={officeLogo} alt="Logo" style={{width:60,height:60,borderRadius:10,objectFit:"contain",border:"1px solid #E2E8F0",background:"#fff",padding:4}}/>:<div style={{width:60,height:60,borderRadius:10,border:"1px dashed #CBD5E1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🏢</div>}
               <div style={{flex:1}}>
@@ -2039,12 +2104,12 @@ const loadTeam=async()=>{
           <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:10,padding:"12px 14px",marginBottom:16}}>
             <div style={{fontSize:12,fontWeight:700,color:"#15803D",marginBottom:6}}>🔗 Link de acceso con logo</div>
             <div style={{fontFamily:"monospace",fontSize:12,color:"#1E3A5F",wordBreak:"break-all",marginBottom:8}}>{window.location.origin+"/app.html?o="+(officeData?.id||"")}</div>
-            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/app.html?o="+(officeData?.id||"")).then(()=>showToastFn("Link copiado ✓"));}} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>📋 Copiar link</button>
+            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/app.html?o="+(officeData?.id||"")).then(()=>showToastFn("Link copiado ✓"));}} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>📋 {t("Copiar link","Copy link")}</button>
             <div style={{fontSize:11,color:"#64748B",marginTop:6}}>Comparte este link con tu equipo — verán tu logo al entrar</div>
           </div>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <button onClick={()=>setShowPagosConfig(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={()=>savePagosConfig(pagosConfig)} disabled={configSaving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:configSaving?"#E5E7EB":"#1E3A5F",color:configSaving?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:configSaving?"not-allowed":"pointer"}}>{configSaving?"Guardando...":"Guardar"}</button>
+            <button onClick={()=>savePagosConfig(pagosConfig)} disabled={configSaving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:configSaving?"#E5E7EB":"#1E3A5F",color:configSaving?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:configSaving?"not-allowed":"pointer"}}>{configSaving ? t("Guardando...","Saving...") : t("Guardar","Save")}</button>
           </div>
         </div>
       </div>
@@ -2055,21 +2120,21 @@ const loadTeam=async()=>{
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>💳 Cobrar cliente</h2>
+            <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>{t("💳 Cobrar","💳 Charge")} cliente</h2>
             <button onClick={()=>setShowCobrar(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer"}}>✕</button>
           </div>
           <div style={{fontSize:13,color:"#64748B",marginBottom:18}}>👤 {cobrarCliente.nombre}</div>
 
           
           <div style={{marginBottom:12}}>
-            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Monto a cobrar *</label>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>{t("Monto a cobrar","Amount to charge")} *</label>
             <input type="number" value={cobrarMonto} onChange={e=>setCobrarMonto(e.target.value)} placeholder="0.00" style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:18,fontWeight:700,outline:"none",textAlign:"center"}}/>
           </div>
 
           
           <div style={{marginBottom:14}}>
-            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Concepto *</label>
-            <input value={cobrarConcepto} onChange={e=>setCobrarConcepto(e.target.value)} placeholder="Ej. Asilo I-589 — primera cuota" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>{t("Concepto","Description")} *</label>
+            <input value={cobrar{t("Concepto","Description")}} onChange={e=>setCobrar{t("Concepto","Description")}(e.target.value)} placeholder="Ej. Asilo I-589 — primera cuota" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
           </div>
 
           
@@ -2083,11 +2148,11 @@ const loadTeam=async()=>{
           </div>
 
           
-          {cobrarMonto&&cobrarConcepto&&(()=>{
+          {cobrarMonto&&cobrar{t("Concepto","Description")}&&(()=>{
             const zelleInfo=cobrarMetodo==="zelle"?`Zelle: ${pagosConfig.zelleNombre||""}${pagosConfig.zelleEmail?" — "+pagosConfig.zelleEmail:""}${pagosConfig.zelleTel?" / "+pagosConfig.zelleTel:""}`:pagosConfig.stripeLink||"(configura tu link de Stripe)";
             const msg=`Hola ${(cobrarCliente.nombre||"").split(" ")[0]}, le informamos que tiene un saldo pendiente:
 
-*Concepto:* ${cobrarConcepto}
+*{t("Concepto","Description")}:* ${cobrar{t("Concepto","Description")}}
 *Monto:* $${parseFloat(cobrarMonto||0).toFixed(2)}
 
 *Pagar via ${cobrarMetodo==="zelle"?"Zelle":"Stripe/Tarjeta"}:*
@@ -2106,16 +2171,16 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <button onClick={()=>setShowCobrar(false)} style={{padding:"9px 18px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer"}}>Cancelar</button>
             <button onClick={async()=>{
-              if(!cobrarMonto||!cobrarConcepto){showToastFn("Completa monto y concepto","error");return;}
+              if(!cobrarMonto||!cobrar{t("Concepto","Description")}){showToastFn("Completa monto y concepto","error");return;}
               setCobrarSaving(true);
               const refNum="REC-"+Date.now().toString(36).toUpperCase();
-              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum};
+              const pago={monto:cobrarMonto,concepto:cobrar{t("Concepto","Description")},metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum};
               await registrarPago(cobrarCliente.id,pago);
               await generarReciboPDF(pago);
               setCobrarSaving(false);
               setShowCobrar(false);
               showToastFn("Pago registrado y recibo generado ✓");
-            }} disabled={cobrarSaving||!cobrarMonto||!cobrarConcepto} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(cobrarSaving||!cobrarMonto||!cobrarConcepto)?"#E5E7EB":"#1E3A5F",color:(cobrarSaving||!cobrarMonto||!cobrarConcepto)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(cobrarSaving||!cobrarMonto||!cobrarConcepto)?"not-allowed":"pointer"}}>
+            }} disabled={cobrarSaving||!cobrarMonto||!cobrar{t("Concepto","Description")}} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(cobrarSaving||!cobrarMonto||!cobrar{t("Concepto","Description")})?"#E5E7EB":"#1E3A5F",color:(cobrarSaving||!cobrarMonto||!cobrar{t("Concepto","Description")})?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(cobrarSaving||!cobrarMonto||!cobrar{t("Concepto","Description")})?"not-allowed":"pointer"}}>
               {cobrarSaving?"Procesando...":"✅ Registrar pago + Recibo PDF"}
             </button>
           </div>
@@ -2137,19 +2202,19 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
           <button key={k} onClick={()=>onChange({...caso,sistema:k,tipoCaso:""})} style={{padding:"5px 10px",borderRadius:7,border:caso.sistema===k?`2px solid ${s.color}`:"1px solid #E2E8F0",background:caso.sistema===k?s.bg:"#fff",color:caso.sistema===k?s.color:"#374151",fontWeight:caso.sistema===k?700:400,fontSize:12,cursor:"pointer"}}>{s.icon} {s.label}</button>
         ))}
       </div>
-      <button onClick={onDelete} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"5px 10px",fontSize:12,cursor:"pointer",fontWeight:600}}>🗑 Eliminar</button>
+      <button onClick={onDelete} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:7,padding:"5px 10px",fontSize:12,cursor:"pointer",fontWeight:600}}>{t("🗑 Eliminar","🗑 Delete")}</button>
     </div>
     <div style={{marginBottom:10}}>
-      <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tipo de caso</label>
+      <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Tipo de caso","Case type")}</label>
       <select value={caso.tipoCaso} onChange={e=>onChange({...caso,tipoCaso:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,background:"#fff",cursor:"pointer"}}>
         <option value="">Seleccionar...</option>{SISTEMAS[caso.sistema].tiposCaso.map(t=><option key={t} value={t}>{t}</option>)}
       </select>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-      {caso.sistema==="uscis"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>N° Recibo</label><input value={caso.receiptNum||""} onChange={e=>onChange({...caso,receiptNum:e.target.value.toUpperCase()})} placeholder="IOE0912345678" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>}
-      <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>A# Alien</label><input value={caso.alienNum||""} onChange={e=>onChange({...caso,alienNum:e.target.value.replace(/[^\d-]/g,"")})} placeholder="012-345-678" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>
-      {caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Corte</label><input value={caso.corte||""} onChange={e=>onChange({...caso,corte:e.target.value})} placeholder="Miami Immigration Court" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
-      {caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Juez</label><input value={caso.juez||""} onChange={e=>onChange({...caso,juez:e.target.value})} placeholder="Hon. Rivera" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
+      {caso.sistema==="uscis"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("N° Recibo","Receipt #")}</label><input value={caso.receiptNum||""} onChange={e=>onChange({...caso,receiptNum:e.target.value.toUpperCase()})} placeholder="IOE0912345678" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>}
+      <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("A# Alien","Alien #")}</label><input value={caso.alienNum||""} onChange={e=>onChange({...caso,alienNum:e.target.value.replace(/[^\d-]/g,"")})} placeholder="012-345-678" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>
+      {caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Corte","Court")}</label><input value={caso.corte||""} onChange={e=>onChange({...caso,corte:e.target.value})} placeholder="Miami Immigration Court" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
+      {caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Juez","Judge")}</label><input value={caso.juez||""} onChange={e=>onChange({...caso,juez:e.target.value})} placeholder="Hon. Rivera" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
     </div>
 
     
@@ -2170,7 +2235,7 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
         {caso.tipoCita==="ambas"&&<><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}> Fecha Biometrics</label><input type="date" value={caso.fechaHuellas||""} onChange={e=>onChange({...caso,fechaHuellas:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>🎤 Fecha de Entrevista</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div></>}
         
         <div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#A5B4FC",marginBottom:3,textTransform:"uppercase"}}>⏱️ Fecha en que se ingresó el asilo</label><input type="date" value={caso.fechaAsilo||""} onChange={e=>onChange({...caso,fechaAsilo:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #4338CA",background:"#1E1B4B",color:"#fff",fontSize:13,outline:"none"}}/></div>
-        {caso.fechaAsilo&&(()=>{const inicio=new Date(caso.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);const dias=Math.floor((hoy-inicio)/86400000);const pct=Math.min(100,Math.round((dias/180)*100));const color=dias>=180?"#4ADE80":dias>=120?"#FACC15":"#60A5FA";return(<div style={{background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:8,padding:"10px 12px"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{textAlign:"center",minWidth:50}}><div style={{fontSize:28,fontWeight:800,color,lineHeight:1}}>{dias}</div><div style={{fontSize:10,color:"#A5B4FC"}}>dias</div></div><div style={{flex:1}}><div style={{background:"#312E81",borderRadius:20,height:8,overflow:"hidden",marginBottom:4}}><div style={{height:"100%",borderRadius:20,background:color,width:`${pct}%`}}/></div><div style={{fontSize:11,color,fontWeight:600}}>{dias>=180?`✅ Elegible para EAD — ${dias} dias`:`⏳ Faltan ${180-dias} dias para EAD`}</div></div></div></div>);})()} 
+        {caso.fechaAsilo&&(()=>{const inicio=new Date(caso.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);const dias=Math.floor((hoy-inicio)/86400000);const pct=Math.min(100,Math.round((dias/180)*100));const color=dias>=180?"#4ADE80":dias>=120?"#FACC15":"#60A5FA";return(<div style={{background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:8,padding:"10px 12px"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{textAlign:"center",minWidth:50}}><div style={{fontSize:28,fontWeight:800,color,lineHeight:1}}>{dias}</div><div style={{fontSize:10,color:"#A5B4FC"}}>{t("días","days")}</div></div><div style={{flex:1}}><div style={{background:"#312E81",borderRadius:20,height:8,overflow:"hidden",marginBottom:4}}><div style={{height:"100%",borderRadius:20,background:color,width:`${pct}%`}}/></div><div style={{fontSize:11,color,fontWeight:600}}>{dias>=180?`✅ t("Elegible para EAD","Eligible for EAD") — ${dias} dias`:`⏳ t(`Faltan ${180-dias} días para EAD`,`${180-dias} days until EAD`)`}</div></div></div></div>);})()} 
       </div>
     )}
 
@@ -2197,7 +2262,7 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
     {caso.sistema==="eoir"&&(caso.tipoCaso||"").toLowerCase().includes("asilo")&&<div style={{marginBottom:8}}>
       <label style={{display:"block",fontSize:11,fontWeight:600,color:"#A5B4FC",marginBottom:3,textTransform:"uppercase"}}>⏱️ Fecha en que se presentó el asilo</label>
       <input type="date" value={caso.fechaAsilo||""} onChange={e=>onChange({...caso,fechaAsilo:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #4338CA",background:"#1E1B4B",color:"#fff",fontSize:13,outline:"none"}}/>
-      {caso.fechaAsilo&&(()=>{const inicio=new Date(caso.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);const dias=Math.floor((hoy-inicio)/86400000);const pct=Math.min(100,Math.round((dias/180)*100));const color=dias>=180?"#4ADE80":dias>=120?"#FACC15":"#60A5FA";return(<div style={{background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:8,padding:"10px 12px",marginTop:6}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{textAlign:"center",minWidth:50}}><div style={{fontSize:28,fontWeight:800,color,lineHeight:1}}>{dias}</div><div style={{fontSize:10,color:"#A5B4FC"}}>dias</div></div><div style={{flex:1}}><div style={{background:"#312E81",borderRadius:20,height:8,overflow:"hidden",marginBottom:4}}><div style={{height:"100%",borderRadius:20,background:color,width:`${pct}%`}}/></div><div style={{fontSize:11,color,fontWeight:600}}>{dias>=180?`✅ Elegible para EAD — ${dias} dias`:`⏳ Faltan ${180-dias} dias para EAD`}</div></div></div></div>);})()} 
+      {caso.fechaAsilo&&(()=>{const inicio=new Date(caso.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);const dias=Math.floor((hoy-inicio)/86400000);const pct=Math.min(100,Math.round((dias/180)*100));const color=dias>=180?"#4ADE80":dias>=120?"#FACC15":"#60A5FA";return(<div style={{background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:8,padding:"10px 12px",marginTop:6}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{textAlign:"center",minWidth:50}}><div style={{fontSize:28,fontWeight:800,color,lineHeight:1}}>{dias}</div><div style={{fontSize:10,color:"#A5B4FC"}}>{t("días","days")}</div></div><div style={{flex:1}}><div style={{background:"#312E81",borderRadius:20,height:8,overflow:"hidden",marginBottom:4}}><div style={{height:"100%",borderRadius:20,background:color,width:`${pct}%`}}/></div><div style={{fontSize:11,color,fontWeight:600}}>{dias>=180?`✅ t("Elegible para EAD","Eligible for EAD") — ${dias} dias`:`⏳ t(`Faltan ${180-dias} días para EAD`,`${180-dias} days until EAD`)`}</div></div></div></div>);})()} 
     </div>}
 
     
@@ -2235,7 +2300,7 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
     
     {caso.sistema==="foia"&&<>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-        <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tracking FOIA</label><input value={caso.foiaTracking||""} onChange={e=>onChange({...caso,foiaTracking:e.target.value})} placeholder="NRC2024123456" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>
+        <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Tracking FOIA","FOIA Tracking")}</label><input value={caso.foiaTracking||""} onChange={e=>onChange({...caso,foiaTracking:e.target.value})} placeholder="NRC2024123456" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>
         <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Estado FOIA</label>
           <select value={caso.foiaEstado||""} onChange={e=>onChange({...caso,foiaEstado:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,background:"#fff",cursor:"pointer"}}>
             <option value="">Seleccionar...</option>
@@ -2247,10 +2312,12 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
         </div>
       </div>
       <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de envío</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
-      <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Respuesta / Notas FOIA</label><textarea value={caso.foiaRespuesta||""} onChange={e=>onChange({...caso,foiaRespuesta:e.target.value})} placeholder="Notas de la respuesta..." rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
+      <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Respuesta / Notas FOIA","FOIA Response / Notes")}</label><textarea value={caso.foiaRespuesta||""} onChange={e=>onChange({...caso,foiaRespuesta:e.target.value})} placeholder={t("Notas de la respuesta...","Response notes...")} rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
     </>}
-    <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Notas del caso</label><textarea value={caso.nota||""} onChange={e=>onChange({...caso,nota:e.target.value})} placeholder="Observaciones..." rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
+    <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Notas del caso","Case notes")}</label><textarea value={caso.nota||""} onChange={e=>onChange({...caso,nota:e.target.value})} placeholder={t("Observaciones...","Notes...")} rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
     <ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>
+      </div>{/* end page content */}
+    </div>{/* end main content */}
   </div>);
 }
 
