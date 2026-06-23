@@ -2351,8 +2351,6 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
     </>}
     <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Notas del caso","Case notes")}</label><textarea value={caso.nota||""} onChange={e=>onChange({...caso,nota:e.target.value})} placeholder={t("Observaciones...","Notes...")} rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
     <ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>
-    </div>
-  </div>
   </div>);
 }
 
