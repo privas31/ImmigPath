@@ -981,7 +981,7 @@ const loadTeam=async()=>{
                       })()}
                     </div>
                     <div style={{display:"flex",gap:16,flexWrap:"wrap",alignItems:"center"}}>
-                      {c.paisOrigen&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>{getFlag(c.paisOrigen)} {c.paisOrigen}</span>}
+                      {c.paisOrigen&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>{getFlag(c.paisOrigen)} <span style={{fontWeight:500}}>{c.paisOrigen}</span></span>}
                       {c.telefono&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>📱 {c.telefono}</span>}
                       {c.email&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>✉️ {c.email}</span>}
                       {c.alienNum&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>🪪 <span style={{fontFamily:"monospace",fontWeight:600}}>{fmtA(c.alienNum)}</span></span>}
@@ -1120,19 +1120,28 @@ const loadTeam=async()=>{
                           {isAdmin&&(ca.procesos||[]).length>0&&(()=>{
                             const totalC=getTotalProcesos(ca.procesos||[]);const pagadoC=getTotalPagado(ca.procesos||[]);const pctC=getPct(totalC,pagadoC);const pcC=pagoColor(pctC);
                             return(
-                              <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"10px 12px"}}>
-                                <div style={{fontSize:11,fontWeight:700,color:"#92400E",marginBottom:8}}>💰 Pagos</div>
+                              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                                  <div style={{width:28,height:28,borderRadius:"50%",background:"#DCFCE7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>💵</div>
+                                  <span style={{fontSize:14,fontWeight:700,color:"#0F172A"}}>$ {t("Pagos","Payments")}</span>
+                                </div>
                                 {(ca.procesos||[]).map((p,pi)=>{const pp=getPct(parseMoney(p.precio),parseMoney(p.pagado));return(
-                                  <div key={pi} style={{marginBottom:8,paddingBottom:8,borderBottom:pi<(ca.procesos||[]).length-1?"1px dashed #FDE68A":"none"}}>
-                                    <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:12,fontWeight:600,color:"#374151"}}>{p.nombre||"—"}</span><span style={{fontSize:11,color:"#64748B"}}>{fmtMoney(p.pagado)||"$0"} / {fmtMoney(p.precio)||"—"}</span></div>
-                                    {p.precio&&<><div style={{background:"#E2E8F0",borderRadius:20,height:4,marginTop:3}}><div style={{height:"100%",borderRadius:20,background:pagoColor(pp),width:`${pp||0}%`}}/></div><div style={{fontSize:10,color:pagoColor(pp),fontWeight:700,marginTop:1}}>{pp!==null?`${pp}%`:"Sin pago"}</div></>}
-                                    {p.notas&&<div style={{fontSize:11,color:"#6B7280",fontStyle:"italic",marginTop:2}}>📝 {p.notas}</div>}
+                                  <div key={pi} style={{marginBottom:12,paddingBottom:12,borderBottom:pi<(ca.procesos||[]).length-1?"1px solid #F1F5F9":"none"}}>
+                                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                                      <span style={{fontSize:13,fontWeight:600,color:"#374151"}}>{p.nombre||"—"}</span>
+                                      <span style={{fontSize:12,fontWeight:600,color:"#0F172A"}}>{fmtMoney(p.pagado)||"$0"} / {fmtMoney(p.precio)||"—"}</span>
+                                    </div>
+                                    {p.precio&&<><div style={{background:"#F1F5F9",borderRadius:20,height:5}}><div style={{height:"100%",borderRadius:20,background:pagoColor(pp),width:`${pp||0}%`}}/></div><div style={{fontSize:11,color:pagoColor(pp),fontWeight:700,marginTop:3}}>{pp!==null?`${pp}%`:"Sin pago"}</div></>}
+                                    {p.notas&&<div style={{fontSize:11,color:"#6B7280",fontStyle:"italic",marginTop:4}}>📝 {p.notas}</div>}
                                   </div>
                                 );})}
-                                <div style={{background:"#FEF9C3",borderRadius:7,padding:"7px 10px",marginTop:4}}>
-                                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:"#92400E"}}>Total</span><span style={{fontSize:12,fontWeight:800,color:"#92400E"}}>{fmtMoney(pagadoC)} / {fmtMoney(totalC)}</span></div>
-                                  <div style={{background:"#E2E8F0",borderRadius:20,height:5,marginTop:3}}><div style={{height:"100%",borderRadius:20,background:pcC,width:`${pctC||0}%`}}/></div>
-                                  <div style={{fontSize:10,color:pcC,fontWeight:700,marginTop:2}}>{pctC!==null?`${pctC}% — Saldo: ${fmtMoney(totalC-pagadoC)}`:"Sin info"}</div>
+                                <div style={{background:"#F0FDF4",borderRadius:8,padding:"10px 12px",marginTop:4,border:"1px solid #BBF7D0"}}>
+                                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                                    <span style={{fontSize:12,fontWeight:700,color:"#374151"}}>Total</span>
+                                    <span style={{fontSize:14,fontWeight:800,color:"#0F172A"}}>{fmtMoney(pagadoC)} / {fmtMoney(totalC)}</span>
+                                  </div>
+                                  <div style={{background:"#D1FAE5",borderRadius:20,height:5}}><div style={{height:"100%",borderRadius:20,background:pcC,width:`${pctC||0}%`}}/></div>
+                                  <div style={{fontSize:11,color:pcC,fontWeight:700,marginTop:4}}>{pctC!==null?`${pctC}% — ${t("Saldo","Balance")}: ${fmtMoney(totalC-pagadoC)}`:"Sin info"}</div>
                                 </div>
                               </div>
                             );
