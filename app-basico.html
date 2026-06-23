@@ -215,8 +215,6 @@ function App(){
   const[showHistorial,setShowHistorial]=useState(false);
   const[openMenuId,setOpenMenuId]=useState(null);
   const[lang,setLang]=useState("es");
-  React.useEffect(()=>{ _lang = lang; }, [lang]);
-  React.useEffect(()=>{ _lang = "es"; }, []);
   const[historialCliente,setHistorialCliente]=useState(null);
   const[historialData,setHistorialData]=useState([]);const[pdfOpts,setPdfOpts]=useState({sistema:"todos",estado:"todos"});
   const[showAddUser,setShowAddUser]=useState(false);const[newUserEmail,setNewUserEmail]=useState("");const[newUserPass,setNewUserPass]=useState("");const[addUserMsg,setAddUserMsg]=useState("");
@@ -892,8 +890,8 @@ const loadTeam=async()=>{
           <button onClick={handleLogout} title={t("Salir","Logout")} style={{background:"rgba(255,255,255,0.06)",border:"none",borderRadius:6,padding:"5px 7px",cursor:"pointer",color:"#64748B",fontSize:11}}>↩</button>
         </div>
         <div style={{display:"flex",gap:4,justifyContent:"flex-end"}}>
-          <button onClick={()=>setLang("es")} style={{background:lang==="es"?"rgba(59,130,246,0.3)":"rgba(255,255,255,0.06)",color:lang==="es"?"#93C5FD":"#475569",border:"none",borderRadius:"4px 0 0 4px",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="es"?700:400}}>ES</button>
-          <button onClick={()=>setLang("en")} style={{background:lang==="en"?"rgba(59,130,246,0.3)":"rgba(255,255,255,0.06)",color:lang==="en"?"#93C5FD":"#475569",border:"none",borderRadius:"0 4px 4px 0",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="en"?700:400}}>EN</button>
+          <button onClick={()=>{_lang="es";setLang("es")}} style={{background:lang==="es"?"rgba(59,130,246,0.3)":"rgba(255,255,255,0.06)",color:lang==="es"?"#93C5FD":"#475569",border:"none",borderRadius:"4px 0 0 4px",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="es"?700:400}}>ES</button>
+          <button onClick={()=>{_lang="en";setLang("en")}} style={{background:lang==="en"?"rgba(59,130,246,0.3)":"rgba(255,255,255,0.06)",color:lang==="en"?"#93C5FD":"#475569",border:"none",borderRadius:"0 4px 4px 0",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="en"?700:400}}>EN</button>
         </div>
       </div>
     </div>
