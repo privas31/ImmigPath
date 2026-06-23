@@ -851,16 +851,16 @@ const loadTeam=async()=>{
   ];
 
   return(<div style={{fontFamily:"'Segoe UI',Inter,system-ui,sans-serif",minHeight:"100vh",background:"#F8FAFC",display:"flex"}}>
-    <div style={{width:240,minHeight:"100vh",background:"#0F172A",display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:40,flexShrink:0}}>
-      <div style={{padding:"24px 20px 16px",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+    <div style={{width:240,minHeight:"100vh",background:"#fff",display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:40,flexShrink:0,borderRight:"1px solid #E2E8F0",boxShadow:"2px 0 8px rgba(0,0,0,0.04)"}}>
+      <div style={{padding:"20px 20px 16px",borderBottom:"1px solid #F1F5F9"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
           {officeLogo
             ?<img src={officeLogo} alt="Logo" style={{height:36,width:36,borderRadius:10,objectFit:"contain",background:"rgba(255,255,255,0.1)",padding:3}}/>
             :<div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#3B82F6,#1E40AF)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>⚖️</div>
           }
           <div>
-            <div style={{fontWeight:800,fontSize:15,color:"#fff",letterSpacing:"-0.01em"}}>{officeName||"ImmigPath"}</div>
-            <div style={{fontSize:10,color:"#64748B",fontWeight:500,textTransform:"uppercase",letterSpacing:"0.06em"}}>SERVICES</div>
+            <div style={{fontWeight:800,fontSize:15,color:"#0F172A",letterSpacing:"-0.01em"}}>{officeName||"ImmigPath"}</div>
+            <div style={{fontSize:10,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em"}}>SERVICES</div>
           </div>
         </div>
         <div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(99,102,241,0.2)",border:"1px solid rgba(99,102,241,0.35)",borderRadius:6,padding:"3px 10px"}}>
@@ -872,7 +872,7 @@ const loadTeam=async()=>{
         {navItems.map(n=>{
           const active = activeNav===n.id;
           return(
-            <button key={n.id} onClick={()=>{setActiveNav(n.id);n.onClick&&n.onClick();}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 20px",background:active?"rgba(59,130,246,0.15)":"transparent",border:"none",borderLeft:active?"3px solid #3B82F6":"3px solid transparent",color:active?"#fff":"#94A3B8",fontSize:13,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
+            <button key={n.id} onClick={()=>{setActiveNav(n.id);n.onClick&&n.onClick();}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 20px",background:active?"#EFF6FF":"transparent",border:"none",borderLeft:active?"3px solid #2563EB":"3px solid transparent",color:active?"#2563EB":"#64748B",fontSize:13,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
               <span style={{fontSize:15,width:20,textAlign:"center"}}>{n.icon}</span>
               <span style={{flex:1}}>{n.label}</span>
               {n.badge>0&&<span style={{background:"#EF4444",color:"#fff",borderRadius:20,padding:"1px 6px",fontSize:10,fontWeight:700,minWidth:18,textAlign:"center"}}>{n.badge}</span>}
@@ -880,20 +880,20 @@ const loadTeam=async()=>{
           );
         })}
       </nav>
-      <div style={{padding:"16px 20px",borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+      <div style={{padding:"16px 20px",borderTop:"1px solid #F1F5F9"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
           <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#3B82F6,#7C3AED)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:700,flexShrink:0}}>
             {(user?.email||"U")[0].toUpperCase()}
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:12,fontWeight:600,color:"#E2E8F0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.displayName||user?.email?.split("@")[0]||"Usuario"}</div>
-            <div style={{fontSize:10,color:"#64748B"}}>{isAdmin?t("Administradora","Administrator"):t("Empleada","Employee")}</div>
+            <div style={{fontSize:12,fontWeight:600,color:"#0F172A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.displayName||user?.email?.split("@")[0]||"Usuario"}</div>
+            <div style={{fontSize:10,color:"#94A3B8"}}>{isAdmin?t("Administradora","Administrator"):t("Empleada","Employee")}</div>
           </div>
-          <button onClick={handleLogout} title={t("Salir","Logout")} style={{background:"rgba(255,255,255,0.06)",border:"none",borderRadius:6,padding:"5px 7px",cursor:"pointer",color:"#64748B",fontSize:11}}>↩</button>
+          <button onClick={handleLogout} title={t("Salir","Logout")} style={{background:"#F1F5F9",border:"none",borderRadius:6,padding:"5px 7px",cursor:"pointer",color:"#64748B",fontSize:11}}>↩</button>
         </div>
         <div style={{display:"flex",gap:4,justifyContent:"flex-end"}}>
-          <button onClick={()=>{_lang="es";setLang("es")}} style={{background:lang==="es"?"rgba(59,130,246,0.3)":"rgba(255,255,255,0.06)",color:lang==="es"?"#93C5FD":"#475569",border:"none",borderRadius:"4px 0 0 4px",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="es"?700:400}}>ES</button>
-          <button onClick={()=>{_lang="en";setLang("en")}} style={{background:lang==="en"?"rgba(59,130,246,0.3)":"rgba(255,255,255,0.06)",color:lang==="en"?"#93C5FD":"#475569",border:"none",borderRadius:"0 4px 4px 0",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="en"?700:400}}>EN</button>
+          <button onClick={()=>{_lang="es";setLang("es")}} style={{background:lang==="es"?"#2563EB":"#F1F5F9",color:lang==="es"?"#fff":"#64748B",border:"none",borderRadius:"4px 0 0 4px",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="es"?700:400}}>ES</button>
+          <button onClick={()=>{_lang="en";setLang("en")}} style={{background:lang==="en"?"#2563EB":"#F1F5F9",color:lang==="en"?"#fff":"#64748B",border:"none",borderRadius:"0 4px 4px 0",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="en"?700:400}}>EN</button>
         </div>
       </div>
     </div>
