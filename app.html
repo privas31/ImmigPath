@@ -565,10 +565,22 @@ const loadTeam=async()=>{
     setShowHistorial(true);
     try{
       const{db,collection,query,where,orderBy,getDocs}=window._firebase;
-      const q=query(collection(db,"historial"),where("clienteId","==",c.id),orderBy("fecha","desc"));
-      const snap=await getDocs(q);
-      setHistorialData(snap.docs.map(d=>({id:d.id,...d.data()})));
-    }catch(e){console.error(e);}
+      // Try with orderBy first (needs composite index in Firebase)
+      let snap;
+      try{
+        const q=query(collection(db,"historial"),where("clienteId","==",c.id),orderBy("fecha","desc"));
+        snap=await getDocs(q);
+      }catch(indexErr){
+        // Fallback: query without orderBy, sort client-side
+        console.warn("Historial index missing, using fallback:",indexErr.message);
+        const q2=query(collection(db,"historial"),where("clienteId","==",c.id));
+        snap=await getDocs(q2);
+      }
+      const data=snap.docs.map(d=>({id:d.id,...d.data()}));
+      // Sort by fecha descending client-side
+      data.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+      setHistorialData(data);
+    }catch(e){console.error("Historial error:",e);}
   };
   const openEdit=(c)=>{
     setEditId(c.id);
