@@ -230,7 +230,7 @@ function App(){
   const[showCobrar,setShowCobrar]=useState(false);
   const[cobrarCliente,setCobrarCliente]=useState(null);
   const[cobrarMonto,setCobrarMonto]=useState("");
-  const[cobrar{t("Concepto","Description")},setCobrar{t("Concepto","Description")}]=useState("");
+  const[cobrarConcepto,setCobrarConcepto]=useState("");
   const[cobrarMetodo,setCobrarMetodo]=useState("zelle");
   const[cobrarSaving,setCobrarSaving]=useState(false);
   const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:""});
@@ -350,7 +350,7 @@ const descargarReciboPDF=async(pago)=>{
   addSec("INFORMACION DEL CLIENTE");
   addRow2("Nombre",pago.nombreCliente||"—");
   addSec("DETALLE DEL PAGO");
-  addRow2("{t("Concepto","Description")}",pago.concepto||"—");
+  addRow2("Concepto",pago.concepto||"—");
   addRow2("Metodo de pago",pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta");
   addRow2("Fecha",new Date(pago.fecha).toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}));
   addRow2("Registrado por",pago.registradoPor||"—");
@@ -449,7 +449,7 @@ const generarReciboPDF=async(pago)=>{
   addSec("INFORMACION DEL CLIENTE");
   addRow("Nombre",pago.nombreCliente);
   addSec("DETALLE DEL PAGO");
-  addRow("{t("Concepto","Description")}",pago.concepto);
+  addRow("Concepto",pago.concepto);
   addRow("Metodo de pago",pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta");
   addRow("Fecha",new Date().toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}));
   y+=4;
@@ -949,8 +949,8 @@ const loadTeam=async()=>{
               <div style={{fontSize:15,fontWeight:600,marginBottom:4,color:"#475569"}}>{t("Sin clientes en esta categoría","No clients in this category")}</div>
               <button onClick={openAdd} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:14,cursor:"pointer",fontWeight:600,marginTop:16}}>+ {t("Agregar primer cliente","Add first client")}</button>
             </div>
-          ):(
-          {filtered.map(c=>{
+          ):
+          filtered.map(c=>{
             const st=getStatusCliente(c);const scfg=STATUS_CONFIG[st];const pf=getProximaFecha(c);const dias=pf?getDias(pf):null;const exp=expandedId===c.id;
             const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
             const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
@@ -1004,7 +1004,7 @@ const loadTeam=async()=>{
 
 
 
-                          {isAdmin&&<button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrar{t("Concepto","Description")}("");setCobrarMetodo("zelle");setShowCobrar(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#16A34A",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F0FDF4"} onMouseLeave={e=>e.target.style.background="none"}>
+                          {isAdmin&&<button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#16A34A",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F0FDF4"} onMouseLeave={e=>e.target.style.background="none"}>
                             <span>💳</span> Cobrar cliente
                           </button>}
                           <div style={{height:"1px",background:"#F1F5F9"}}></div>
@@ -1438,10 +1438,10 @@ const loadTeam=async()=>{
             {(()=>{
               const inicioMes=new Date(new Date().getFullYear(),new Date().getMonth(),1);
               const nuevos=clientes.filter(c=>c.createdAt&&new Date(c.createdAt)>=inicioMes);
-              if(nuevos.length===0) return <div style={{fontSize:13,color:"#94A3B8",textAlign:"center",padding:"12px 0"}}>{t("Sin t("clientes nuevos","new clients") este mes","No new clients this month")}</div>;
+              if(nuevos.length===0) return <div style={{fontSize:13,color:"#94A3B8",textAlign:"center",padding:"12px 0"}}>{t("Sin clientes nuevos este mes","No new clients this month")}</div>;
               return(
                 <div>
-                  <div style={{fontSize:24,fontWeight:800,color:"#16A34A",marginBottom:10}}>{nuevos.length} t("clientes nuevos","new clients")</div>
+                  <div style={{fontSize:24,fontWeight:800,color:"#16A34A",marginBottom:10}}>{nuevos.length} {t("clientes nuevos","new clients")}</div>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                     {nuevos.slice(0,6).map((c,i)=>(
                       <div key={i} style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:"6px 12px",fontSize:13,color:"#166534",fontWeight:500}}>
@@ -2084,7 +2084,7 @@ const loadTeam=async()=>{
           
           <div style={{marginBottom:14}}>
             <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>{t("Concepto","Description")} *</label>
-            <input value={cobrar{t("Concepto","Description")}} onChange={e=>setCobrar{t("Concepto","Description")}(e.target.value)} placeholder="Ej. Asilo I-589 — primera cuota" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            <input value={cobrarConcepto} onChange={e=>setCobrarConcepto(e.target.value)} placeholder="Ej. Asilo I-589 — primera cuota" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
           </div>
 
           
@@ -2098,11 +2098,11 @@ const loadTeam=async()=>{
           </div>
 
           
-          {cobrarMonto&&cobrar{t("Concepto","Description")}&&(()=>{
+          {cobrarMonto&&cobrarConcepto&&(()=>{
             const zelleInfo=cobrarMetodo==="zelle"?`Zelle: ${pagosConfig.zelleNombre||""}${pagosConfig.zelleEmail?" — "+pagosConfig.zelleEmail:""}${pagosConfig.zelleTel?" / "+pagosConfig.zelleTel:""}`:pagosConfig.stripeLink||"(configura tu link de Stripe)";
             const msg=`Hola ${(cobrarCliente.nombre||"").split(" ")[0]}, le informamos que tiene un saldo pendiente:
 
-*{t("Concepto","Description")}:* ${cobrar{t("Concepto","Description")}}
+*{t("Concepto","Description")}:* ${cobrarConcepto}
 *Monto:* $${parseFloat(cobrarMonto||0).toFixed(2)}
 
 *Pagar via ${cobrarMetodo==="zelle"?"Zelle":"Stripe/Tarjeta"}:*
@@ -2121,16 +2121,16 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <button onClick={()=>setShowCobrar(false)} style={{padding:"9px 18px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer"}}>Cancelar</button>
             <button onClick={async()=>{
-              if(!cobrarMonto||!cobrar{t("Concepto","Description")}){showToastFn("Completa monto y concepto","error");return;}
+              if(!cobrarMonto||!cobrarConcepto){showToastFn("Completa monto y concepto","error");return;}
               setCobrarSaving(true);
               const refNum="REC-"+Date.now().toString(36).toUpperCase();
-              const pago={monto:cobrarMonto,concepto:cobrar{t("Concepto","Description")},metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum};
+              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum};
               await registrarPago(cobrarCliente.id,pago);
               await generarReciboPDF(pago);
               setCobrarSaving(false);
               setShowCobrar(false);
               showToastFn("Pago registrado y recibo generado ✓");
-            }} disabled={cobrarSaving||!cobrarMonto||!cobrar{t("Concepto","Description")}} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(cobrarSaving||!cobrarMonto||!cobrar{t("Concepto","Description")})?"#E5E7EB":"#1E3A5F",color:(cobrarSaving||!cobrarMonto||!cobrar{t("Concepto","Description")})?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(cobrarSaving||!cobrarMonto||!cobrar{t("Concepto","Description")})?"not-allowed":"pointer"}}>
+            }} disabled={cobrarSaving||!cobrarMonto||!cobrarConcepto} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(cobrarSaving||!cobrarMonto||!cobrarConcepto)?"#E5E7EB":"#1E3A5F",color:(cobrarSaving||!cobrarMonto||!cobrarConcepto)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(cobrarSaving||!cobrarMonto||!cobrarConcepto)?"not-allowed":"pointer"}}>
               {cobrarSaving?"Procesando...":"✅ Registrar pago + Recibo PDF"}
             </button>
           </div>
@@ -2266,8 +2266,6 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
     </>}
     <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Notas del caso","Case notes")}</label><textarea value={caso.nota||""} onChange={e=>onChange({...caso,nota:e.target.value})} placeholder={t("Observaciones...","Notes...")} rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
     <ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>
-      </div>
-    </div>
   </div>);
 }
 
