@@ -186,7 +186,7 @@ function LoginScreen({onLogin}){
             :<div style={{fontSize:48}}>⚖️</div>
           }
         </div>
-        <h1 style={{fontSize:22,fontWeight:800,color:"#0F172A",margin:0}}>{loginName||"t("Monitor de Inmigración","Immigration Monitor")"}</h1>
+        <h1 style={{fontSize:22,fontWeight:800,color:"#0F172A",margin:0}}>{loginName||t("Monitor de Inmigración","Immigration Monitor")}</h1>
         <p style={{fontSize:13,color:"#64748B",marginTop:6}}>{t("Ingresa con tu cuenta para continuar","Sign in to continue")}</p>
       </div>
       <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>{t("Email","Email")}</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" onKeyDown={e=>e.key==="Enter"&&login()} style={{width:"100%",padding:"11px 13px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/></div>
@@ -699,7 +699,7 @@ const loadTeam=async()=>{
                   pdfdoc.setTextColor(255,255,255);
                   pdfdoc.setFontSize(12);
                   pdfdoc.setFont("helvetica","bold");
-                  pdfdoc.text(cleanTxt(officeData?.name||"t("Monitor de Inmigración","Immigration Monitor")"), M, 10);
+                  pdfdoc.text(cleanTxt(officeData?.name||t("Monitor de Inmigración","Immigration Monitor")), M, 10);
                   // Subtitulo
                   pdfdoc.setFontSize(7.5);
                   pdfdoc.setFont("helvetica","normal");
