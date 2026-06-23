@@ -215,6 +215,7 @@ function App(){
   const[showHistorial,setShowHistorial]=useState(false);
   const[openMenuId,setOpenMenuId]=useState(null);
   const[lang,setLang]=useState("es");
+  const[activeNav,setActiveNav]=useState("monitor");
   const[historialCliente,setHistorialCliente]=useState(null);
   const[historialData,setHistorialData]=useState([]);const[pdfOpts,setPdfOpts]=useState({sistema:"todos",estado:"todos"});
   const[showAddUser,setShowAddUser]=useState(false);const[newUserEmail,setNewUserEmail]=useState("");const[newUserPass,setNewUserPass]=useState("");const[addUserMsg,setAddUserMsg]=useState("");
@@ -846,7 +847,6 @@ const loadTeam=async()=>{
     {id:"usuarios",   label:t("Usuarios","Users"),                  icon:"🔐", onClick:()=>isAdmin&&setShowAddUser(true)},
     {id:"reportes",   label:t("Reportes","Reports"),                icon:"📈", onClick:()=>isAdmin&&setShowPDF(true)},
   ];
-  const [activeNav, setActiveNav] = React.useState("monitor");
 
   return(<div style={{fontFamily:"'Segoe UI',Inter,system-ui,sans-serif",minHeight:"100vh",background:"#F8FAFC",display:"flex"}}>
     <div style={{width:240,minHeight:"100vh",background:"#0F172A",display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:40,flexShrink:0}}>
