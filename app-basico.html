@@ -106,6 +106,9 @@ function getFlag(p){
   if(!code) return <span style={{fontSize:16}}>🌍</span>;
   return <img src={`https://flagcdn.com/20x15/${code}.png`} alt={p} style={{width:20,height:15,borderRadius:2,objectFit:"cover",display:"inline-block",verticalAlign:"middle",boxShadow:"0 1px 2px rgba(0,0,0,0.15)"}}/>;
 }
+// Text-only version for use inside <option> elements
+const FLAG_EMOJI={"Mexico":"🇲🇽","Guatemala":"🇬🇹","Honduras":"🇭🇳","El Salvador":"🇸🇻","Cuba":"🇨🇺","Haiti":"🇭🇹","Venezuela":"🇻🇪","Colombia":"🇨🇴","Ecuador":"🇪🇨","Peru":"🇵🇪","Nicaragua":"🇳🇮","Dominican Republic":"🇩🇴","Brazil":"🇧🇷","Bolivia":"🇧🇴","Argentina":"🇦🇷","Chile":"🇨🇱","Jamaica":"🇯🇲","China":"🇨🇳","India":"🇮🇳","Pakistan":"🇵🇰","Philippines":"🇵🇭","Vietnam":"🇻🇳","Ukraine":"🇺🇦","Russia":"🇷🇺","Ethiopia":"🇪🇹","Somalia":"🇸🇴","Nigeria":"🇳🇬","Ghana":"🇬🇭","Cameroon":"🇨🇲","Senegal":"🇸🇳","Syria":"🇸🇾","Iraq":"🇮🇶","Iran":"🇮🇷","Afghanistan":"🇦🇫"};
+function getFlagEmoji(p){return FLAG_EMOJI[p]||"🌍";}
 
 const emptyCaso={sistema:"uscis",tipoCaso:"",receiptNum:"",alienNum:"",corte:"",juez:"",fechaCorte:"",fechaHuellas:"",tipoCita:"",tieneEAD:"",eadReceipt:"",eadVence:"",eadRenovado:"",fechaAsilo:"",estatusReloj:"",estatusCaso:"",origenCaso:"",foiaTracking:"",foiaEstado:"",foiaRespuesta:"",procesos:[],nota:""};
 const emptyCliente={nombre:"",paisOrigen:"",alienNum:"",telefono:"",email:"",encargada:"",casos:[],nota:""};
@@ -1259,7 +1262,7 @@ const loadTeam=async()=>{
               <div style={{marginBottom:11}}>
                 <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Pais de origen</label>
                 <select value={formCliente.paisOrigen} onChange={e=>setFormCliente(p=>({...p,paisOrigen:e.target.value}))} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,background:"#fff",cursor:"pointer"}}>
-                  <option value="">Seleccionar...</option>{PAISES.map(p=><option key={p} value={p}>{getFlag(p)} {p}</option>)}
+                  <option value="">Seleccionar...</option>{PAISES.map(p=><option key={p} value={p}>{getFlagEmoji(p)} {p}</option>)}
                 </select>
               </div>
             </div>
