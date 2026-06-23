@@ -73,14 +73,15 @@ const SISTEMAS = {
 };
 const FOIA_ESTADOS = ["Enviado","En proceso","Respuesta recibida","Cerrado"];
 const PROCESOS_COMUNES = ["Asilo (I-589)","Permiso de trabajo (I-765)","Ajuste de estatus (I-485)","Peticion familiar (I-130)","Advance Parole (I-131)","Naturalizacion (N-400)","Renovar Green Card (I-90)","Cancelacion de deportación","FOIA","Consultoria","Otro"];
-const STATUS_CONFIG = {
+function getStatusConfig(){return{
   vencido:{label:t("Vencida","Overdue"),color:"#DC2626",bg:"#FEF2F2",border:"#FECACA",icon:"🔴"},
-  hoy:{label:"Hoy",color:"#EA580C",bg:"#FFF7ED",border:"#FED7AA",icon:"🟠"},
-  urgente:{label:"Urgente",color:"#D97706",bg:"#FFFBEB",border:"#FDE68A",icon:"🟡"},
+  hoy:{label:t("Hoy","Today"),color:"#EA580C",bg:"#FFF7ED",border:"#FED7AA",icon:"🟠"},
+  urgente:{label:t("Urgente","Urgent"),color:"#D97706",bg:"#FFFBEB",border:"#FDE68A",icon:"🟡"},
   proximo:{label:t("Próxima","Upcoming"),color:"#2563EB",bg:"#EFF6FF",border:"#BFDBFE",icon:"🔵"},
   ok:{label:t("Al día","On Track"),color:"#16A34A",bg:"#F0FDF4",border:"#BBF7D0",icon:"🟢"},
   pendiente:{label:t("Pendiente","Pending"),color:"#6B7280",bg:"#F9FAFB",border:"#E5E7EB",icon:"⚪"},
-};
+};}
+const STATUS_CONFIG = getStatusConfig();
 
 //  Helpers 
 function getStatus(f){if(!f)return"pendiente";const h=new Date();h.setHours(0,0,0,0);const d=Math.round((new Date(f+"T00:00:00")-h)/86400000);if(d<0)return"vencido";if(d===0)return"hoy";if(d<=3)return"urgente";if(d<=14)return"proximo";return"ok";}
@@ -666,6 +667,7 @@ const loadTeam=async()=>{
 
   const cnt=(s,sys="todos")=>clientes.filter(c=>(sys==="todos"||(c.casos||[]).some(ca=>ca.sistema===sys))&&(s==="todos"||getStatusCliente(c)===s)).length;
 
+  const STATUS_CONFIG=getStatusConfig();
   const stats=React.useMemo(()=>{
     const hoy=new Date();hoy.setHours(0,0,0,0);
     const en7dias=new Date(hoy);en7dias.setDate(en7dias.getDate()+7);
@@ -1117,7 +1119,8 @@ const loadTeam=async()=>{
                       const ca=(c.casos||[])[casoTab];const sys=SISTEMAS[ca.sistema]||SISTEMAS.uscis;
                       const diasFecha=getDias(ca.fechaCorte);const scfgCaso=STATUS_CONFIG[getStatus(ca.fechaCorte)];
                       return(
-                        <div style={{padding:"14px 16px"}}>
+                        <div style={{padding:"16px 20px",display:"grid",gridTemplateColumns:"1fr 300px",gap:20,alignItems:"start"}}>
+                          <div>
                           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:10,marginBottom:12}}>
                             {ca.sistema==="uscis"&&ca.receiptNum&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>{t("N° Recibo","Receipt #")}</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600,color:"#0369A1"}}>{ca.receiptNum}</div></div>}
                             {ca.alienNum&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Número Alien</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600}}>{fmtA(ca.alienNum)}</div></div>}
@@ -1197,6 +1200,7 @@ const loadTeam=async()=>{
                           </div>
 
                           
+                          </div>
                           {isAdmin&&(ca.procesos||[]).length>0&&(()=>{
                             const totalC=getTotalProcesos(ca.procesos||[]);const pagadoC=getTotalPagado(ca.procesos||[]);const pctC=getPct(totalC,pagadoC);const pcC=pagoColor(pctC);
                             return(
