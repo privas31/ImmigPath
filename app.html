@@ -100,8 +100,12 @@ function getProximaFecha(cliente){const fechas=[];(cliente.casos||[]).forEach(c=
 function getStatusCliente(cliente){const pf=getProximaFecha(cliente);if(!pf)return"pendiente";return getStatus(pf);}
 
 const PAISES=["Afghanistan","Albania","Algeria","Angola","Argentina","Armenia","Azerbaijan","Bahamas","Bangladesh","Belarus","Belize","Bolivia","Brazil","Bulgaria","Burkina Faso","Burma (Myanmar)","Burundi","Cambodia","Cameroon","Chad","Chile","China","Colombia","Congo (DRC)","Costa Rica","Cuba","Dominican Republic","Ecuador","Egypt","El Salvador","Eritrea","Ethiopia","Georgia","Ghana","Guatemala","Guinea","Haiti","Honduras","India","Indonesia","Iran","Iraq","Jamaica","Jordan","Kazakhstan","Kenya","Kosovo","Kyrgyzstan","Lebanon","Liberia","Libya","Mali","Mauritania","Mexico","Moldova","Morocco","Mozambique","Nepal","Nicaragua","Niger","Nigeria","Pakistan","Panama","Paraguay","Peru","Philippines","Romania","Russia","Rwanda","Senegal","Sierra Leone","Somalia","South Sudan","Sri Lanka","Sudan","Syria","Tajikistan","Tanzania","Togo","Trinidad and Tobago","Turkey","Turkmenistan","Uganda","Ukraine","Uzbekistan","Venezuela","Vietnam","Yemen","Zimbabwe","Other"].sort();
-const FLAG_MAP={"Mexico":"🇲🇽","Guatemala":"🇬🇹","Honduras":"🇭🇳","El Salvador":"🇸🇻","Cuba":"🇨🇺","Haiti":"🇭🇹","Venezuela":"🇻🇪","Colombia":"🇨🇴","Ecuador":"🇪🇨","Peru":"🇵🇪","Nicaragua":"🇳🇮","Dominican Republic":"🇩🇴","Brazil":"🇧🇷","Bolivia":"🇧🇴","Argentina":"🇦🇷","Chile":"🇨🇱","Jamaica":"🇯🇲","China":"🇨🇳","India":"🇮🇳","Pakistan":"🇵🇰","Philippines":"🇵🇭","Vietnam":"🇻🇳","Ukraine":"🇺🇦","Russia":"🇷🇺","Ethiopia":"🇪🇹","Somalia":"🇸🇴","Nigeria":"🇳🇬","Ghana":"🇬🇭","Cameroon":"🇨🇲","Senegal":"🇸🇳","Syria":"🇸🇾","Iraq":"🇮🇶","Iran":"🇮🇷","Afghanistan":"🇦🇫","Other":"🌍"};
-function getFlag(p){return FLAG_MAP[p]||"🌍";}
+const COUNTRY_CODE={"Mexico":"mx","Guatemala":"gt","Honduras":"hn","El Salvador":"sv","Cuba":"cu","Haiti":"ht","Venezuela":"ve","Colombia":"co","Ecuador":"ec","Peru":"pe","Nicaragua":"ni","Dominican Republic":"do","Brazil":"br","Bolivia":"bo","Argentina":"ar","Chile":"cl","Jamaica":"jm","China":"cn","India":"in","Pakistan":"pk","Philippines":"ph","Vietnam":"vn","Ukraine":"ua","Russia":"ru","Ethiopia":"et","Somalia":"so","Nigeria":"ng","Ghana":"gh","Cameroon":"cm","Senegal":"sn","Syria":"sy","Iraq":"iq","Iran":"ir","Afghanistan":"af"};
+function getFlag(p){
+  const code=COUNTRY_CODE[p];
+  if(!code) return <span style={{fontSize:16}}>🌍</span>;
+  return <img src={`https://flagcdn.com/20x15/${code}.png`} alt={p} style={{width:20,height:15,borderRadius:2,objectFit:"cover",display:"inline-block",verticalAlign:"middle",boxShadow:"0 1px 2px rgba(0,0,0,0.15)"}}/>;
+}
 
 const emptyCaso={sistema:"uscis",tipoCaso:"",receiptNum:"",alienNum:"",corte:"",juez:"",fechaCorte:"",fechaHuellas:"",tipoCita:"",tieneEAD:"",eadReceipt:"",eadVence:"",eadRenovado:"",fechaAsilo:"",estatusReloj:"",estatusCaso:"",origenCaso:"",foiaTracking:"",foiaEstado:"",foiaRespuesta:"",procesos:[],nota:""};
 const emptyCliente={nombre:"",paisOrigen:"",alienNum:"",telefono:"",email:"",encargada:"",casos:[],nota:""};
@@ -591,24 +595,56 @@ const loadTeam=async()=>{
         // Guardar en historial (con try/catch para no romper el guardado)
         try{
           const cambios=[];
-          if(prevCliente.nombre!==formCliente.nombre) cambios.push("Nombre cambiado");
-          if(prevCliente.alienNum!==formCliente.alienNum) cambios.push("A# actualizado");
-          if(prevCliente.encargada!==formCliente.encargada) cambios.push("Encargada: "+(formCliente.encargada||"Sin asignar"));
-          if((prevCliente.casos||[]).length!==(formCliente.casos||[]).length) cambios.push("Casos actualizados");
-          (formCliente.casos||[]).forEach((ca,i)=>{
-            const prev=(prevCliente.casos||[])[i]||{};
-            if(prev.estatusUSCIS!==ca.estatusUSCIS&&ca.estatusUSCIS) cambios.push("Estado USCIS: "+ca.estatusUSCIS);
-            if(prev.estatusEOIR!==ca.estatusEOIR&&ca.estatusEOIR) cambios.push("Estado EOIR: "+ca.estatusEOIR);
-            if(prev.fechaCorte!==ca.fechaCorte&&ca.fechaCorte) cambios.push("Fecha de cita: "+ca.fechaCorte);
-            if(prev.tipoCaso!==ca.tipoCaso&&ca.tipoCaso) cambios.push("Tipo de caso: "+ca.tipoCaso);
+          const usuario=userData?.displayName||user.email;
+          const fmtFecha=(f)=>f?new Date(f+"T00:00:00").toLocaleDateString("es-US",{day:"2-digit",month:"short",year:"numeric"}):"—";
+          // Datos del cliente
+          if(prevCliente.nombre!==formCliente.nombre) cambios.push({icono:"✏️",texto:`Nombre: "${prevCliente.nombre||"—"}" → "${formCliente.nombre}"`});
+          if(prevCliente.alienNum!==formCliente.alienNum) cambios.push({icono:"🪪",texto:`A#: ${prevCliente.alienNum||"—"} → ${formCliente.alienNum||"—"}`});
+          if(prevCliente.encargada!==formCliente.encargada) cambios.push({icono:"👤",texto:`Encargada: ${prevCliente.encargada||"Sin asignar"} → ${formCliente.encargada||"Sin asignar"}`});
+          if(prevCliente.telefono!==formCliente.telefono) cambios.push({icono:"📱",texto:`Teléfono: ${prevCliente.telefono||"—"} → ${formCliente.telefono||"—"}`});
+          if(prevCliente.paisOrigen!==formCliente.paisOrigen) cambios.push({icono:"🌍",texto:`País: ${prevCliente.paisOrigen||"—"} → ${formCliente.paisOrigen||"—"}`});
+          // Casos
+          const casosNew=formCliente.casos||[];
+          const casosOld=prevCliente.casos||[];
+          if(casosNew.length>casosOld.length) cambios.push({icono:"📁",texto:`Nuevo caso agregado: ${casosNew[casosNew.length-1].tipoCaso||"Sin tipo"}`});
+          if(casosNew.length<casosOld.length) cambios.push({icono:"🗑️",texto:`Caso eliminado`});
+          casosNew.forEach((ca,i)=>{
+            const prev=casosOld[i]||{};
+            const label=ca.tipoCaso||`Caso ${i+1}`;
+            if(prev.tipoCaso!==ca.tipoCaso&&ca.tipoCaso) cambios.push({icono:"📋",texto:`Tipo de caso: ${prev.tipoCaso||"—"} → ${ca.tipoCaso}`});
+            if(prev.estatusCaso!==ca.estatusCaso&&ca.estatusCaso) cambios.push({icono:"🔄",texto:`[${label}] Estado: ${prev.estatusCaso||"—"} → ${ca.estatusCaso}`});
+            if(prev.fechaCorte!==ca.fechaCorte&&ca.fechaCorte) cambios.push({icono:"📅",texto:`[${label}] Fecha de corte: ${fmtFecha(prev.fechaCorte)} → ${fmtFecha(ca.fechaCorte)}`});
+            if(prev.fechaHuellas!==ca.fechaHuellas&&ca.fechaHuellas) cambios.push({icono:"📅",texto:`[${label}] Biométricos: ${fmtFecha(prev.fechaHuellas)} → ${fmtFecha(ca.fechaHuellas)}`});
+            if(prev.fechaAsilo!==ca.fechaAsilo&&ca.fechaAsilo) cambios.push({icono:"📅",texto:`[${label}] Fecha asilo: ${fmtFecha(prev.fechaAsilo)} → ${fmtFecha(ca.fechaAsilo)}`});
+            if(prev.receiptNum!==ca.receiptNum&&ca.receiptNum) cambios.push({icono:"🧾",texto:`[${label}] N° Recibo: ${prev.receiptNum||"—"} → ${ca.receiptNum}`});
+            if(prev.alienNum!==ca.alienNum&&ca.alienNum) cambios.push({icono:"🪪",texto:`[${label}] A#: ${prev.alienNum||"—"} → ${ca.alienNum}`});
+            if(prev.foiaTracking!==ca.foiaTracking&&ca.foiaTracking) cambios.push({icono:"📂",texto:`[${label}] FOIA Tracking: ${prev.foiaTracking||"—"} → ${ca.foiaTracking}`});
+            if(prev.foiaEstado!==ca.foiaEstado&&ca.foiaEstado) cambios.push({icono:"📂",texto:`[${label}] Estado FOIA: ${prev.foiaEstado||"—"} → ${ca.foiaEstado}`});
+            if(prev.nota!==ca.nota&&ca.nota) cambios.push({icono:"📝",texto:`[${label}] Notas actualizadas`});
+            // Pagos/procesos
+            const procNew=ca.procesos||[];
+            const procOld=prev.procesos||[];
+            if(procNew.length>procOld.length) cambios.push({icono:"💵",texto:`[${label}] Nuevo pago agregado: ${procNew[procNew.length-1].nombre||""}`});
+            procNew.forEach((p,pi)=>{
+              const pp=procOld[pi]||{};
+              if(pp.pagado!==p.pagado&&p.pagado) cambios.push({icono:"💵",texto:`[${label}] Pago "${p.nombre||"—"}": $${pp.pagado||0} → $${p.pagado}`});
+            });
           });
           if(cambios.length>0){
             await addDoc(collection(db,"historial"),{
               clienteId:editId,officeId,
-              accion:cambios.join(" · "),
-              usuario:user.email,
+              cambios,
+              accion:cambios.map(c=>c.texto).join(" · "),
+              usuario,
+              usuarioEmail:user.email,
               fecha:new Date().toISOString(),
             });
+            // Refresh historial if open
+            if(showHistorial&&historialCliente?.id===editId){
+              const q=query(collection(db,"historial"),where("clienteId","==",editId),orderBy("fecha","desc"));
+              const snap=await getDocs(q);
+              setHistorialData(snap.docs.map(d=>({id:d.id,...d.data()})));
+            }
           }
         }catch(he){console.error("Historial error:",he);}
         setClientes(prev=>prev.map(c=>c.id===editId?{...c,...formCliente,officeId}:c));
@@ -1024,12 +1060,26 @@ const loadTeam=async()=>{
                         </>;
                       })()}
                     </div>
-                    <div style={{display:"flex",gap:16,flexWrap:"wrap",alignItems:"center"}}>
-                      {c.paisOrigen&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>{getFlag(c.paisOrigen)} <span style={{fontWeight:500}}>{c.paisOrigen}</span></span>}
-                      {c.telefono&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>📱 {c.telefono}</span>}
-                      {c.email&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>✉️ {c.email}</span>}
-                      {c.alienNum&&<span style={{fontSize:12,color:"#64748B",display:"flex",alignItems:"center",gap:4}}>🪪 <span style={{fontFamily:"monospace",fontWeight:600}}>{fmtA(c.alienNum)}</span></span>}
-                      {c.encargada&&<span style={{fontSize:12,color:"#7C3AED",fontWeight:600,background:"#F5F3FF",borderRadius:20,padding:"2px 10px",display:"flex",alignItems:"center",gap:4}}>👤 {c.encargada}</span>}
+                    <div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"center",marginTop:5}}>
+                      {c.paisOrigen&&<span style={{fontSize:13,color:"#374151",display:"inline-flex",alignItems:"center",gap:6,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:20,padding:"3px 10px 3px 7px"}}>
+                        {getFlag(c.paisOrigen)}
+                        <span style={{fontWeight:500}}>{c.paisOrigen}</span>
+                      </span>}
+                      {c.alienNum&&<span style={{fontSize:12,color:"#374151",display:"flex",alignItems:"center",gap:5}}>
+                        <span style={{color:"#94A3B8",fontSize:14}}>🪪</span>
+                        <span style={{fontFamily:"monospace",fontWeight:600}}>{fmtA(c.alienNum)}</span>
+                      </span>}
+                      {c.email&&<span style={{fontSize:12,color:"#374151",display:"flex",alignItems:"center",gap:5}}>
+                        <span style={{color:"#94A3B8",fontSize:14}}>✉️</span>
+                        <span>{c.email}</span>
+                      </span>}
+                      {c.telefono&&<span style={{fontSize:12,color:"#374151",display:"flex",alignItems:"center",gap:5}}>
+                        <span style={{color:"#94A3B8",fontSize:14}}>📱</span>
+                        <span>{c.telefono}</span>
+                      </span>}
+                      {c.encargada&&<span style={{fontSize:12,color:"#7C3AED",fontWeight:600,background:"#F5F3FF",borderRadius:20,padding:"3px 10px",display:"flex",alignItems:"center",gap:4}}>
+                        <span>👤</span>{c.encargada}
+                      </span>}
                     </div>
                     {isAdmin&&totalP>0&&<div style={{marginTop:8,display:"flex",alignItems:"center",gap:8,maxWidth:320}}>
                       <div style={{flex:1,background:"#F8FAFC",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`,transition:"width 0.3s"}}/></div>
@@ -1037,10 +1087,10 @@ const loadTeam=async()=>{
                       <span style={{fontSize:11,color:"#94A3B8",whiteSpace:"nowrap"}}>{fmtMoney(pagadoP)} / {fmtMoney(totalP)}</span>
                     </div>}
                   </div>
-                  <div style={{textAlign:"right",minWidth:110,flexShrink:0,padding:"0 8px",borderLeft:"1px solid #F1F5F9"}}>
-                    <div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4}}>{t("Próxima fecha","Next date")}</div>
-                    <div style={{fontWeight:700,color:pf?scfg.color:"#CBD5E1",fontSize:16}}>{pf?fmt(pf):"—"}</div>
-                    {dias!==null&&<div style={{fontSize:11,color:scfg.color,fontWeight:600,marginTop:2,background:scfg.bg,borderRadius:6,padding:"2px 6px",display:"inline-block"}}>{dias<0?(lang==="es"?`Hace ${Math.abs(dias)}d`:`${Math.abs(dias)}d ago`):dias===0?t("HOY!","TODAY!"):(lang==="es"?`En ${dias}d`:`In ${dias}d`)}</div>}
+                  <div style={{textAlign:"right",minWidth:130,flexShrink:0,paddingLeft:20,borderLeft:"1px solid #F1F5F9"}}>
+                    <div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:4,fontWeight:600}}>{t("Próxima Fecha","Next Date")}</div>
+                    <div style={{fontWeight:800,color:pf?scfg.color:"#CBD5E1",fontSize:18,letterSpacing:"-0.02em",lineHeight:1.2}}>{pf?fmt(pf):"—"}</div>
+                    {dias!==null&&<div style={{fontSize:12,color:scfg.color,fontWeight:600,marginTop:4}}>{dias<0?(lang==="es"?`Hace ${Math.abs(dias)} días`:`${Math.abs(dias)}d ago`):dias===0?t("HOY!","TODAY!"):(lang==="es"?`En ${dias} días`:`In ${dias}d`)}</div>}
                   </div>
                   <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
                     <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"#F8FAFC",color:"#475569",border:"1px solid #E2E8F0",borderRadius:7,padding:"7px 10px",fontSize:12,cursor:"pointer"}} title="Editar">✏️</button>
@@ -1121,14 +1171,17 @@ const loadTeam=async()=>{
                       return(
                         <div style={{padding:"16px 20px",display:"grid",gridTemplateColumns:"1fr 300px",gap:20,alignItems:"start"}}>
                           <div>
-                          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:10,marginBottom:12}}>
-                            {ca.sistema==="uscis"&&ca.receiptNum&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>{t("N° Recibo","Receipt #")}</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600,color:"#0369A1"}}>{ca.receiptNum}</div></div>}
-                            {ca.alienNum&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Número Alien</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600}}>{fmtA(ca.alienNum)}</div></div>}
-                            {ca.sistema==="eoir"&&ca.corte&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Corte</div><div style={{fontSize:13,fontWeight:500}}>🏛️ {ca.corte}</div></div>}
-                            {ca.sistema==="eoir"&&ca.juez&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Juez</div><div style={{fontSize:13,fontWeight:500}}>👨‍⚖️ {ca.juez}</div></div>}
-
-                            
-                            {ca.sistema==="uscis"&&ca.estatusCaso&&<div style={{gridColumn:"1/-1"}}><div style={{display:"inline-block",padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:700,background:ca.estatusCaso==="activo"?"#F0FDF4":ca.estatusCaso==="referido_eoir"?"#F5F3FF":ca.estatusCaso==="aprobado"?"#F0F9FF":"#FEF2F2",color:ca.estatusCaso==="activo"?"#16A34A":ca.estatusCaso==="referido_eoir"?"#7C3AED":ca.estatusCaso==="aprobado"?"#0369A1":"#DC2626",border:`1px solid ${ca.estatusCaso==="activo"?"#BBF7D0":ca.estatusCaso==="referido_eoir"?"#DDD6FE":ca.estatusCaso==="aprobado"?"#BAE6FD":"#FECACA"}`}}>{ca.estatusCaso==="activo"?"✅ Caso Activo":ca.estatusCaso==="referido_eoir"?"🔒 Cerrado — Referido a EOIR":ca.estatusCaso==="aprobado"?"🔒 Cerrado — Aprobado":"🔒 Cerrado — Denegado"}</div></div>}
+                          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"14px 16px",marginBottom:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:12}}>
+                              <span style={{fontSize:14}}>📋</span>
+                              <span style={{fontSize:13,fontWeight:700,color:"#0F172A"}}>{t("Resumen del caso","Case Summary")}</span>
+                            </div>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:14}}>
+                            {ca.sistema==="uscis"&&ca.receiptNum&&<div><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("N° Recibo","Receipt #")}</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:700,color:"#0369A1"}}>{ca.receiptNum}</div></div>}
+                            {ca.alienNum&&<div><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("Número Alien","Alien Number")}</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:700,color:"#0F172A"}}>{fmtA(ca.alienNum)}</div></div>}
+                            {ca.sistema==="eoir"&&ca.corte&&<div><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("Corte","Court")}</div><div style={{fontSize:13,fontWeight:500}}>🏛️ {ca.corte}</div></div>}
+                            {ca.sistema==="eoir"&&ca.juez&&<div><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("Juez","Judge")}</div><div style={{fontSize:13,fontWeight:500}}>👨‍⚖️ {ca.juez}</div></div>}
+                            {ca.sistema==="uscis"&&ca.estatusCaso&&<div><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("Estado","Status")}</div><div style={{display:"inline-block",padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:700,background:ca.estatusCaso==="activo"?"#F0FDF4":ca.estatusCaso==="referido_eoir"?"#F5F3FF":ca.estatusCaso==="aprobado"?"#F0F9FF":"#FEF2F2",color:ca.estatusCaso==="activo"?"#16A34A":ca.estatusCaso==="referido_eoir"?"#7C3AED":ca.estatusCaso==="aprobado"?"#0369A1":"#DC2626",border:`1px solid ${ca.estatusCaso==="activo"?"#BBF7D0":ca.estatusCaso==="referido_eoir"?"#DDD6FE":ca.estatusCaso==="aprobado"?"#BAE6FD":"#FECACA"}`}}>{ca.estatusCaso==="activo"?"✅ Caso Activo":ca.estatusCaso==="referido_eoir"?"🔒 Cerrado — Referido a EOIR":ca.estatusCaso==="aprobado"?"🔒 Cerrado — Aprobado":"🔒 Cerrado — Denegado"}</div></div>}
 
                             
                             {(ca.sistema==="uscis"&&(ca.tipoCaso||"").includes("I-589")||ca.sistema==="eoir"&&(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&ca.fechaAsilo&&(()=>{
@@ -1190,7 +1243,8 @@ const loadTeam=async()=>{
                               </div>}
                             </div>}
 
-                            {ca.nota&&<div style={{gridColumn:"1/-1"}}><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Notas</div><div style={{fontSize:13,color:"#475569",fontStyle:"italic"}}>📝 {ca.nota}</div></div>}
+                            {ca.nota&&<div style={{gridColumn:"1/-1"}}><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("Notas","Notes")}</div><div style={{fontSize:13,color:"#475569",fontStyle:"italic"}}>📝 {ca.nota}</div></div>}
+                          </div>
                           </div>
 
                           
@@ -1201,13 +1255,14 @@ const loadTeam=async()=>{
 
                           
                           </div>
+                          <div style={{position:"sticky",top:80}}>
                           {isAdmin&&(ca.procesos||[]).length>0&&(()=>{
                             const totalC=getTotalProcesos(ca.procesos||[]);const pagadoC=getTotalPagado(ca.procesos||[]);const pctC=getPct(totalC,pagadoC);const pcC=pagoColor(pctC);
                             return(
                               <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
                                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                                  <div style={{width:28,height:28,borderRadius:"50%",background:"#DCFCE7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>💵</div>
-                                  <span style={{fontSize:14,fontWeight:700,color:"#0F172A"}}>$ {t("Pagos","Payments")}</span>
+                                  <div style={{width:30,height:30,borderRadius:"50%",background:"#DCFCE7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>💵</div>
+                                  <span style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>💵 {t("Pagos","Payments")}</span>
                                 </div>
                                 {(ca.procesos||[]).map((p,pi)=>{const pp=getPct(parseMoney(p.precio),parseMoney(p.pagado));return(
                                   <div key={pi} style={{marginBottom:12,paddingBottom:12,borderBottom:pi<(ca.procesos||[]).length-1?"1px solid #F1F5F9":"none"}}>
@@ -1230,6 +1285,7 @@ const loadTeam=async()=>{
                               </div>
                             );
                           })()}
+                          </div>
                         </div>
                       );
                     })()}
@@ -1719,39 +1775,73 @@ const loadTeam=async()=>{
     )}
 
     {showHistorial&&historialCliente&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:560,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"85vh",overflowY:"auto"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-            <div>
-              <h2 style={{fontSize:18,fontWeight:800,color:"#0F172A",margin:0}}>Historial de cambios</h2>
-              <p style={{fontSize:13,color:"#64748B",marginTop:4}}>{historialCliente.nombre}</p>
+      <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:600,boxShadow:"0 24px 64px rgba(0,0,0,0.25)",maxHeight:"88vh",display:"flex",flexDirection:"column"}}>
+          
+          {/* Header */}
+          <div style={{padding:"20px 24px 16px",borderBottom:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:40,height:40,borderRadius:10,background:"#F0F9FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>📋</div>
+              <div>
+                <div style={{fontSize:16,fontWeight:800,color:"#0F172A"}}>{t("Registro de Actividad","Activity Log")}</div>
+                <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{historialCliente.nombre}</div>
+              </div>
             </div>
-            <button onClick={()=>setShowHistorial(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
+            <button onClick={()=>setShowHistorial(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600,color:"#374151"}}>{t("Cerrar","Close")}</button>
           </div>
-          {historialData.length===0?(
-            <div style={{textAlign:"center",padding:"32px 0",color:"#94A3B8"}}>
-              <div style={{fontSize:36,marginBottom:8}}>📋</div>
-              <div style={{fontSize:14}}>{t("Sin historial","No history")} registrado aun</div>
-              <div style={{fontSize:12,marginTop:6,color:"#CBD5E1"}}>Los cambios futuros apareceran aqui</div>
-            </div>
-          ):(
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {historialData.map((h,i)=>(
-                <div key={h.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px 14px",background:i===0?"#F0FDF4":"#F8FAFC",borderRadius:10,border:`1px solid ${i===0?"#BBF7D0":"#E2E8F0"}`}}>
-                  <div style={{width:36,height:36,borderRadius:"50%",background:i===0?"#16A34A":"#E2E8F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
-                    {i===0?"✓":"·"}
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:600,color:"#0F172A",marginBottom:3}}>{h.accion}</div>
-                    <div style={{fontSize:12,color:"#64748B",display:"flex",gap:12,flexWrap:"wrap"}}>
-                      <span>👤 {h.usuario}</span>
-                      <span>📅 {new Date(h.fecha).toLocaleDateString("es-US",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span>
-                    </div>
-                  </div>
+
+          {/* Content */}
+          <div style={{overflowY:"auto",padding:"16px 24px 24px",flex:1}}>
+            {historialData.length===0?(
+              <div style={{textAlign:"center",padding:"48px 0",color:"#94A3B8"}}>
+                <div style={{fontSize:48,marginBottom:12}}>📋</div>
+                <div style={{fontSize:15,fontWeight:600,color:"#475569",marginBottom:6}}>{t("Sin actividad registrada","No activity recorded")}</div>
+                <div style={{fontSize:13,color:"#CBD5E1"}}>{t("Los cambios futuros aparecerán aquí","Future changes will appear here")}</div>
+              </div>
+            ):(
+              <div style={{position:"relative"}}>
+                {/* Timeline line */}
+                <div style={{position:"absolute",left:19,top:24,bottom:0,width:2,background:"#E2E8F0"}}/>
+                <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                  {historialData.map((h,i)=>{
+                    const fecha=new Date(h.fecha);
+                    const fechaStr=fecha.toLocaleDateString("es-US",{day:"2-digit",month:"short",year:"numeric"});
+                    const horaStr=fecha.toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"});
+                    const esNuevo=i===0;
+                    const initials=(h.usuario||h.usuarioEmail||"?")[0].toUpperCase();
+                    const cambios=Array.isArray(h.cambios)?h.cambios:[{icono:"📝",texto:h.accion}];
+                    return(
+                      <div key={h.id} style={{display:"flex",gap:14,alignItems:"flex-start",paddingBottom:20,position:"relative"}}>
+                        {/* Avatar */}
+                        <div style={{width:38,height:38,borderRadius:"50%",background:esNuevo?"#2563EB":"#E2E8F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:esNuevo?"#fff":"#64748B",flexShrink:0,zIndex:1,border:"2px solid #fff",boxShadow:"0 1px 4px rgba(0,0,0,0.1)"}}>
+                          {initials}
+                        </div>
+                        {/* Content */}
+                        <div style={{flex:1,background:esNuevo?"#F0F9FF":"#F8FAFC",borderRadius:10,border:`1px solid ${esNuevo?"#BAE6FD":"#E2E8F0"}`,padding:"10px 14px",minWidth:0}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:cambios.length>1?8:4,flexWrap:"wrap",gap:6}}>
+                            <span style={{fontSize:12,fontWeight:700,color:esNuevo?"#0369A1":"#374151"}}>
+                              {h.usuario||h.usuarioEmail}
+                            </span>
+                            <span style={{fontSize:11,color:"#94A3B8",whiteSpace:"nowrap"}}>
+                              {fechaStr} · {horaStr}
+                            </span>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                            {cambios.map((c,ci)=>(
+                              <div key={ci} style={{display:"flex",alignItems:"flex-start",gap:7,fontSize:13,color:"#374151"}}>
+                                <span style={{fontSize:14,flexShrink:0,marginTop:1}}>{c.icono||"•"}</span>
+                                <span style={{lineHeight:1.4}}>{c.texto}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     )}
@@ -2228,6 +2318,19 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
               const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum};
               await registrarPago(cobrarCliente.id,pago);
               await generarReciboPDF(pago);
+              // Log payment in historial
+              try{
+                const{db:db2,collection:col2,addDoc:add2}=window._firebase;
+                const officeId=officeData?.id||userData?.officeId||"";
+                await add2(col2(db2,"historial"),{
+                  clienteId:cobrarCliente.id,officeId,
+                  cambios:[{icono:"💵",texto:`Pago registrado: $${cobrarMonto} — ${cobrarConcepto} (${cobrarMetodo==="zelle"?"Zelle":"Stripe"})`}],
+                  accion:`Pago $${cobrarMonto}`,
+                  usuario:userData?.displayName||user.email,
+                  usuarioEmail:user.email,
+                  fecha:new Date().toISOString(),
+                });
+              }catch(he){console.error(he);}
               setCobrarSaving(false);
               setShowCobrar(false);
               showToastFn("Pago registrado y recibo generado ✓");
