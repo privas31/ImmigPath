@@ -1256,16 +1256,16 @@ window.generarContratoPDF = function() {
 
   function addPage(){
     pdf.addPage();
-    pdf.setFillColor(15,23,42); pdf.rect(0,0,W,12,'F');
-    pdf.setFillColor(184,134,11); pdf.rect(0,12,W,0.8,'F');
-    pdf.setTextColor(255,255,255); pdf.setFontSize(7.5); pdf.setFont('helvetica','bold');
-    pdf.text('ImmigPath Services — Contrato #'+contratoNum,M,9);
+    pdf.setFillColor(15,23,42); pdf.rect(0,0,W,9,'F');
+    pdf.setFillColor(184,134,11); pdf.rect(0,9,W,0.5,'F');
+    pdf.setTextColor(255,255,255); pdf.setFontSize(7); pdf.setFont('helvetica','bold');
+    pdf.text('ImmigPath Services — Contrato #'+contratoNum,M,6.5);
     pdf.setFont('helvetica','normal'); pdf.setTextColor(184,134,11);
-    pdf.text(d.nombre,W-M,9,{align:'right'});
-    y=18;
+    pdf.text(d.nombre,W-M,6.5,{align:'right'});
+    y=13;
   }
 
-  function checkPage(needed){ if(y+needed>268) addPage(); }
+  function checkPage(needed){ if(y+needed>275) addPage(); }
 
   // Sección bilingüe — español arriba, inglés abajo en línea separada
   function seccion(es, en, yPos){
@@ -1357,10 +1357,8 @@ window.generarContratoPDF = function() {
     'The contract has monthly term with automatic renewal. Either party may cancel with 15 calendar days advance notice without penalty, notifying in writing or via WhatsApp. Cancellation does not generate a refund of the installation fee.',
     M,y,tW);
 
-  // ═══ PÁGINA 2 ═══
-  addPage();
-
-  // OBLIGACIONES IMMIG
+  // ═══ OBLIGACIONES IMMIG ═══
+  checkPage(60);
   y = seccion('OBLIGACIONES DE IMMIG PATH','IMMIG PATH OBLIGATIONS',y);
   [['Proporcionar acceso continuo con disponibilidad mínima del 99%.','Provide continuous access with minimum 99% uptime.'],
    ['Mantener confidencialidad y seguridad de todos los datos del cliente.','Maintain confidentiality and security of all client data.'],
