@@ -933,7 +933,8 @@ window.deleteOfficeConfirmed = async function(id) {
     showToast('✓ Oficina eliminada', 'success');
     // Remove from cache and re-render
     officesCache = officesCache.filter(o => o.id !== id);
-    renderOffices(officesCache);
+    renderOfficesTable(officesCache);
+    renderOfficesFullTable(officesCache);
   } catch(e) {
     showToast('Error al eliminar: ' + e.message, 'error');
   }
