@@ -229,6 +229,7 @@ function App(){
   const[historialCliente,setHistorialCliente]=useState(null);
   const[historialData,setHistorialData]=useState([]);const[pdfOpts,setPdfOpts]=useState({sistema:"todos",estado:"todos"});
   const[showAddUser,setShowAddUser]=useState(false);const[newUserEmail,setNewUserEmail]=useState("");const[newUserPass,setNewUserPass]=useState("");const[addUserMsg,setAddUserMsg]=useState("");
+  const[officeUsers,setOfficeUsers]=useState([]);const[confirmDeleteUser,setConfirmDeleteUser]=useState(null);
   const[newUserName,setNewUserName]=useState("");
   const[newUserRole,setNewUserRole]=useState("employee");
   const[addUserLoading,setAddUserLoading]=useState(false);
@@ -504,6 +505,39 @@ const loadTeam=async()=>{
       const snap=await getDoc(doc(db,"config",`equipo_${officeId}`));
       if(snap.exists())setEquipo(snap.data().miembros||[]);
     }catch(e){}
+  };
+
+  const loadOfficeUsers=async()=>{
+    try{
+      const{db,collection,getDocs,query,where}=window._firebase;
+      const officeId=officeData?.id||userData?.officeId||"";
+      if(!officeId)return;
+      const q=query(collection(db,"users"),where("officeId","==",officeId));
+      const snap=await getDocs(q);
+      const users=snap.docs.map(d=>({id:d.id,...d.data()}));
+      // Exclude the current admin
+      setOfficeUsers(users.filter(u=>u.email!==user.email));
+    }catch(e){console.error("loadOfficeUsers:",e);}
+  };
+
+  const handleDeleteUser=async(u)=>{
+    try{
+      const{db,doc,deleteDoc,setDoc}=window._firebase;
+      // 1. Delete Firestore user document (revokes access immediately)
+      await deleteDoc(doc(db,"users",u.id));
+      // 2. Remove from equipo list
+      const officeId=officeData?.id||userData?.officeId||"";
+      const newEquipo=equipo.filter(m=>m!==u.displayName);
+      await setDoc(doc(db,"config",`equipo_${officeId}`),{miembros:newEquipo});
+      setEquipo(newEquipo);
+      // 3. Update local state
+      setOfficeUsers(prev=>prev.filter(x=>x.id!==u.id));
+      setConfirmDeleteUser(null);
+      showToastFn(t(`Acceso de ${u.displayName} eliminado ✓`,`Access for ${u.displayName} removed ✓`));
+    }catch(e){
+      showToastFn("❌ Error: "+e.message);
+      setConfirmDeleteUser(null);
+    }
   };
 
   const loadBorradores=async()=>{
@@ -915,7 +949,7 @@ const loadTeam=async()=>{
     {id:"cobros",    label:t("Cobros","Collections"),              icon:"💰", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
     {id:"nomina",    label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNomina(true)},
     {id:"notaria",   label:t("Notaría","Notary"),                  icon:"📜", href:"/notaria.html", show:enabledModules.includes("notary")},
-    {id:"equipo",    label:t("Equipo","Team"),                     icon:"🤝", show:isAdmin, onClick:()=>setShowTeam(true)},
+    {id:"equipo",    label:t("Equipo","Team"),                     icon:"🤝", show:isAdmin, onClick:()=>{setShowTeam(true);loadOfficeUsers();}},
     {id:"usuarios",  label:t("Usuarios","Users"),                  icon:"🔐", show:isAdmin, onClick:()=>setShowAddUser(true)},
     {id:"reportes",  label:t("Reportes","Reports"),                icon:"📈", show:isAdmin, onClick:()=>setShowPDF(true)},
     {id:"config",    label:t("Configuración","Settings"),          icon:"⚙️", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
@@ -1647,24 +1681,107 @@ const loadTeam=async()=>{
       </div>
     )}
 
-        {showTeam&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-      <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:420,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
-        <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>{t("Equipo","Team")}</h2>
-        <div style={{display:"flex",gap:8,marginBottom:12}}>
-          <input value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder="Nombre..." style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
-          <button onClick={addMember} style={{padding:"9px 16px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontWeight:600,fontSize:14,cursor:"pointer"}}>{ t("+ Agregar","+ Add") }</button>
-        </div>
-        <div style={{display:"grid",gap:8,marginBottom:16,maxHeight:220,overflowY:"auto"}}>
-          {equipo.length===0?<div style={{textAlign:"center",padding:16,color:"#94A3B8",fontSize:13}}>{ t("Sin miembros aún","No members yet") }</div>:equipo.map((m,i)=>(
-            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#F8FAFC",borderRadius:8,padding:"9px 13px",border:"1px solid #E2E8F0"}}>
-              <span style={{fontWeight:500}}>👩 {m}</span>
-              <button onClick={()=>removeMember(i)} style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:6,padding:"4px 9px",fontSize:12,cursor:"pointer"}}>{ t("Eliminar","Remove") }</button>
+        {showTeam&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:500,boxShadow:"0 24px 64px rgba(0,0,0,0.2)",display:"flex",flexDirection:"column",maxHeight:"88vh"}}>
+          
+          {/* Header */}
+          <div style={{padding:"20px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:36,height:36,borderRadius:9,background:"#EFF6FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🤝</div>
+              <div>
+                <div style={{fontSize:15,fontWeight:800,color:"#0F172A"}}>{t("Equipo de la Oficina","Office Team")}</div>
+                <div style={{fontSize:12,color:"#64748B",marginTop:1}}>{officeUsers.length} {t("empleado(s) con acceso","employee(s) with access")}</div>
+              </div>
             </div>
-          ))}
+            <button onClick={()=>setShowTeam(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{t("Cerrar","Close")}</button>
+          </div>
+
+          <div style={{overflowY:"auto",padding:"16px 24px 24px",flex:1}}>
+
+            {/* Add member to name list */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t("Agregar nombre al equipo","Add name to team")}</div>
+              <div style={{display:"flex",gap:8}}>
+                <input value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder={t("Nombre de la empleada...","Employee name...")} style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:14,outline:"none"}}/>
+                <button onClick={addMember} style={{padding:"9px 16px",borderRadius:8,border:"none",background:"#2563EB",color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer",whiteSpace:"nowrap"}}>+ {t("Agregar","Add")}</button>
+              </div>
+              <div style={{fontSize:11,color:"#94A3B8",marginTop:5}}>{t("Estos nombres aparecen en el menú 'Encargada' de cada cliente","These names appear in the 'Assigned to' menu for each client")}</div>
+              {equipo.length>0&&(
+                <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
+                  {equipo.map((m,i)=>(
+                    <div key={i} style={{display:"inline-flex",alignItems:"center",gap:6,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:20,padding:"4px 10px 4px 8px",fontSize:12}}>
+                      <span>👩 {m}</span>
+                      <button onClick={()=>removeMember(i)} style={{background:"none",border:"none",color:"#94A3B8",cursor:"pointer",fontSize:14,lineHeight:1,padding:0}} title={t("Quitar nombre","Remove name")}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Real users with Firebase access */}
+            <div>
+              <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t("Usuarios con acceso al sistema","Users with system access")}</div>
+              {officeUsers.length===0?(
+                <div style={{textAlign:"center",padding:"24px 0",color:"#94A3B8",fontSize:13}}>
+                  <div style={{fontSize:32,marginBottom:8}}>👤</div>
+                  <div>{t("Sin empleadas con acceso creado","No employees with system access")}</div>
+                  <div style={{fontSize:12,marginTop:4}}>{t("Ve a Usuarios para crear acceso","Go to Users to create access")}</div>
+                </div>
+              ):(
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {officeUsers.map(u=>(
+                    <div key={u.id} style={{display:"flex",alignItems:"center",gap:12,background:"#F8FAFC",borderRadius:10,padding:"11px 14px",border:"1px solid #E2E8F0"}}>
+                      <div style={{width:36,height:36,borderRadius:"50%",background:u.role==="admin"?"#1E40AF":"#7C3AED",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff",flexShrink:0}}>
+                        {(u.displayName||u.email||"?")[0].toUpperCase()}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:700,color:"#0F172A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.displayName||"Sin nombre"}</div>
+                        <div style={{fontSize:11,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.email}</div>
+                        <div style={{fontSize:11,color:u.role==="admin"?"#1E40AF":"#7C3AED",fontWeight:600,marginTop:2}}>
+                          {u.role==="admin"?t("👑 Administrador","👑 Administrator"):t("👩 Empleada","👩 Employee")}
+                        </div>
+                      </div>
+                      <button
+                        onClick={()=>setConfirmDeleteUser(u)}
+                        style={{background:"#FEF2F2",color:"#DC2626",border:"1px solid #FECACA",borderRadius:8,padding:"7px 12px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}
+                      >
+                        🗑 {t("Eliminar acceso","Remove access")}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
         </div>
-        <button onClick={()=>setShowTeam(false)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
       </div>
-    </div>)}
+    )}
+
+    {/* ── CONFIRM DELETE USER ── */}
+    {confirmDeleteUser&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:16}}>
+        <div style={{background:"#fff",borderRadius:16,padding:28,maxWidth:400,width:"100%",boxShadow:"0 24px 64px rgba(0,0,0,0.3)",textAlign:"center"}}>
+          <div style={{fontSize:48,marginBottom:12}}>🔐</div>
+          <div style={{fontSize:17,fontWeight:800,color:"#0F172A",marginBottom:8}}>{t("¿Eliminar acceso?","Remove access?")}</div>
+          <div style={{fontSize:14,color:"#64748B",marginBottom:6}}>{t("Vas a eliminar el acceso de:","You are removing access for:")}</div>
+          <div style={{fontSize:15,fontWeight:700,color:"#DC2626",marginBottom:4}}>{confirmDeleteUser.displayName}</div>
+          <div style={{fontSize:13,color:"#64748B",marginBottom:16}}>{confirmDeleteUser.email}</div>
+          <div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:12,color:"#DC2626",textAlign:"left"}}>
+            ⚠️ {t("Esta persona ya no podrá entrar al sistema. Esta acción no se puede deshacer.","This person will no longer be able to log in. This action cannot be undone.")}
+          </div>
+          <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+            <button onClick={()=>setConfirmDeleteUser(null)} style={{padding:"10px 20px",borderRadius:8,border:"1px solid #E2E8F0",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer",fontWeight:600}}>
+              {t("Cancelar","Cancel")}
+            </button>
+            <button onClick={()=>handleDeleteUser(confirmDeleteUser)} style={{padding:"10px 20px",borderRadius:8,border:"none",background:"#DC2626",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+              🗑 {t("Sí, eliminar acceso","Yes, remove access")}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {showPDF&&(()=>{
       const pdfClientes=clientes.filter(c=>{
