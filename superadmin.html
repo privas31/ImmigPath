@@ -127,7 +127,7 @@
       <label class="form-label">Contraseña</label>
       <input class="form-input" id="login-pass" type="password" placeholder="••••••••">
     </div>
-    <button class="btn btn-primary" id="login-btn" style="width:100%;padding:11px;font-size:14px;margin-top:4px" onclick="doLogin()">
+    <button class="btn btn-primary" id="login-btn" style="width:100%;padding:11px;font-size:14px;margin-top:4px">
       Iniciar Sesión
     </button>
   </div>
@@ -671,6 +671,7 @@ window.doLogin = async function() {
 };
 
 document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('login-btn').addEventListener('click', () => doLogin());
 window.doSignOut = async function() { await signOut(auth); location.reload(); };
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -818,7 +819,7 @@ function renderOfficesTable(offices) {
           <button class="action-btn" onclick="openEditOffice('${o.id}')" style="background:rgba(251,191,36,0.12);color:#FBBF24;border-color:rgba(251,191,36,0.3)">✏️ Editar</button>
           <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
           <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
-          <button class="action-btn" onclick="confirmDeleteOffice('${o.id}','${(o.name||'Oficina').replace(/'/g,'\\'')}')" style="background:rgba(239,68,68,0.12);color:#F87171;border-color:rgba(239,68,68,0.3)">🗑 Eliminar</button>
+          <button class="action-btn delete-office-btn" style="background:rgba(239,68,68,0.12);color:#F87171;border-color:rgba(239,68,68,0.3)" data-office-id="${o.id}" data-office-name="${o.name||'Oficina'}">🗑 Eliminar</button>
         </div>
       </td>
     </tr>`).join('');
@@ -868,7 +869,7 @@ function renderOfficesFullTable(offices) {
         <button class="action-btn" onclick="openEditOffice('${o.id}')" style="background:rgba(251,191,36,0.12);color:#FBBF24;border-color:rgba(251,191,36,0.3)">✏️ Editar</button>
         <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
         <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
-        <button class="action-btn" onclick="confirmDeleteOffice('${o.id}','${(o.name||'Oficina').replace(/'/g,'\\'')}')" style="background:rgba(239,68,68,0.12);color:#F87171;border-color:rgba(239,68,68,0.3)">🗑 Eliminar</button>
+        <button class="action-btn delete-office-btn" style="background:rgba(239,68,68,0.12);color:#F87171;border-color:rgba(239,68,68,0.3)" data-office-id="${o.id}" data-office-name="${o.name||'Oficina'}">🗑 Eliminar</button>
       </td>
     </tr>`).join('');
 }
@@ -883,6 +884,16 @@ function getPlanBadge(plan) { return {basic:'badge-gray',professional:'badge-pur
 function getMonitorUrl(office) { return office.plan==='basic' ? '/app-basico.html?o='+office.id : '/app.html?o='+office.id; }
 
 // ── Editar módulos de una oficina ─────────────────────────────────────────────
+// Event delegation for delete buttons
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.delete-office-btn');
+  if(btn) {
+    const id = btn.dataset.officeId;
+    const name = btn.dataset.officeName || 'Oficina';
+    confirmDeleteOffice(id, name);
+  }
+});
+
 window.confirmDeleteOffice = function(id, name) {
   const existing = document.getElementById('modal-delete-office');
   if(existing) existing.remove();
