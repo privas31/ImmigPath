@@ -121,6 +121,33 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-he
 .footer{text-align:center;padding:20px;font-size:12px;color:#94A3B8;border-top:1px solid var(--border);background:var(--white);margin-top:20px;}
 .footer-office{font-weight:600;color:var(--slate);margin-bottom:3px;}
 
+/* ── FULL FORM MODAL ── */
+.form-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:1000;overflow-y:auto;padding:16px;}
+.form-modal.open{display:flex;align-items:flex-start;justify-content:center;}
+.form-box{background:#fff;border-radius:16px;width:100%;max-width:680px;overflow:hidden;margin:auto;}
+.form-hdr{background:linear-gradient(135deg,var(--navy),#1E3A5F);padding:20px 24px;color:#fff;}
+.form-hdr-title{font-size:18px;font-weight:800;margin-bottom:4px;}
+.form-hdr-sub{font-size:12px;color:#A8C4E0;}
+.form-body{padding:24px;max-height:75vh;overflow-y:auto;}
+.form-part{margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid #F1F5F9;}
+.form-part:last-child{border-bottom:none;}
+.form-part-title{font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;}
+.form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.form-field{margin-bottom:12px;}
+.form-label{font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;display:block;}
+.form-label span{color:#EF4444;margin-left:2px;}
+.form-input{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:9px 12px;font-size:13px;color:var(--navy);outline:none;font-family:inherit;}
+.form-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.1);}
+.form-select{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:9px 12px;font-size:13px;color:var(--navy);outline:none;background:#fff;font-family:inherit;}
+.form-textarea{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:9px 12px;font-size:13px;color:var(--navy);outline:none;resize:vertical;font-family:inherit;line-height:1.6;}
+.form-checkbox-group{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+.form-checkbox-item{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;cursor:pointer;}
+.form-footer{padding:16px 24px;border-top:1px solid #F1F5F9;display:flex;gap:10px;justify-content:flex-end;}
+.form-btn-save{background:#1E40AF;color:#fff;border:none;border-radius:10px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer;}
+.form-btn-cancel{background:#F1F5F9;color:#374151;border:none;border-radius:10px;padding:11px 18px;font-size:14px;cursor:pointer;font-weight:600;}
+.form-notice{background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:12px 16px;font-size:12px;color:#92400E;margin-bottom:16px;line-height:1.5;}
+
 /* ── FORMS DROPDOWN ── */
 .form-menu-wrap{position:relative;}
 .form-dropdown{display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--white);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.15);border:1px solid var(--border);min-width:230px;overflow:hidden;z-index:200;}
@@ -235,9 +262,9 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-he
           <div class="form-dropdown" id="form-dropdown">
             <div class="form-dropdown-title" id="lbl-seleccionar">Selecciona un formulario</div>
             <button class="form-dropdown-item" onclick="openFormulario('asilo')">🕊️ Asilo (I-589)</button>
-            <button class="form-dropdown-item disabled">💼 Permiso de trabajo (I-765) <span class="form-dropdown-soon">pronto</span></button>
-            <button class="form-dropdown-item disabled">🏠 Residencia (I-485) <span class="form-dropdown-soon">pronto</span></button>
-            <button class="form-dropdown-item disabled">👨‍👩‍👧 Petición familiar (I-130) <span class="form-dropdown-soon">pronto</span></button>
+            <button class="form-dropdown-item" onclick="openFormulario('i765')">💼 Permiso de trabajo (I-765)</button>
+            <button class="form-dropdown-item" onclick="openFormulario('i485')">🏠 Residencia (I-485)</button>
+            <button class="form-dropdown-item" onclick="openFormulario('i130')">👨‍👩‍👧 Petición familiar (I-130)</button>
             <button class="form-dropdown-item disabled">🗽 Ciudadanía (N-400) <span class="form-dropdown-soon">pronto</span></button>
           </div>
         </div>
@@ -758,6 +785,12 @@ window.renderI589Status = function(c){
     </div>`;
   }
   wrap.innerHTML=`<div class="i589-section"><div class="section-title">📄 Formulario I-589</div>${inner}</div>`;
+  // Show status for other forms if they exist
+  const otherForms = [{tipo:'i765',nombre:'I-765 Permiso de Trabajo'},{tipo:'i485',nombre:'I-485 Residencia Permanente'},{tipo:'i130',nombre:'I-130 Petición Familiar'}];
+  otherForms.forEach(({tipo,nombre})=>{
+    if(c[tipo+'Draft']) renderFormStatus(tipo, nombre, c[tipo+'Draft']);
+  });
+
   // Alert banner
   const banner=document.getElementById("alert-banner");
   const bannerMsg=document.getElementById("alert-banner-msg");
@@ -882,6 +915,597 @@ window.openFormulario=function(tipo){
   document.getElementById("form-dropdown")?.classList.remove("open");
   if(tipo==="asilo"&&window.openI589)openI589();
 };
+
+// ── Generic Form Functions ─────────────────────────────────────────────────
+window.openFormulario = function(tipo) {
+  document.getElementById('form-dropdown')?.classList.remove('open');
+  if(tipo === 'asilo') { openI589(); return; }
+  // Load existing draft if any
+  if(clientData && clientData[tipo+'Draft']) loadFormDraft(tipo, clientData[tipo+'Draft']);
+  document.getElementById(tipo+'-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeForm = function(tipo) {
+  document.getElementById(tipo+'-modal').classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+function collectFormData(tipo) {
+  const inputs = document.querySelectorAll(`#${tipo}-body input, #${tipo}-body select, #${tipo}-body textarea`);
+  const data = {};
+  inputs.forEach(el => {
+    if(el.type === 'checkbox') {
+      data[el.id.replace(tipo+'-','')] = el.checked;
+    } else {
+      data[el.id.replace(tipo+'-','')] = el.value;
+    }
+  });
+  data.savedAt = new Date().toISOString();
+  data.status = 'pendiente_revision';
+  return data;
+}
+
+function loadFormDraft(tipo, draft) {
+  if(!draft) return;
+  Object.entries(draft).forEach(([key, val]) => {
+    const el = document.getElementById(tipo+'-'+key);
+    if(!el) return;
+    if(el.type === 'checkbox') el.checked = !!val;
+    else el.value = val || '';
+  });
+}
+
+window.saveForm = async function(tipo, nombre) {
+  const btn = document.querySelector(`#${tipo}-modal .form-btn-save`);
+  if(btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
+  try {
+    const draft = collectFormData(tipo);
+    const updateObj = {};
+    updateObj[tipo+'Draft'] = draft;
+    await setDoc(doc(db,'clientes',clientId), updateObj, {merge:true});
+    clientData[tipo+'Draft'] = draft;
+    closeForm(tipo);
+    // Update the forms section status
+    renderFormStatus(tipo, nombre, draft);
+    // Show toast
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.2);white-space:nowrap';
+    toast.textContent = `✅ ${nombre} guardado — tu oficina lo revisará pronto`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  } catch(err) {
+    alert('Error al guardar: ' + err.message);
+    if(btn) { btn.textContent = '💾 Guardar y enviar a mi oficina'; btn.disabled = false; }
+  }
+};
+
+function renderFormStatus(tipo, nombre, draft) {
+  // Add or update the form status card in the main view
+  const statusMap = {
+    pendiente_revision: {label:'⏳ Pendiente de revisión', color:'#D97706', bg:'#FFFBEB'},
+    en_revision: {label:'🔍 En revisión', color:'#2563EB', bg:'#EFF6FF'},
+    aprobado: {label:'✅ Aprobado', color:'#16A34A', bg:'#F0FDF4'},
+    devuelto: {label:'↩️ Requiere correcciones', color:'#DC2626', bg:'#FEF2F2'},
+  };
+  const st = statusMap[draft?.status] || statusMap.pendiente_revision;
+  const iconMap = {i765:'💼',i485:'🏠',i130:'👨‍👩‍👧'};
+  const existingCard = document.getElementById(`form-status-${tipo}`);
+  const card = existingCard || document.createElement('div');
+  card.id = `form-status-${tipo}`;
+  card.style.cssText = `background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:12px`;
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex:1">
+      <span style="font-size:22px">${iconMap[tipo]||'📋'}</span>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#0F172A">${nombre}</div>
+        <div style="font-size:12px;font-weight:600;color:${st.color};margin-top:2px">${st.label}</div>
+        <div style="font-size:11px;color:#94A3B8;margin-top:1px">Guardado el ${new Date(draft.savedAt).toLocaleDateString('es-US',{day:'2-digit',month:'short',year:'numeric'})}</div>
+        ${draft.status==='devuelto'&&draft.comentarioOficina?`<div style="font-size:12px;color:#DC2626;margin-top:4px;background:#FEF2F2;padding:6px 10px;border-radius:6px"><strong>Nota:</strong> ${draft.comentarioOficina}</div>`:''}
+      </div>
+    </div>
+    <button onclick="openFormulario('${tipo}')" style="background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">✏️ Editar</button>
+  `;
+  if(!existingCard) {
+    const section = document.getElementById('i589-section-wrap');
+    if(section) section.appendChild(card);
+  }
+}
+
 </script>
+
+<!-- ══════════════════════════════════════════════════════
+     I-765 PERMISO DE TRABAJO
+══════════════════════════════════════════════════════ -->
+<div class="form-modal" id="i765-modal">
+  <div class="form-box">
+    <div class="form-hdr">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:11px;color:#A8C4E0;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Formulario USCIS</div>
+          <div class="form-hdr-title">I-765 — Autorización de Empleo (EAD)</div>
+          <div class="form-hdr-sub">Application for Employment Authorization</div>
+        </div>
+        <button onclick="closeForm('i765')" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="margin-top:10px;background:rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;font-size:12px;color:#CBD5E1">
+        ⚠️ Este formulario <strong style="color:#fff">NO se envía a USCIS</strong> directamente. Tu oficina lo revisará antes de enviarlo.
+      </div>
+    </div>
+    <div class="form-body" id="i765-body">
+      <div class="form-notice">💡 Llena toda la información que tengas disponible. Los campos marcados con * son obligatorios.</div>
+
+      <!-- PARTE 1 -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 1 — Razón de la Solicitud</div>
+        <div class="form-field">
+          <label class="form-label">Motivo de la solicitud <span>*</span></label>
+          <select class="form-select" id="i765-motivo">
+            <option value="">— Selecciona —</option>
+            <option value="inicial">Permiso inicial de trabajo</option>
+            <option value="renovacion">Renovación del permiso de trabajo</option>
+            <option value="reemplazo">Reemplazo (perdido, robado o dañado)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- PARTE 2 -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 2 — Información Personal</div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Apellido(s) <span>*</span></label><input class="form-input" id="i765-apellido" placeholder="Como en pasaporte"></div>
+          <div class="form-field"><label class="form-label">Nombre(s) <span>*</span></label><input class="form-input" id="i765-nombre" placeholder="Como en pasaporte"></div>
+        </div>
+        <div class="form-field"><label class="form-label">Segundo nombre</label><input class="form-input" id="i765-middle" placeholder="Si aplica"></div>
+        <div class="form-field"><label class="form-label">Otros nombres utilizados</label><input class="form-input" id="i765-otros-nombres" placeholder="Alias, nombre de soltera, etc."></div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Número Alien (A#)</label><input class="form-input" id="i765-alien" placeholder="A-000-000-000"></div>
+          <div class="form-field"><label class="form-label">Número de Seguro Social (SSN)</label><input class="form-input" id="i765-ssn" placeholder="XXX-XX-XXXX"></div>
+        </div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Fecha de nacimiento <span>*</span></label><input class="form-input" id="i765-dob" type="date"></div>
+          <div class="form-field"><label class="form-label">Sexo <span>*</span></label>
+            <select class="form-select" id="i765-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option></select>
+          </div>
+        </div>
+        <div class="form-grid3">
+          <div class="form-field"><label class="form-label">Ciudad de nacimiento <span>*</span></label><input class="form-input" id="i765-ciudad-nac" placeholder="Ciudad"></div>
+          <div class="form-field"><label class="form-label">Estado/Provincia</label><input class="form-input" id="i765-estado-nac" placeholder="Estado"></div>
+          <div class="form-field"><label class="form-label">País de nacimiento <span>*</span></label><input class="form-input" id="i765-pais-nac" placeholder="País"></div>
+        </div>
+        <div class="form-field"><label class="form-label">País(es) de ciudadanía o nacionalidad <span>*</span></label>
+          <input class="form-input" id="i765-nacionalidad" placeholder="Ej: Nicaragua, Honduras"></div>
+        <div class="form-field"><label class="form-label">Estado civil <span>*</span></label>
+          <select class="form-select" id="i765-estado-civil"><option value="">—</option><option value="soltero">Soltero/a</option><option value="casado">Casado/a</option><option value="divorciado">Divorciado/a</option><option value="viudo">Viudo/a</option></select>
+        </div>
+        <div class="form-field"><label class="form-label">¿Has llenado el I-765 antes?</label>
+          <select class="form-select" id="i765-previo"><option value="">—</option><option value="no">No</option><option value="si">Sí</option></select>
+        </div>
+      </div>
+
+      <!-- DIRECCIÓN -->
+      <div class="form-part">
+        <div class="form-part-title">Dirección en EE.UU.</div>
+        <div class="form-field"><label class="form-label">Calle y número <span>*</span></label><input class="form-input" id="i765-calle" placeholder="Street Number and Name"></div>
+        <div class="form-grid3">
+          <div class="form-field"><label class="form-label">Ciudad <span>*</span></label><input class="form-input" id="i765-ciudad" placeholder="City"></div>
+          <div class="form-field"><label class="form-label">Estado <span>*</span></label><input class="form-input" id="i765-estado" placeholder="State"></div>
+          <div class="form-field"><label class="form-label">ZIP Code <span>*</span></label><input class="form-input" id="i765-zip" placeholder="ZIP"></div>
+        </div>
+        <div class="form-field"><label class="form-label">¿Tu dirección postal es la misma?</label>
+          <select class="form-select" id="i765-misma-dir"><option value="si">Sí</option><option value="no">No, tengo otra dirección postal</option></select>
+        </div>
+        <div class="form-field"><label class="form-label">Teléfono</label><input class="form-input" id="i765-tel" placeholder="Número de teléfono"></div>
+        <div class="form-field"><label class="form-label">Email</label><input class="form-input" id="i765-email" type="email" placeholder="correo@email.com"></div>
+      </div>
+
+      <!-- PASAPORTE Y ENTRADA -->
+      <div class="form-part">
+        <div class="form-part-title">Pasaporte y Última Entrada a EE.UU.</div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Número de pasaporte</label><input class="form-input" id="i765-pasaporte" placeholder="Si tiene"></div>
+          <div class="form-field"><label class="form-label">País que emitió el pasaporte</label><input class="form-input" id="i765-pais-pasaporte" placeholder="País"></div>
+        </div>
+        <div class="form-field"><label class="form-label">Vencimiento del pasaporte</label><input class="form-input" id="i765-pasaporte-vence" type="date"></div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Fecha de última entrada a EE.UU.</label><input class="form-input" id="i765-fecha-entrada" type="date"></div>
+          <div class="form-field"><label class="form-label">Lugar de última entrada</label><input class="form-input" id="i765-lugar-entrada" placeholder="Ciudad, Estado"></div>
+        </div>
+        <div class="form-field"><label class="form-label">Estatus migratorio al entrar</label><input class="form-input" id="i765-estatus-entrada" placeholder="Ej: B-2 visitante, parolee, sin estatus"></div>
+        <div class="form-field"><label class="form-label">Estatus migratorio actual</label><input class="form-input" id="i765-estatus-actual" placeholder="Ej: Asilo pendiente, parolee, TPS"></div>
+        <div class="form-field"><label class="form-label">Número I-94 (si tiene)</label><input class="form-input" id="i765-i94" placeholder="Número de llegada/salida"></div>
+        <div class="form-field"><label class="form-label">Categoría de elegibilidad <span>*</span></label>
+          <input class="form-input" id="i765-categoria" placeholder="Ej: (c)(8) asilo pendiente, (c)(14) DACA, (a)(5) asilo...">
+          <div style="font-size:11px;color:#6B7280;margin-top:4px;font-style:italic">Tu abogado o representante llenará este campo si no lo sabes</div>
+        </div>
+      </div>
+
+      <!-- PARTE 3 — Declaración -->
+      <div class="form-part">
+        <div class="form-part-title">Declaración</div>
+        <div class="form-field"><label class="form-label">Idioma en que se completó el formulario <span>*</span></label>
+          <select class="form-select" id="i765-idioma-form">
+            <option value="yo_mismo">Lo completé yo mismo en inglés o español</option>
+            <option value="interprete">Un intérprete me leyó cada pregunta</option>
+            <option value="preparador">Un preparador lo llenó por mí</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">Nombre del intérprete o preparador (si aplica)</label>
+          <input class="form-input" id="i765-preparador" placeholder="Nombre completo del preparador/intérprete">
+        </div>
+        <div class="form-field"><label class="form-label">Notas adicionales para la oficina</label>
+          <textarea class="form-textarea" id="i765-notas" rows="3" placeholder="Cualquier información adicional relevante..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="form-btn-cancel" onclick="closeForm('i765')">Cancelar</button>
+      <button class="form-btn-save" onclick="saveForm('i765','I-765 Permiso de Trabajo')">💾 Guardar y enviar a mi oficina</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     I-485 RESIDENCIA PERMANENTE
+══════════════════════════════════════════════════════ -->
+<div class="form-modal" id="i485-modal">
+  <div class="form-box">
+    <div class="form-hdr">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:11px;color:#A8C4E0;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Formulario USCIS</div>
+          <div class="form-hdr-title">I-485 — Residencia Permanente (Green Card)</div>
+          <div class="form-hdr-sub">Application to Register Permanent Residence or Adjust Status</div>
+        </div>
+        <button onclick="closeForm('i485')" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="margin-top:10px;background:rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;font-size:12px;color:#CBD5E1">
+        ⚠️ Este formulario <strong style="color:#fff">NO se envía a USCIS</strong> directamente. Tu oficina lo revisará antes de enviarlo.
+      </div>
+    </div>
+    <div class="form-body" id="i485-body">
+      <div class="form-notice">💡 Llena toda la información que tengas disponible. Los campos marcados con * son obligatorios.</div>
+
+      <!-- PARTE 1 -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 1 — Información Personal</div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Apellido(s) <span>*</span></label><input class="form-input" id="i485-apellido" placeholder="Last Name"></div>
+          <div class="form-field"><label class="form-label">Nombre(s) <span>*</span></label><input class="form-input" id="i485-nombre" placeholder="First Name"></div>
+        </div>
+        <div class="form-field"><label class="form-label">Segundo nombre</label><input class="form-input" id="i485-middle" placeholder="Middle Name"></div>
+        <div class="form-field"><label class="form-label">Otros nombres usados desde nacimiento</label><input class="form-input" id="i485-otros-nombres" placeholder="Nombre de soltera, alias, etc."></div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Fecha de nacimiento <span>*</span></label><input class="form-input" id="i485-dob" type="date"></div>
+          <div class="form-field"><label class="form-label">Sexo <span>*</span></label>
+            <select class="form-select" id="i485-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option></select>
+          </div>
+        </div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Ciudad de nacimiento <span>*</span></label><input class="form-input" id="i485-ciudad-nac" placeholder="Ciudad"></div>
+          <div class="form-field"><label class="form-label">País de nacimiento <span>*</span></label><input class="form-input" id="i485-pais-nac" placeholder="País"></div>
+        </div>
+        <div class="form-field"><label class="form-label">País de ciudadanía o nacionalidad <span>*</span></label><input class="form-input" id="i485-nacionalidad" placeholder="País"></div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Número Alien (A#)</label><input class="form-input" id="i485-alien" placeholder="A-000-000-000"></div>
+          <div class="form-field"><label class="form-label">Número de Seguro Social (SSN)</label><input class="form-input" id="i485-ssn" placeholder="XXX-XX-XXXX"></div>
+        </div>
+      </div>
+
+      <!-- DIRECCIÓN -->
+      <div class="form-part">
+        <div class="form-part-title">Dirección Física en EE.UU.</div>
+        <div class="form-field"><label class="form-label">Calle y número <span>*</span></label><input class="form-input" id="i485-calle" placeholder="Street Number and Name"></div>
+        <div class="form-grid3">
+          <div class="form-field"><label class="form-label">Ciudad <span>*</span></label><input class="form-input" id="i485-ciudad" placeholder="City"></div>
+          <div class="form-field"><label class="form-label">Estado <span>*</span></label><input class="form-input" id="i485-estado" placeholder="State"></div>
+          <div class="form-field"><label class="form-label">ZIP Code <span>*</span></label><input class="form-input" id="i485-zip" placeholder="ZIP"></div>
+        </div>
+        <div class="form-field"><label class="form-label">¿Cuándo empezaste a vivir en esta dirección?</label><input class="form-input" id="i485-dir-desde" type="date"></div>
+        <div class="form-field"><label class="form-label">Teléfono</label><input class="form-input" id="i485-tel" placeholder="Número de teléfono"></div>
+        <div class="form-field"><label class="form-label">Email</label><input class="form-input" id="i485-email" type="email" placeholder="correo@email.com"></div>
+      </div>
+
+      <!-- PARTE 2 — Categoría -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 2 — Categoría de Solicitud</div>
+        <div class="form-field"><label class="form-label">Solicito residencia como <span>*</span></label>
+          <select class="form-select" id="i485-categoria">
+            <option value="">— Selecciona —</option>
+            <option value="conyuge_ciudadano">Cónyuge de ciudadano/a americano/a</option>
+            <option value="hijo_ciudadano">Hijo/a menor de ciudadano/a americano/a</option>
+            <option value="padre_ciudadano">Padre/madre de ciudadano/a americano/a (mayor de 21)</option>
+            <option value="conyuge_residente">Cónyuge de residente permanente</option>
+            <option value="hijo_residente">Hijo/a de residente permanente</option>
+            <option value="asilo">Asilado/a (basado en I-589 aprobado)</option>
+            <option value="refugiado">Refugiado/a</option>
+            <option value="empleo">Basado en empleo (I-140)</option>
+            <option value="otro">Otra categoría</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">¿Estás en procedimientos de remoción ante EOIR?</label>
+          <select class="form-select" id="i485-eoir"><option value="no">No</option><option value="si">Sí</option></select>
+        </div>
+        <div class="form-field"><label class="form-label">Número de recibo de la petición base (si tiene)</label>
+          <input class="form-input" id="i485-recibo-base" placeholder="Ej: EAC-XX-XXX-XXXXX">
+        </div>
+        <div class="form-field"><label class="form-label">Fecha de prioridad de la petición base (si aplica)</label>
+          <input class="form-input" id="i485-fecha-prioridad" type="date">
+        </div>
+      </div>
+
+      <!-- ÚLTIMA ENTRADA -->
+      <div class="form-part">
+        <div class="form-part-title">Última Entrada a EE.UU.</div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Fecha de última entrada <span>*</span></label><input class="form-input" id="i485-fecha-entrada" type="date"></div>
+          <div class="form-field"><label class="form-label">Ciudad de entrada</label><input class="form-input" id="i485-ciudad-entrada" placeholder="Ciudad, Estado"></div>
+        </div>
+        <div class="form-field"><label class="form-label">¿Cómo entraste? <span>*</span></label>
+          <select class="form-select" id="i485-tipo-entrada">
+            <option value="">— Selecciona —</option>
+            <option value="inspeccion">Inspeccionado y admitido en puerto de entrada</option>
+            <option value="parolee">Parolee (parole humanitario, cubano, etc.)</option>
+            <option value="sin_inspeccion">Sin inspección (sin documentos)</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">Estatus migratorio al entrar (si aplica)</label>
+          <input class="form-input" id="i485-estatus-entrada" placeholder="Ej: visitante B-2, estudiante F-1, parolee">
+        </div>
+        <div class="form-field"><label class="form-label">Número I-94 (si tiene)</label><input class="form-input" id="i485-i94" placeholder="Número I-94"></div>
+        <div class="form-field"><label class="form-label">Número de pasaporte</label><input class="form-input" id="i485-pasaporte" placeholder="Si tiene"></div>
+        <div class="form-field"><label class="form-label">País que emitió el pasaporte</label><input class="form-input" id="i485-pais-pasaporte" placeholder="País"></div>
+        <div class="form-field"><label class="form-label">Vencimiento del pasaporte</label><input class="form-input" id="i485-pasaporte-vence" type="date"></div>
+      </div>
+
+      <!-- PADRES -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 5 — Información de los Padres</div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Nombre completo del Padre/Progenitor 1</label><input class="form-input" id="i485-padre1-nombre" placeholder="Nombre completo"></div>
+          <div class="form-field"><label class="form-label">Fecha de nacimiento del Padre/Progenitor 1</label><input class="form-input" id="i485-padre1-dob" type="date"></div>
+        </div>
+        <div class="form-field"><label class="form-label">País de nacimiento del Padre/Progenitor 1</label><input class="form-input" id="i485-padre1-pais" placeholder="País"></div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Nombre completo del Padre/Progenitor 2</label><input class="form-input" id="i485-padre2-nombre" placeholder="Nombre completo"></div>
+          <div class="form-field"><label class="form-label">Fecha de nacimiento del Padre/Progenitor 2</label><input class="form-input" id="i485-padre2-dob" type="date"></div>
+        </div>
+        <div class="form-field"><label class="form-label">País de nacimiento del Padre/Progenitor 2</label><input class="form-input" id="i485-padre2-pais" placeholder="País"></div>
+      </div>
+
+      <!-- HISTORIAL MATRIMONIAL -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 6 — Estado Civil</div>
+        <div class="form-field"><label class="form-label">Estado civil actual <span>*</span></label>
+          <select class="form-select" id="i485-estado-civil">
+            <option value="">—</option>
+            <option value="soltero">Soltero/a</option>
+            <option value="casado">Casado/a</option>
+            <option value="divorciado">Divorciado/a</option>
+            <option value="viudo">Viudo/a</option>
+            <option value="anulado">Matrimonio anulado</option>
+            <option value="separado">Separado/a legalmente</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">¿Cuántas veces te has casado?</label><input class="form-input" id="i485-veces-casado" type="number" min="0" placeholder="0"></div>
+        <div class="form-field"><label class="form-label">Nombre completo del cónyuge actual (si aplica)</label><input class="form-input" id="i485-conyuge-nombre" placeholder="Nombre completo"></div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Fecha de nacimiento del cónyuge</label><input class="form-input" id="i485-conyuge-dob" type="date"></div>
+          <div class="form-field"><label class="form-label">País de nacimiento del cónyuge</label><input class="form-input" id="i485-conyuge-pais" placeholder="País"></div>
+        </div>
+        <div class="form-field"><label class="form-label">Fecha del matrimonio actual</label><input class="form-input" id="i485-fecha-matrimonio" type="date"></div>
+      </div>
+
+      <!-- PREGUNTAS DE ELEGIBILIDAD (resumidas) -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 9 — Preguntas de Elegibilidad (responde con honestidad)</div>
+        <div style="font-size:12px;color:#6B7280;margin-bottom:12px;line-height:1.5">Responde Sí o No a cada pregunta. Si respondes Sí, tu oficina te pedirá más detalles.</div>
+        <div class="form-checkbox-group">
+          <label class="form-checkbox-item"><input type="checkbox" id="i485-q-arrestado"> ¿Alguna vez has sido arrestado, citado o detenido por alguna razón?</label>
+          <label class="form-checkbox-item"><input type="checkbox" id="i485-q-convicto"> ¿Alguna vez te han declarado culpable de un delito?</label>
+          <label class="form-checkbox-item"><input type="checkbox" id="i485-q-deportado"> ¿Alguna vez has sido deportado o removido de EE.UU.?</label>
+          <label class="form-checkbox-item"><input type="checkbox" id="i485-q-fraude"> ¿Alguna vez presentaste documentos falsos o fraudulentos?</label>
+          <label class="form-checkbox-item"><input type="checkbox" id="i485-q-overstay"> ¿Alguna vez permaneciste en EE.UU. más tiempo del autorizado?</label>
+          <label class="form-checkbox-item"><input type="checkbox" id="i485-q-trabajo-sin-auth"> ¿Alguna vez trabajaste en EE.UU. sin autorización?</label>
+          <label class="form-checkbox-item"><input type="checkbox" id="i485-q-procedimientos"> ¿Actualmente estás en procedimientos de remoción o deportación?</label>
+          <label class="form-checkbox-item"><input type="checkbox" id="i485-q-visa-negada"> ¿Alguna vez te negaron una visa para EE.UU.?</label>
+        </div>
+        <div class="form-field" style="margin-top:14px"><label class="form-label">Si respondiste Sí a alguna pregunta, explica brevemente:</label>
+          <textarea class="form-textarea" id="i485-explicacion" rows="4" placeholder="Explica cada situación con fecha y lugar..."></textarea>
+        </div>
+      </div>
+
+      <!-- NOTAS -->
+      <div class="form-part">
+        <div class="form-part-title">Notas para la Oficina</div>
+        <div class="form-field"><label class="form-label">Información adicional</label>
+          <textarea class="form-textarea" id="i485-notas" rows="3" placeholder="Cualquier información adicional que quieras compartir con tu oficina..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="form-btn-cancel" onclick="closeForm('i485')">Cancelar</button>
+      <button class="form-btn-save" onclick="saveForm('i485','I-485 Residencia Permanente')">💾 Guardar y enviar a mi oficina</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     I-130 PETICIÓN FAMILIAR
+══════════════════════════════════════════════════════ -->
+<div class="form-modal" id="i130-modal">
+  <div class="form-box">
+    <div class="form-hdr">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:11px;color:#A8C4E0;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Formulario USCIS</div>
+          <div class="form-hdr-title">I-130 — Petición para Familiar Extranjero</div>
+          <div class="form-hdr-sub">Petition for Alien Relative</div>
+        </div>
+        <button onclick="closeForm('i130')" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="margin-top:10px;background:rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;font-size:12px;color:#CBD5E1">
+        ⚠️ Este formulario <strong style="color:#fff">NO se envía a USCIS</strong> directamente. Tu oficina lo revisará antes de enviarlo.
+      </div>
+    </div>
+    <div class="form-body" id="i130-body">
+      <div class="form-notice">💡 El peticionario (quien llena este formulario) debe ser ciudadano americano o residente permanente. El beneficiario es el familiar que quiere traer.</div>
+
+      <!-- PARTE 1 — RELACIÓN -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 1 — Relación con el Familiar</div>
+        <div class="form-field"><label class="form-label">Estoy presentando esta petición para mi <span>*</span></label>
+          <select class="form-select" id="i130-relacion">
+            <option value="">— Selecciona —</option>
+            <option value="conyuge">Cónyuge (esposo/a)</option>
+            <option value="padre">Padre o madre</option>
+            <option value="hermano">Hermano/a</option>
+            <option value="hijo">Hijo/a</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">Si es para hijo/a, ¿cuál es la relación exacta?</label>
+          <select class="form-select" id="i130-tipo-hijo">
+            <option value="na">No aplica</option>
+            <option value="biologico_matrimonio">Hijo/a biológico nacido dentro del matrimonio</option>
+            <option value="biologico_fuera">Hijo/a biológico nacido fuera del matrimonio</option>
+            <option value="hijastro">Hijastro/a</option>
+            <option value="adoptado">Hijo/a adoptado/a</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- PARTE 2 — PETICIONARIO -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 2 — Información del Peticionario (Tú)</div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Apellido(s) <span>*</span></label><input class="form-input" id="i130-pet-apellido" placeholder="Last Name"></div>
+          <div class="form-field"><label class="form-label">Nombre(s) <span>*</span></label><input class="form-input" id="i130-pet-nombre" placeholder="First Name"></div>
+        </div>
+        <div class="form-field"><label class="form-label">Segundo nombre</label><input class="form-input" id="i130-pet-middle" placeholder="Middle Name"></div>
+        <div class="form-field"><label class="form-label">Otros nombres utilizados</label><input class="form-input" id="i130-pet-otros-nombres" placeholder="Nombre de soltera, alias, etc."></div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Número Alien (A#) si aplica</label><input class="form-input" id="i130-pet-alien" placeholder="A-000-000-000"></div>
+          <div class="form-field"><label class="form-label">Número de Seguro Social (SSN)</label><input class="form-input" id="i130-pet-ssn" placeholder="XXX-XX-XXXX"></div>
+        </div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Fecha de nacimiento <span>*</span></label><input class="form-input" id="i130-pet-dob" type="date"></div>
+          <div class="form-field"><label class="form-label">Sexo <span>*</span></label>
+            <select class="form-select" id="i130-pet-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option></select>
+          </div>
+        </div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Ciudad de nacimiento <span>*</span></label><input class="form-input" id="i130-pet-ciudad-nac" placeholder="Ciudad"></div>
+          <div class="form-field"><label class="form-label">País de nacimiento <span>*</span></label><input class="form-input" id="i130-pet-pais-nac" placeholder="País"></div>
+        </div>
+        <div class="form-field"><label class="form-label">Dirección actual <span>*</span></label>
+          <input class="form-input" id="i130-pet-calle" placeholder="Calle y número" style="margin-bottom:6px">
+          <div class="form-grid3"><input class="form-input" id="i130-pet-ciudad" placeholder="Ciudad"><input class="form-input" id="i130-pet-estado" placeholder="Estado"><input class="form-input" id="i130-pet-zip" placeholder="ZIP"></div>
+        </div>
+        <div class="form-field"><label class="form-label">Estado civil actual <span>*</span></label>
+          <select class="form-select" id="i130-pet-estado-civil">
+            <option value="">—</option><option value="soltero">Soltero/a</option><option value="casado">Casado/a</option>
+            <option value="divorciado">Divorciado/a</option><option value="viudo">Viudo/a</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">Soy <span>*</span></label>
+          <select class="form-select" id="i130-pet-estatus">
+            <option value="">— Selecciona —</option>
+            <option value="ciudadano">Ciudadano/a americano/a</option>
+            <option value="residente">Residente permanente (Green Card)</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">¿Cómo obtuviste tu ciudadanía o residencia? (si aplica)</label>
+          <select class="form-select" id="i130-pet-como-ciudadano">
+            <option value="na">No aplica</option>
+            <option value="nacimiento">Nacimiento en EE.UU.</option>
+            <option value="naturalizacion">Naturalización</option>
+            <option value="padres">A través de mis padres</option>
+            <option value="residencia">Residencia permanente (I-551)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- PARTE 3 — INFORMACIÓN BIOGRÁFICA -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 3 — Información Biográfica del Peticionario</div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Estatura (pies)</label><input class="form-input" id="i130-pet-estatura-pies" placeholder="Ej: 5"></div>
+          <div class="form-field"><label class="form-label">Estatura (pulgadas)</label><input class="form-input" id="i130-pet-estatura-pulg" placeholder="Ej: 6"></div>
+        </div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Peso (libras)</label><input class="form-input" id="i130-pet-peso" placeholder="Ej: 150"></div>
+          <div class="form-field"><label class="form-label">Color de ojos</label>
+            <select class="form-select" id="i130-pet-ojos">
+              <option value="">—</option><option value="negro">Negro</option><option value="cafe">Café/Marrón</option>
+              <option value="verde">Verde</option><option value="azul">Azul</option><option value="gris">Gris</option><option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field"><label class="form-label">Etnia</label>
+          <select class="form-select" id="i130-pet-etnia"><option value="">—</option><option value="hispano">Hispano o Latino</option><option value="no_hispano">No Hispano o Latino</option></select>
+        </div>
+      </div>
+
+      <!-- PARTE 4 — BENEFICIARIO -->
+      <div class="form-part">
+        <div class="form-part-title">Parte 4 — Información del Beneficiario (Familiar que quieres traer)</div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Apellido(s) <span>*</span></label><input class="form-input" id="i130-ben-apellido" placeholder="Last Name"></div>
+          <div class="form-field"><label class="form-label">Nombre(s) <span>*</span></label><input class="form-input" id="i130-ben-nombre" placeholder="First Name"></div>
+        </div>
+        <div class="form-field"><label class="form-label">Segundo nombre</label><input class="form-input" id="i130-ben-middle" placeholder="Middle Name"></div>
+        <div class="form-field"><label class="form-label">Otros nombres utilizados</label><input class="form-input" id="i130-ben-otros-nombres" placeholder="Alias, nombre de soltera, etc."></div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Número Alien (A#) si tiene</label><input class="form-input" id="i130-ben-alien" placeholder="A-000-000-000"></div>
+          <div class="form-field"><label class="form-label">Número de Seguro Social (SSN) si tiene</label><input class="form-input" id="i130-ben-ssn" placeholder="XXX-XX-XXXX"></div>
+        </div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Fecha de nacimiento <span>*</span></label><input class="form-input" id="i130-ben-dob" type="date"></div>
+          <div class="form-field"><label class="form-label">Sexo <span>*</span></label>
+            <select class="form-select" id="i130-ben-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option></select>
+          </div>
+        </div>
+        <div class="form-grid2">
+          <div class="form-field"><label class="form-label">Ciudad de nacimiento <span>*</span></label><input class="form-input" id="i130-ben-ciudad-nac" placeholder="Ciudad"></div>
+          <div class="form-field"><label class="form-label">País de nacimiento <span>*</span></label><input class="form-input" id="i130-ben-pais-nac" placeholder="País"></div>
+        </div>
+        <div class="form-field"><label class="form-label">País de ciudadanía o nacionalidad <span>*</span></label><input class="form-input" id="i130-ben-nacionalidad" placeholder="País"></div>
+        <div class="form-field"><label class="form-label">Dirección actual del beneficiario</label>
+          <input class="form-input" id="i130-ben-dir" placeholder="Dirección completa (puede ser en otro país)">
+        </div>
+        <div class="form-field"><label class="form-label">Teléfono del beneficiario</label><input class="form-input" id="i130-ben-tel" placeholder="Número de teléfono"></div>
+        <div class="form-field"><label class="form-label">Email del beneficiario</label><input class="form-input" id="i130-ben-email" type="email" placeholder="correo@email.com"></div>
+        <div class="form-field"><label class="form-label">Estado civil del beneficiario</label>
+          <select class="form-select" id="i130-ben-estado-civil">
+            <option value="">—</option><option value="soltero">Soltero/a</option><option value="casado">Casado/a</option>
+            <option value="divorciado">Divorciado/a</option><option value="viudo">Viudo/a</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">Número de pasaporte del beneficiario</label><input class="form-input" id="i130-ben-pasaporte" placeholder="Si tiene"></div>
+        <div class="form-field"><label class="form-label">País que emitió el pasaporte</label><input class="form-input" id="i130-ben-pais-pasaporte" placeholder="País"></div>
+        <div class="form-field"><label class="form-label">Vencimiento del pasaporte</label><input class="form-input" id="i130-ben-pasaporte-vence" type="date"></div>
+        <div class="form-field"><label class="form-label">¿El beneficiario está actualmente en EE.UU.?</label>
+          <select class="form-select" id="i130-ben-en-usa"><option value="no">No</option><option value="si">Sí</option></select>
+        </div>
+        <div class="form-field"><label class="form-label">¿El beneficiario ha estado en procedimientos de inmigración?</label>
+          <select class="form-select" id="i130-ben-proc"><option value="no">No</option><option value="si">Sí</option></select>
+        </div>
+      </div>
+
+      <!-- NOTAS -->
+      <div class="form-part">
+        <div class="form-part-title">Notas para la Oficina</div>
+        <div class="form-field"><label class="form-label">Información adicional</label>
+          <textarea class="form-textarea" id="i130-notas" rows="3" placeholder="Cualquier información adicional que quieras compartir con tu oficina..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="form-btn-cancel" onclick="closeForm('i130')">Cancelar</button>
+      <button class="form-btn-save" onclick="saveForm('i130','I-130 Petición Familiar')">💾 Guardar y enviar a mi oficina</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
