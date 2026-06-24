@@ -1605,26 +1605,6 @@ const loadTeam=async()=>{
 
           <div style={{overflowY:"auto",padding:"16px 24px 24px",flex:1}}>
 
-            {/* Add member to name list */}
-            <div style={{marginBottom:20}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t("Agregar nombre al equipo","Add name to team")}</div>
-              <div style={{display:"flex",gap:8}}>
-                <input value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder={t("Nombre de la empleada...","Employee name...")} style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:14,outline:"none"}}/>
-                <button onClick={addMember} style={{padding:"9px 16px",borderRadius:8,border:"none",background:"#2563EB",color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer",whiteSpace:"nowrap"}}>+ {t("Agregar","Add")}</button>
-              </div>
-              <div style={{fontSize:11,color:"#94A3B8",marginTop:5}}>{t("Estos nombres aparecen en el menú 'Encargada' de cada cliente","These names appear in the 'Assigned to' menu for each client")}</div>
-              {equipo.length>0&&(
-                <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
-                  {equipo.map((m,i)=>(
-                    <div key={i} style={{display:"inline-flex",alignItems:"center",gap:6,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:20,padding:"4px 10px 4px 8px",fontSize:12}}>
-                      <span>👩 {m}</span>
-                      <button onClick={()=>removeMember(i)} style={{background:"none",border:"none",color:"#94A3B8",cursor:"pointer",fontSize:14,lineHeight:1,padding:0}} title={t("Quitar nombre","Remove name")}>×</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Real users with Firebase access */}
             <div>
               <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t("Usuarios con acceso al sistema","Users with system access")}</div>
