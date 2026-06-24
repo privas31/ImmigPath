@@ -818,6 +818,7 @@ function renderOfficesTable(offices) {
           <button class="action-btn" onclick="openEditOffice('${o.id}')" style="background:rgba(251,191,36,0.12);color:#FBBF24;border-color:rgba(251,191,36,0.3)">✏️ Editar</button>
           <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
           <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
+          <button class="action-btn" onclick="confirmDeleteOffice('${o.id}','${(o.name||'Oficina').replace(/'/g,'\\'')}')" style="background:rgba(239,68,68,0.12);color:#F87171;border-color:rgba(239,68,68,0.3)">🗑 Eliminar</button>
         </div>
       </td>
     </tr>`).join('');
@@ -867,6 +868,7 @@ function renderOfficesFullTable(offices) {
         <button class="action-btn" onclick="openEditOffice('${o.id}')" style="background:rgba(251,191,36,0.12);color:#FBBF24;border-color:rgba(251,191,36,0.3)">✏️ Editar</button>
         <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
         <button class="action-btn" onclick="toggleOffice('${o.id}',${o.isActive})">${o.isActive?'Desactivar':'Activar'}</button>
+        <button class="action-btn" onclick="confirmDeleteOffice('${o.id}','${(o.name||'Oficina').replace(/'/g,'\\'')}')" style="background:rgba(239,68,68,0.12);color:#F87171;border-color:rgba(239,68,68,0.3)">🗑 Eliminar</button>
       </td>
     </tr>`).join('');
 }
@@ -881,6 +883,51 @@ function getPlanBadge(plan) { return {basic:'badge-gray',professional:'badge-pur
 function getMonitorUrl(office) { return office.plan==='basic' ? '/app-basico.html?o='+office.id : '/app.html?o='+office.id; }
 
 // ── Editar módulos de una oficina ─────────────────────────────────────────────
+window.confirmDeleteOffice = function(id, name) {
+  const existing = document.getElementById('modal-delete-office');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'modal-delete-office';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px';
+  modal.innerHTML = `
+    <div style="background:#1E293B;border:1px solid rgba(239,68,68,0.4);border-radius:14px;padding:28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5);text-align:center">
+      <div style="font-size:48px;margin-bottom:12px">🗑️</div>
+      <div style="font-size:18px;font-weight:800;color:#F1F5F9;margin-bottom:8px">¿Eliminar oficina?</div>
+      <div style="font-size:14px;color:#94A3B8;margin-bottom:6px">Estás a punto de eliminar:</div>
+      <div style="font-size:15px;font-weight:700;color:#F87171;margin-bottom:16px">${name}</div>
+      <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px;margin-bottom:20px;font-size:12px;color:#FCA5A5;text-align:left">
+        ⚠️ Esta acción eliminará la oficina del sistema. Los clientes y datos en Firebase NO se eliminan automáticamente. Esta acción no se puede deshacer.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button onclick="document.getElementById('modal-delete-office').remove()" style="padding:10px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94A3B8;cursor:pointer;font-size:13px;font-weight:600">Cancelar</button>
+        <button onclick="deleteOfficeConfirmed('${id}')" style="padding:10px 20px;border-radius:8px;border:none;background:#DC2626;color:#fff;cursor:pointer;font-size:13px;font-weight:700">🗑 Sí, eliminar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
+};
+
+window.deleteOfficeConfirmed = async function(id) {
+  try {
+    const { db, doc, deleteDoc } = window._firebase || {};
+    if(!deleteDoc) {
+      // Fallback: import directly
+      const { getFirestore, doc: docFn, deleteDoc: deleteFn } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      const fireDb = getFirestore();
+      await deleteFn(docFn(fireDb, 'offices', id));
+    } else {
+      await deleteDoc(doc(db, 'offices', id));
+    }
+    document.getElementById('modal-delete-office')?.remove();
+    showToast('✓ Oficina eliminada', 'success');
+    // Remove from cache and re-render
+    officesCache = officesCache.filter(o => o.id !== id);
+    renderOffices(officesCache);
+  } catch(e) {
+    showToast('Error al eliminar: ' + e.message, 'error');
+  }
+};
+
 window.editOfficeModules = function(officeId) {
   const office = officesCache.find(o => o.id === officeId);
   if (!office) return;
@@ -1016,6 +1063,42 @@ window.openEditOffice = function(id) {
           </select>
         </div>
       </div>
+
+      <!-- CREDENCIALES DE ACCESO -->
+      <div style="margin-top:20px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;padding:16px">
+        <div style="font-size:12px;font-weight:700;color:#A5B4FC;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px">🔐 Credenciales de Acceso</div>
+        <div style="display:grid;gap:12px">
+          <div>
+            <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Email de acceso</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" readonly value="${o.adminEmail||o.email||'Sin email'}" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;color:#CBD5E1;font-size:13px;outline:none">
+              <button onclick="navigator.clipboard.writeText('${o.adminEmail||o.email||''}').then(()=>showToast('Email copiado','success'))" style="padding:9px 12px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.3);border-radius:8px;color:#A5B4FC;font-size:12px;cursor:pointer;white-space:nowrap">📋 Copiar</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Contraseña actual</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" readonly id="edit-cred-pass" value="${o.accessPassword||'(no guardada)'}" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;color:#CBD5E1;font-size:13px;outline:none;font-family:monospace">
+              <button onclick="navigator.clipboard.writeText(document.getElementById('edit-cred-pass').value).then(()=>showToast('Contraseña copiada','success'))" style="padding:9px 12px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.3);border-radius:8px;color:#A5B4FC;font-size:12px;cursor:pointer;white-space:nowrap">📋 Copiar</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Nueva contraseña <span style="color:#64748B">(dejar vacío para no cambiar)</span></label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="edit-new-password" placeholder="Nueva contraseña..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none">
+              <button onclick="document.getElementById('edit-new-password').value=Math.random().toString(36).slice(2,10).toUpperCase()" style="padding:9px 12px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:8px;color:#34D399;font-size:12px;cursor:pointer;white-space:nowrap">🎲 Generar</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Link de acceso al monitor</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" readonly id="edit-access-link" value="${o.accessLink||window.location.origin+(o.plan==='basic'?'/app-basico.html':'/app.html')+'?o='+o.id}" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;color:#CBD5E1;font-size:12px;outline:none;font-family:monospace">
+              <button onclick="navigator.clipboard.writeText(document.getElementById('edit-access-link').value).then(()=>showToast('Link copiado','success'))" style="padding:9px 12px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.3);border-radius:8px;color:#A5B4FC;font-size:12px;cursor:pointer;white-space:nowrap">📋 Copiar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
         <button onclick="document.getElementById('modal-edit-office').remove()" style="padding:9px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94A3B8;cursor:pointer;font-size:13px">Cancelar</button>
         <button onclick="saveEditOffice('${o.id}')" style="padding:9px 18px;border-radius:8px;border:none;background:#1E40AF;color:#fff;cursor:pointer;font-size:13px;font-weight:700">Guardar cambios</button>
@@ -1040,10 +1123,10 @@ window.saveEditOffice = async function(id) {
     const monitorPath = plan === 'basic' ? '/app-basico.html' : '/app.html';
     const newAccessLink = window.location.origin + monitorPath + '?o=' + id;
 
-    await updateDoc(doc(db,'offices',id), {
-      name, ownerName:owner, adminEmail:email, phone, plan, accessType,
-      accessLink: newAccessLink
-    });
+    const newPass = document.getElementById('edit-new-password')?.value.trim();
+    const updateData = { name, ownerName:owner, adminEmail:email, phone, plan, accessType, accessLink: newAccessLink };
+    if(newPass) updateData.accessPassword = newPass;
+    await updateDoc(doc(db,'offices',id), updateData);
 
     // Actualizar también en el documento del usuario admin
     try {
