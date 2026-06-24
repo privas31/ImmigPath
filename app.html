@@ -221,6 +221,8 @@ function App(){
   const[confirmDelete,setConfirmDelete]=useState(null);const[expandedId,setExpandedId]=useState(null);const[activeCasoTab,setActiveCasoTab]=useState({});
   const[showPDF,setShowPDF]=useState(false);
   const[showHistorial,setShowHistorial]=useState(false);
+  const[showAlertas,setShowAlertas]=useState(false);
+  const[showChecklist,setShowChecklist]=useState(false);
   const[openMenuId,setOpenMenuId]=useState(null);
   const[lang,setLang]=useState("es");
   const[activeNav,setActiveNav]=useState("monitor");
@@ -286,6 +288,17 @@ function App(){
   },[]);
 
   useEffect(()=>{if(!user||!officeData)return;loadCases();loadTeam();loadBorradores();loadPagosConfig();},[user,officeData]);
+
+  // Auto-show checklist for new offices (first time only)
+  React.useEffect(()=>{
+    if(!loading&&officeData&&clientes.length===0){
+      const key=`checklist_shown_${officeData.id||"default"}`;
+      if(!localStorage.getItem(key)){
+        setTimeout(()=>setShowChecklist(true),800);
+        localStorage.setItem(key,"1");
+      }
+    }
+  },[loading,clientes.length,officeData?.id]);
 
   const handleLogin=(u,ud,od)=>{setUser(u);setUserData(ud);setOfficeData(od);};
 
@@ -731,10 +744,13 @@ const loadTeam=async()=>{
     const totalCobrado=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalPagado(ca.procesos||[]),s),0);
     const pendiente=totalCobrar-totalCobrado;
     const eadElegibles=clientes.filter(c=>(c.casos||[]).some(ca=>{if(!ca.fechaAsilo)return false;const dias=Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000);return dias>=180;}));
+    const eadProximos=clientes.filter(c=>(c.casos||[]).some(ca=>{if(!ca.fechaAsilo)return false;const dias=Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000);return dias>=160&&dias<180;}));
     const pagadoCompleto=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p>=t;});
     const conSaldo=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p<t;});
     const sinPago=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p===0;});
-    return{alertas,alertas1dia,alertas3dias,alertas7dias,vencidos,totalCobrar,totalCobrado,pendiente,eadElegibles,pagadoCompleto,conSaldo,sinPago};
+    const sinFecha=clientes.filter(c=>!getProximaFecha(c)&&(c.casos||[]).length>0);
+    const sinDocumentos=clientes.filter(c=>(c.casos||[]).some(ca=>!ca.receiptNum&&!ca.foiaTracking&&ca.sistema==="uscis"));
+    return{alertas,alertas1dia,alertas3dias,alertas7dias,vencidos,totalCobrar,totalCobrado,pendiente,eadElegibles,eadProximos,pagadoCompleto,conSaldo,sinPago,sinFecha,sinDocumentos};
   },[clientes]);
 
   const generatePDF=()=>{
@@ -890,6 +906,8 @@ const loadTeam=async()=>{
   // ── SIDEBAR NAV ITEMS ──────────────────────────────────────────────────────
   const navItems = [
     {id:"monitor",   label:t("Monitor Oficina","Office Monitor"),  icon:"🖥"},
+    {id:"checklist", label:t("Primeros pasos","Getting started"), icon:"🚀", onClick:()=>setShowChecklist(true)},
+    {id:"alertas",   label:t("Alertas","Alerts"),                  icon:"🔔", badge: (stats.alertas.length+stats.vencidos.length+stats.eadElegibles.length)||null, onClick:()=>setShowAlertas(true)},
     {id:"dashboard", label:t("Dashboard","Dashboard"),             icon:"📊", badge: (stats.alertas.length+stats.vencidos.length)||null, onClick:()=>setShowDashboard(true)},
     {id:"clientes",  label:t("Clientes","Clients"),                icon:"👥"},
     {id:"calendario",label:t("Calendario","Calendar"),             icon:"📅"},
@@ -1789,7 +1807,308 @@ const loadTeam=async()=>{
       </div>
     )}
 
-    {showHistorial&&historialCliente&&(
+    {showChecklist&&(()=>{
+      // Calculate checklist steps completion
+      const pasos=[
+        {
+          id:"oficina",
+          icono:"🏢",
+          titulo:t("Configura tu oficina","Set up your office"),
+          desc:t("Agrega el nombre y logo de tu oficina","Add your office name and logo"),
+          completado:!!(officeData?.name&&officeData.name!=="Mi Oficina"&&officeData.name!=="ImmigPath"),
+          accion:()=>{setShowChecklist(false);setShowPagosConfig(true);},
+          btnLabel:t("Configurar","Configure"),
+        },
+        {
+          id:"cliente",
+          icono:"👤",
+          titulo:t("Agrega tu primer cliente","Add your first client"),
+          desc:t("Registra un cliente con sus datos básicos","Register a client with basic info"),
+          completado:clientes.length>0,
+          accion:()=>{setShowChecklist(false);openAdd();},
+          btnLabel:t("Agregar cliente","Add client"),
+        },
+        {
+          id:"caso",
+          icono:"📋",
+          titulo:t("Asigna un tipo de caso","Assign a case type"),
+          desc:t("Define si es USCIS, EOIR o FOIA","Define if it's USCIS, EOIR or FOIA"),
+          completado:clientes.some(c=>(c.casos||[]).some(ca=>ca.tipoCaso)),
+          accion:()=>{setShowChecklist(false);if(clientes[0])openEdit(clientes[0]);},
+          btnLabel:t("Ver cliente","View client"),
+        },
+        {
+          id:"fecha",
+          icono:"📅",
+          titulo:t("Registra una fecha importante","Add an important date"),
+          desc:t("Agrega la próxima cita o fecha de corte","Add the next appointment or court date"),
+          completado:clientes.some(c=>(c.casos||[]).some(ca=>ca.fechaCorte||ca.fechaHuellas)),
+          accion:()=>{setShowChecklist(false);if(clientes[0])openEdit(clientes[0]);},
+          btnLabel:t("Agregar fecha","Add date"),
+        },
+        {
+          id:"portal",
+          icono:"🌐",
+          titulo:t("Activa el portal del cliente","Activate client portal"),
+          desc:t("El cliente puede ver su caso desde su celular","Clients can track their case from their phone"),
+          completado:clientes.some(c=>c.portalActivo),
+          accion:()=>{setShowChecklist(false);if(clientes[0])setExpandedId(clientes[0].id);},
+          btnLabel:t("Ver portal","View portal"),
+        },
+        {
+          id:"equipo",
+          icono:"👥",
+          titulo:t("Invita a tu equipo","Invite your team"),
+          desc:t("Agrega empleadas para que puedan acceder","Add employees so they can access the system"),
+          completado:equipo.length>0,
+          accion:()=>{setShowChecklist(false);setShowAddUser(true);},
+          btnLabel:t("Agregar usuario","Add user"),
+        },
+      ];
+      const completados=pasos.filter(p=>p.completado).length;
+      const pct=Math.round((completados/pasos.length)*100);
+
+      return(
+        <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
+          <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:560,boxShadow:"0 24px 64px rgba(0,0,0,0.2)",maxHeight:"92vh",display:"flex",flexDirection:"column"}}>
+
+            {/* Header */}
+            <div style={{padding:"24px 28px 20px",borderBottom:"1px solid #F1F5F9"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div>
+                  <div style={{fontSize:22,marginBottom:4}}>🚀</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"#0F172A"}}>{t("Primeros pasos","Getting started")}</div>
+                  <div style={{fontSize:13,color:"#64748B",marginTop:2}}>{t("Completa estos pasos para aprovechar ImmigPath al máximo","Complete these steps to get the most out of ImmigPath")}</div>
+                </div>
+                <button onClick={()=>setShowChecklist(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600,color:"#374151",flexShrink:0}}>{t("Cerrar","Close")}</button>
+              </div>
+              {/* Progress bar */}
+              <div style={{marginTop:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                  <span style={{fontSize:12,fontWeight:600,color:"#374151"}}>{completados} {t("de","of")} {pasos.length} {t("completados","completed")}</span>
+                  <span style={{fontSize:12,fontWeight:700,color:pct===100?"#16A34A":"#2563EB"}}>{pct}%</span>
+                </div>
+                <div style={{background:"#F1F5F9",borderRadius:20,height:8}}>
+                  <div style={{height:"100%",borderRadius:20,background:pct===100?"#16A34A":"#2563EB",width:`${pct}%`,transition:"width 0.5s"}}/>
+                </div>
+              </div>
+            </div>
+
+            {/* Steps */}
+            <div style={{overflowY:"auto",padding:"16px 28px 24px",flex:1,display:"flex",flexDirection:"column",gap:10}}>
+              {pct===100&&(
+                <div style={{textAlign:"center",padding:"24px 0",background:"#F0FDF4",borderRadius:12,border:"1px solid #BBF7D0",marginBottom:8}}>
+                  <div style={{fontSize:40,marginBottom:8}}>🎉</div>
+                  <div style={{fontSize:16,fontWeight:700,color:"#15803D"}}>{t("¡Configuración completa!","Setup complete!")}</div>
+                  <div style={{fontSize:13,color:"#16A34A",marginTop:4}}>{t("Tu oficina está lista para operar","Your office is ready to operate")}</div>
+                </div>
+              )}
+              {pasos.map((p,i)=>(
+                <div key={p.id} style={{display:"flex",gap:14,alignItems:"center",padding:"14px 16px",borderRadius:12,background:p.completado?"#F0FDF4":"#F8FAFC",border:`1px solid ${p.completado?"#BBF7D0":"#E2E8F0"}`}}>
+                  {/* Check circle */}
+                  <div style={{width:36,height:36,borderRadius:"50%",background:p.completado?"#16A34A":"#fff",border:`2px solid ${p.completado?"#16A34A":"#CBD5E1"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:16,transition:"all 0.2s"}}>
+                    {p.completado?"✓":p.icono}
+                  </div>
+                  {/* Content */}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:700,color:p.completado?"#15803D":"#0F172A",marginBottom:2}}>{p.titulo}</div>
+                    <div style={{fontSize:12,color:p.completado?"#16A34A":"#64748B"}}>{p.desc}</div>
+                  </div>
+                  {/* Action button */}
+                  {!p.completado&&(
+                    <button onClick={p.accion} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
+                      {p.btnLabel}
+                    </button>
+                  )}
+                  {p.completado&&(
+                    <div style={{fontSize:20,flexShrink:0}}>✅</div>
+                  )}
+                </div>
+              ))}
+
+              {/* Bottom tip */}
+              <div style={{background:"#F0F9FF",borderRadius:10,padding:"12px 16px",marginTop:4,border:"1px solid #BAE6FD"}}>
+                <div style={{fontSize:12,color:"#0369A1",display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:16}}>💡</span>
+                  <span>{t("Puedes volver a esta guía desde el menú lateral → Primeros pasos","You can return to this guide from the sidebar → Getting started")}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+
+        {showAlertas&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:100,padding:"24px 16px",overflowY:"auto"}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:680,boxShadow:"0 24px 64px rgba(0,0,0,0.2)"}}>
+          {/* Header */}
+          <div style={{padding:"20px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:40,height:40,borderRadius:10,background:"#FEF2F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🔔</div>
+              <div>
+                <div style={{fontSize:16,fontWeight:800,color:"#0F172A"}}>{t("Centro de Alertas","Alert Center")}</div>
+                <div style={{fontSize:12,color:"#64748B"}}>{t("Casos que necesitan atención","Cases that need attention")}</div>
+              </div>
+            </div>
+            <button onClick={()=>setShowAlertas(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{t("Cerrar","Close")}</button>
+          </div>
+
+          <div style={{padding:"20px 24px",display:"flex",flexDirection:"column",gap:16}}>
+
+            {/* FECHAS VENCIDAS */}
+            {stats.vencidos.length>0&&(
+              <div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:12,overflow:"hidden"}}>
+                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #FECACA"}}>
+                  <span style={{fontSize:18}}>🔴</span>
+                  <span style={{fontSize:14,fontWeight:700,color:"#DC2626"}}>{t("Fechas Vencidas","Overdue Dates")} — {stats.vencidos.length} {t("cliente(s)","client(s)")}</span>
+                </div>
+                {stats.vencidos.map((c,i)=>{const pf=getProximaFecha(c);const dias=Math.abs(getDias(pf)||0);return(
+                  <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.vencidos.length-1?"1px solid #FEE2E2":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#FFF5F5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
+                      <div style={{fontSize:12,color:"#EF4444"}}>{(c.casos||[]).map(ca=>ca.tipoCaso).filter(Boolean).join(", ")||"—"}</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#DC2626"}}>{pf?fmt(pf):"—"}</div>
+                      <div style={{fontSize:11,color:"#EF4444"}}>Hace {dias} {dias===1?"día":"días"}</div>
+                    </div>
+                  </div>
+                );})}
+              </div>
+            )}
+
+            {/* PROXIMAS 7 DIAS */}
+            {stats.alertas.length>0&&(
+              <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:12,overflow:"hidden"}}>
+                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #FDE68A"}}>
+                  <span style={{fontSize:18}}>🟡</span>
+                  <span style={{fontSize:14,fontWeight:700,color:"#D97706"}}>{t("Próximas en 7 días","Upcoming in 7 days")} — {stats.alertas.length} {t("cliente(s)","client(s)")}</span>
+                </div>
+                {stats.alertas.map((c,i)=>{const pf=getProximaFecha(c);const dias=getDias(pf)||0;return(
+                  <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.alertas.length-1?"1px solid #FEF3C7":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#FFFDF0"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
+                      <div style={{fontSize:12,color:"#92400E"}}>{(c.casos||[]).map(ca=>ca.tipoCaso).filter(Boolean).join(", ")||"—"}</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#D97706"}}>{pf?fmt(pf):"—"}</div>
+                      <div style={{fontSize:11,color:"#D97706"}}>{dias===0?"HOY":dias===1?"Mañana":`En ${dias} días`}</div>
+                    </div>
+                  </div>
+                );})}
+              </div>
+            )}
+
+            {/* EAD ELEGIBLES */}
+            {stats.eadElegibles.length>0&&(
+              <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:12,overflow:"hidden"}}>
+                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #BBF7D0"}}>
+                  <span style={{fontSize:18}}>✅</span>
+                  <span style={{fontSize:14,fontWeight:700,color:"#15803D"}}>{t("Elegibles para EAD","EAD Eligible")} — {stats.eadElegibles.length} {t("cliente(s)","client(s)")}</span>
+                </div>
+                {stats.eadElegibles.map((c,i)=>{
+                  const ca=(c.casos||[]).find(ca=>ca.fechaAsilo);
+                  const dias=ca?Math.floor((new Date()-new Date(ca.fechaAsilo+"T00:00:00"))/86400000):0;
+                  return(
+                    <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.eadElegibles.length-1?"1px solid #DCFCE7":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#F0FFF4"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
+                        <div style={{fontSize:12,color:"#16A34A"}}>{ca?.tipoCaso||"—"}</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:13,fontWeight:700,color:"#16A34A"}}>✅ Puede aplicar</div>
+                        <div style={{fontSize:11,color:"#15803D"}}>{dias} días de asilo</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* EAD PROXIMOS 20 DIAS */}
+            {stats.eadProximos.length>0&&(
+              <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:12,overflow:"hidden"}}>
+                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #BFDBFE"}}>
+                  <span style={{fontSize:18}}>⏳</span>
+                  <span style={{fontSize:14,fontWeight:700,color:"#1D4ED8"}}>{t("Próximos a EAD (20 días)","Near EAD (20 days)")} — {stats.eadProximos.length} {t("cliente(s)","client(s)")}</span>
+                </div>
+                {stats.eadProximos.map((c,i)=>{
+                  const ca=(c.casos||[]).find(ca=>ca.fechaAsilo);
+                  const dias=ca?Math.floor((new Date()-new Date(ca.fechaAsilo+"T00:00:00"))/86400000):0;
+                  return(
+                    <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.eadProximos.length-1?"1px solid #DBEAFE":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#EFF6FF"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
+                        <div style={{fontSize:12,color:"#2563EB"}}>{ca?.tipoCaso||"—"}</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:13,fontWeight:700,color:"#2563EB"}}>Faltan {180-dias} días</div>
+                        <div style={{fontSize:11,color:"#3B82F6"}}>{dias} de 180 días</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* BALANCE PENDIENTE */}
+            {stats.conSaldo.length>0&&(
+              <div style={{background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:12,overflow:"hidden"}}>
+                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #FED7AA"}}>
+                  <span style={{fontSize:18}}>💰</span>
+                  <span style={{fontSize:14,fontWeight:700,color:"#C2410C"}}>{t("Balance pendiente","Outstanding balance")} — {stats.conSaldo.length} {t("cliente(s)","client(s)")}</span>
+                </div>
+                {stats.conSaldo.slice(0,5).map((c,i)=>{
+                  const total=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                  const pagado=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                  const saldo=total-pagado;
+                  return(
+                    <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<Math.min(stats.conSaldo.length,5)-1?"1px solid #FEF3C7":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#FFFDF5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
+                        <div style={{fontSize:12,color:"#92400E"}}>{fmtMoney(pagado)} / {fmtMoney(total)}</div>
+                      </div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#C2410C"}}>Debe {fmtMoney(saldo)}</div>
+                    </div>
+                  );
+                })}
+                {stats.conSaldo.length>5&&<div style={{padding:"8px 16px",fontSize:12,color:"#92400E",textAlign:"center"}}>+{stats.conSaldo.length-5} más con saldo pendiente</div>}
+              </div>
+            )}
+
+            {/* SIN FECHA */}
+            {stats.sinFecha.length>0&&(
+              <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,overflow:"hidden"}}>
+                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #E2E8F0"}}>
+                  <span style={{fontSize:18}}>📅</span>
+                  <span style={{fontSize:14,fontWeight:700,color:"#475569"}}>{t("Sin próxima fecha","No next date")} — {stats.sinFecha.length} {t("cliente(s)","client(s)")}</span>
+                </div>
+                {stats.sinFecha.slice(0,4).map((c,i)=>(
+                  <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<Math.min(stats.sinFecha.length,4)-1?"1px solid #F1F5F9":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#F8FAFC"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
+                    <div style={{fontSize:12,color:"#94A3B8"}}>{(c.casos||[]).map(ca=>ca.tipoCaso).filter(Boolean).join(", ")||"—"}</div>
+                  </div>
+                ))}
+                {stats.sinFecha.length>4&&<div style={{padding:"8px 16px",fontSize:12,color:"#64748B",textAlign:"center"}}>+{stats.sinFecha.length-4} más sin fecha</div>}
+              </div>
+            )}
+
+            {/* TODO BIEN */}
+            {stats.vencidos.length===0&&stats.alertas.length===0&&stats.eadElegibles.length===0&&stats.conSaldo.length===0&&stats.sinFecha.length===0&&(
+              <div style={{textAlign:"center",padding:"48px 0"}}>
+                <div style={{fontSize:56,marginBottom:12}}>🎉</div>
+                <div style={{fontSize:16,fontWeight:700,color:"#0F172A",marginBottom:6}}>{t("¡Todo al día!","All up to date!")}</div>
+                <div style={{fontSize:13,color:"#64748B"}}>{t("No hay alertas pendientes en este momento","No pending alerts at this time")}</div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    )}
+
+        {showHistorial&&historialCliente&&(
       <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:600,boxShadow:"0 24px 64px rgba(0,0,0,0.25)",maxHeight:"88vh",display:"flex",flexDirection:"column"}}>
           
