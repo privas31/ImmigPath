@@ -905,21 +905,20 @@ const loadTeam=async()=>{
 
   // ── SIDEBAR NAV ITEMS ──────────────────────────────────────────────────────
   const navItems = [
-    {id:"monitor",   label:t("Monitor Oficina","Office Monitor"),  icon:"🖥"},
+    {id:"monitor",   label:t("Monitor Oficina","Office Monitor"),  icon:"🖥", onClick:()=>{setActiveNav("monitor");}},
     {id:"checklist", label:t("Primeros pasos","Getting started"), icon:"🚀", onClick:()=>setShowChecklist(true)},
     {id:"alertas",   label:t("Alertas","Alerts"),                  icon:"🔔", badge: (stats.alertas.length+stats.vencidos.length+stats.eadElegibles.length)||null, onClick:()=>setShowAlertas(true)},
-    {id:"dashboard", label:t("Dashboard","Dashboard"),             icon:"📊", badge: (stats.alertas.length+stats.vencidos.length)||null, onClick:()=>setShowDashboard(true)},
-    {id:"clientes",  label:t("Clientes","Clients"),                icon:"👥"},
-    {id:"calendario",label:t("Calendario","Calendar"),             icon:"📅"},
-    {id:"pagos",     label:t("Pagos","Payments"),                  icon:"💳", onClick:()=>isAdmin&&setShowPagosConfig(true)},
-    {id:"cobros",    label:t("Cobros","Collections"),              icon:"💰", onClick:()=>isAdmin&&setShowPagosReporte(true)},
+    {id:"dashboard", label:t("Dashboard","Dashboard"),             icon:"📊", badge: isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
     {id:"formularios",label:t("Formularios","Forms"),              icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
-    {id:"nomina",    label:t("Nómina","Payroll"),                  icon:"💵", onClick:()=>isAdmin&&setShowNomina(true)},
+    // Admin only items below
+    {id:"pagos",     label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
+    {id:"cobros",    label:t("Cobros","Collections"),              icon:"💰", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
+    {id:"nomina",    label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNomina(true)},
     {id:"notaria",   label:t("Notaría","Notary"),                  icon:"📜", href:"/notaria.html", show:enabledModules.includes("notary")},
-    {id:"equipo",    label:t("Equipo","Team"),                     icon:"🤝", onClick:()=>isAdmin&&setShowTeam(true)},
-    {id:"usuarios",  label:t("Usuarios","Users"),                  icon:"🔐", onClick:()=>isAdmin&&setShowAddUser(true)},
-    {id:"reportes",  label:t("Reportes","Reports"),                icon:"📈", onClick:()=>isAdmin&&setShowPDF(true)},
-    {id:"config",    label:t("Configuración","Settings"),          icon:"⚙️", onClick:()=>isAdmin&&setShowPagosConfig(true)},
+    {id:"equipo",    label:t("Equipo","Team"),                     icon:"🤝", show:isAdmin, onClick:()=>setShowTeam(true)},
+    {id:"usuarios",  label:t("Usuarios","Users"),                  icon:"🔐", show:isAdmin, onClick:()=>setShowAddUser(true)},
+    {id:"reportes",  label:t("Reportes","Reports"),                icon:"📈", show:isAdmin, onClick:()=>setShowPDF(true)},
+    {id:"config",    label:t("Configuración","Settings"),          icon:"⚙️", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
   ];
 
   return(<div style={{fontFamily:"'Segoe UI',Inter,system-ui,sans-serif",minHeight:"100vh",background:"#F8FAFC",display:"flex"}}>
@@ -1622,7 +1621,7 @@ const loadTeam=async()=>{
             </div>
 
           </div>)}
-          <div style={{background:"#fff",borderRadius:12,padding:"18px",border:"1px solid #E2E8F0"}}>
+          {isAdmin&&<div style={{background:"#fff",borderRadius:12,padding:"18px",border:"1px solid #E2E8F0"}}>
             <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:14}}>{t("📅 Clientes nuevos este mes","📅 New clients this month")}</div>
             {(()=>{
               const inicioMes=new Date(new Date().getFullYear(),new Date().getMonth(),1);
@@ -1630,7 +1629,7 @@ const loadTeam=async()=>{
               if(nuevos.length===0) return <div style={{fontSize:13,color:"#94A3B8",textAlign:"center",padding:"12px 0"}}>{t("Sin clientes nuevos este mes","No new clients this month")}</div>;
               return(
                 <div>
-                  <div style={{fontSize:24,fontWeight:800,color:"#16A34A",marginBottom:10}}>{nuevos.length} clientes nuevos</div>
+                  <div style={{fontSize:24,fontWeight:800,color:"#16A34A",marginBottom:10}}>{nuevos.length} {t("clientes nuevos","new clients")}</div>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                     {nuevos.slice(0,6).map((c,i)=>(
                       <div key={i} style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:"6px 12px",fontSize:13,color:"#166534",fontWeight:500}}>
@@ -1642,7 +1641,7 @@ const loadTeam=async()=>{
                 </div>
               );
             })()}
-          </div>
+          </div>}
 
         </div>
       </div>
