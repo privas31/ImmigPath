@@ -1081,9 +1081,9 @@ const loadTeam=async()=>{
 
 
 
-                          {isAdmin&&<button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#16A34A",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F0FDF4"} onMouseLeave={e=>e.target.style.background="none"}>
+                          <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#16A34A",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F0FDF4"} onMouseLeave={e=>e.target.style.background="none"}>
                             <span>💳</span> Cobrar cliente
-                          </button>}
+                          </button>
                           <div style={{height:"1px",background:"#F1F5F9"}}></div>
                           <button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#EF4444",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#FEF2F2"} onMouseLeave={e=>e.target.style.background="none"}>
                             <span>🗑</span> Eliminar cliente
@@ -2484,7 +2484,7 @@ const loadTeam=async()=>{
     )}
 
     
-    {showCobrar&&cobrarCliente&&isAdmin&&(
+    {showCobrar&&cobrarCliente&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
