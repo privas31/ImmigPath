@@ -67,12 +67,12 @@ const SISTEMAS = {
   uscis: { label:"USCIS", icon:"🏛", color:"#0369A1", bg:"#F0F9FF", border:"#BAE6FD",
     tiposCaso:["I-485 Ajuste de estatus","I-130 Peticion familiar","I-765 Permiso de trabajo","I-131 Advance Parole","N-400 Naturalizacion","I-589 Asilo","I-90 Renovar Green Card","Otro"] },
   eoir:  { label:"EOIR",  icon:"⚖️", color:"#7C3AED", bg:"#F5F3FF", border:"#DDD6FE",
-    tiposCaso:["Asilo","Deportacion","Cancelacion","Ajuste de estatus","Apelacion","Otro"] },
+    tiposCaso:["Asilo","Deportacion","Cancelación","Ajuste de estatus","Apelacion","Otro"] },
   foia:  { label:"FOIA",  icon:"📂", color:"#0891B2", bg:"#ECFEFF", border:"#A5F3FC",
     tiposCaso:["FOIA - Expediente migratorio","FOIA - Expediente USCIS","FOIA - Expediente ICE","FOIA - Expediente CBP","Otro"] },
 };
 const FOIA_ESTADOS = ["Enviado","En proceso","Respuesta recibida","Cerrado"];
-const PROCESOS_COMUNES = ["Asilo (I-589)","Permiso de trabajo (I-765)","Ajuste de estatus (I-485)","Peticion familiar (I-130)","Advance Parole (I-131)","Naturalizacion (N-400)","Renovar Green Card (I-90)","Cancelacion de deportación","FOIA","Consultoria","Otro"];
+const PROCESOS_COMUNES = ["Asilo (I-589)","Permiso de trabajo (I-765)","Ajuste de estatus (I-485)","Peticion familiar (I-130)","Advance Parole (I-131)","Naturalizacion (N-400)","Renovar Green Card (I-90)","Cancelación de deportación","FOIA","Consultoria","Otro"];
 function getStatusConfig(){return{
   vencido:{label:t("Vencida","Overdue"),color:"#DC2626",bg:"#FEF2F2",border:"#FECACA",icon:"🔴"},
   hoy:{label:t("Hoy","Today"),color:"#EA580C",bg:"#FFF7ED",border:"#FED7AA",icon:"🟠"},
@@ -96,8 +96,8 @@ function getPct(total,pagado){if(!total)return null;return Math.min(100,Math.rou
 function pagoColor(pct){if(pct===null)return"#6B7280";if(pct>=100)return"#16A34A";if(pct>=50)return"#D97706";return"#DC2626";}
 function getTotalProcesos(procesos){return(procesos||[]).reduce((s,p)=>s+parseMoney(p.precio),0);}
 function getTotalPagado(procesos){return(procesos||[]).reduce((s,p)=>s+parseMoney(p.pagado),0);}
-function getProximaFecha(cliente){const fechas=[];(cliente.casos||[]).forEach(c=>{if(c.fechaCorte)fechas.push(c.fechaCorte);if(c.fechaHuellas)fechas.push(c.fechaHuellas);});if(!fechas.length)return null;const hoy=new Date();hoy.setHours(0,0,0,0);const futuras=fechas.filter(f=>new Date(f+"T00:00:00")>=hoy).sort();if(futuras.length)return futuras[0];return fechas.sort().reverse()[0];}
-function getStatusCliente(cliente){const pf=getProximaFecha(cliente);if(!pf)return"pendiente";return getStatus(pf);}
+function getPróximaFecha(cliente){const fechas=[];(cliente.casos||[]).forEach(c=>{if(c.fechaCorte)fechas.push(c.fechaCorte);if(c.fechaHuellas)fechas.push(c.fechaHuellas);});if(!fechas.length)return null;const hoy=new Date();hoy.setHours(0,0,0,0);const futuras=fechas.filter(f=>new Date(f+"T00:00:00")>=hoy).sort();if(futuras.length)return futuras[0];return fechas.sort().reverse()[0];}
+function getStatusCliente(cliente){const pf=getPróximaFecha(cliente);if(!pf)return"pendiente";return getStatus(pf);}
 
 const PAISES=["Afghanistan","Albania","Algeria","Angola","Argentina","Armenia","Azerbaijan","Bahamas","Bangladesh","Belarus","Belize","Bolivia","Brazil","Bulgaria","Burkina Faso","Burma (Myanmar)","Burundi","Cambodia","Cameroon","Chad","Chile","China","Colombia","Congo (DRC)","Costa Rica","Cuba","Dominican Republic","Ecuador","Egypt","El Salvador","Eritrea","Ethiopia","Georgia","Ghana","Guatemala","Guinea","Haiti","Honduras","India","Indonesia","Iran","Iraq","Jamaica","Jordan","Kazakhstan","Kenya","Kosovo","Kyrgyzstan","Lebanon","Liberia","Libya","Mali","Mauritania","Mexico","Moldova","Morocco","Mozambique","Nepal","Nicaragua","Niger","Nigeria","Pakistan","Panama","Paraguay","Peru","Philippines","Romania","Russia","Rwanda","Senegal","Sierra Leone","Somalia","South Sudan","Sri Lanka","Sudan","Syria","Tajikistan","Tanzania","Togo","Trinidad and Tobago","Turkey","Turkmenistan","Uganda","Ukraine","Uzbekistan","Venezuela","Vietnam","Yemen","Zimbabwe","Other"].sort();
 const COUNTRY_CODE={"Mexico":"mx","Guatemala":"gt","Honduras":"hn","El Salvador":"sv","Cuba":"cu","Haiti":"ht","Venezuela":"ve","Colombia":"co","Ecuador":"ec","Peru":"pe","Nicaragua":"ni","Dominican Republic":"do","Brazil":"br","Bolivia":"bo","Argentina":"ar","Chile":"cl","Jamaica":"jm","China":"cn","India":"in","Pakistan":"pk","Philippines":"ph","Vietnam":"vn","Ukraine":"ua","Russia":"ru","Ethiopia":"et","Somalia":"so","Nigeria":"ng","Ghana":"gh","Cameroon":"cm","Senegal":"sn","Syria":"sy","Iraq":"iq","Iran":"ir","Afghanistan":"af"};
@@ -216,7 +216,7 @@ function App(){
   const[clientes,setClientes]=useState([]);const[loading,setLoading]=useState(false);
   const[showModal,setShowModal]=useState(false);const[editId,setEditId]=useState(null);const[formCliente,setFormCliente]=useState(emptyCliente);
   const[filtroStatus,setFiltroStatus]=useState("todos");const[filtroSistema,setFiltroSistema]=useState("todos");
-  const[busqueda,setBusqueda]=useState("");const[saving,setSaving]=useState(false);
+  const[búsqueda,setBúsqueda]=useState("");const[saving,setSaving]=useState(false);
   const[toast,setToast]=useState(null);const[sortBy,setSortBy]=useState("fecha");
   const[confirmDelete,setConfirmDelete]=useState(null);const[expandedId,setExpandedId]=useState(null);const[activeCasoTab,setActiveCasoTab]=useState({});
   const[showPDF,setShowPDF]=useState(false);
@@ -235,7 +235,7 @@ function App(){
   const[addUserLoading,setAddUserLoading]=useState(false);
   const[equipo,setEquipo]=useState([]);const[showTeam,setShowTeam]=useState(false);const[newMember,setNewMember]=useState("");
   const[showDashboard,setShowDashboard]=useState(false);
-  const[showNomina,setShowNomina]=useState(false);
+  const[showNómina,setShowNómina]=useState(false);
   const[showI589Review,setShowI589Review]=useState(false);
   const[i589Cliente,setI589Cliente]=useState(null);
   const[i589Comentario,setI589Comentario]=useState("");
@@ -252,11 +252,11 @@ function App(){
   const[pagosPorCliente,setPagosPorCliente]=useState({});
   const[loadingPagos,setLoadingPagos]=useState({});
   const[configSaving,setConfigSaving]=useState(false);
-  const[tarifasNomina,setTarifasNomina]=useState({});
-  const[nominaPeriodoInicio,setNominaPeriodoInicio]=useState(()=>{
+  const[tarifasNómina,setTarifasNómina]=useState({});
+  const[nominaPeriodoInicio,setNóminaPeriodoInicio]=useState(()=>{
     const d=new Date();d.setDate(d.getDate()-7);return d.toISOString().split("T")[0];
   });
-  const[nominaPeriodoFin,setNominaPeriodoFin]=useState(()=>new Date().toISOString().split("T")[0]);
+  const[nominaPeriodoFin,setNóminaPeriodoFin]=useState(()=>new Date().toISOString().split("T")[0]);
   const[showPagosReporte,setShowPagosReporte]=useState(false);
   const[borradores,setBorradores]=useState([]);const[showBorradores,setShowBorradores]=useState(false);const[borradorExpanded,setBorradorExpanded]=useState({});
   const[borradoresLoading,setBorradoresLoading]=useState(false);const[borradoresPendientes,setBorradoresPendientes]=useState(0);
@@ -418,7 +418,7 @@ const savePagosConfig=async(cfg)=>{
       await updateDoc(doc(db,"offices",officeData.id),{logoUrl:officeLogo||""});
       setOfficeData(prev=>({...prev,logoUrl:officeLogo||""}));
     }
-    showToastFn("Configuracion guardada ✓");
+    showToastFn("Configuración guardada ✓");
   }catch(e){console.error("Error al guardar:",e);showToastFn("Error al guardar: "+e.message,"error");}
   setConfigSaving(false);
 };
@@ -747,10 +747,10 @@ const loadTeam=async()=>{
     const st=getStatusCliente(c);
     if(filtroStatus!=="todos"&&st!==filtroStatus)return false;
     if(filtroSistema!=="todos"&&!(c.casos||[]).some(ca=>ca.sistema===filtroSistema))return false;
-    const q=busqueda.toLowerCase();
+    const q=búsqueda.toLowerCase();
     return!q||c.nombre.toLowerCase().includes(q)||(c.alienNum||"").replace(/\D/g,"").includes(q.replace(/\D/g,""))||(c.encargada||"").toLowerCase().includes(q)||(c.paisOrigen||"").toLowerCase().includes(q)||(c.casos||[]).some(ca=>(ca.receiptNum||"").toLowerCase().includes(q)||(ca.foiaTracking||"").toLowerCase().includes(q));
   }).sort((a,b)=>{
-    if(sortBy==="fecha"){const fa=getProximaFecha(a),fb=getProximaFecha(b);if(!fa)return 1;if(!fb)return -1;return new Date(fa)-new Date(fb);}
+    if(sortBy==="fecha"){const fa=getPróximaFecha(a),fb=getPróximaFecha(b);if(!fa)return 1;if(!fb)return -1;return new Date(fa)-new Date(fb);}
     return a.nombre.localeCompare(b.nombre);
   });
 
@@ -760,22 +760,22 @@ const loadTeam=async()=>{
   const stats=React.useMemo(()=>{
     const hoy=new Date();hoy.setHours(0,0,0,0);
     const en7dias=new Date(hoy);en7dias.setDate(en7dias.getDate()+7);
-    const alertas=clientes.filter(c=>{const pf=getProximaFecha(c);if(!pf)return false;const d=new Date(pf+"T00:00:00");return d>=hoy&&d<=en7dias;});
-    const alertas1dia=alertas.filter(c=>{const pf=getProximaFecha(c);return getDias(pf)===0||getDias(pf)===1;});
-    const alertas3dias=alertas.filter(c=>{const pf=getProximaFecha(c);const d=getDias(pf);return d>1&&d<=3;});
-    const alertas7dias=alertas.filter(c=>{const pf=getProximaFecha(c);const d=getDias(pf);return d>3&&d<=7;});
+    const alertas=clientes.filter(c=>{const pf=getPróximaFecha(c);if(!pf)return false;const d=new Date(pf+"T00:00:00");return d>=hoy&&d<=en7dias;});
+    const alertas1dia=alertas.filter(c=>{const pf=getPróximaFecha(c);return getDias(pf)===0||getDias(pf)===1;});
+    const alertas3dias=alertas.filter(c=>{const pf=getPróximaFecha(c);const d=getDias(pf);return d>1&&d<=3;});
+    const alertas7dias=alertas.filter(c=>{const pf=getPróximaFecha(c);const d=getDias(pf);return d>3&&d<=7;});
     const vencidos=clientes.filter(c=>getStatusCliente(c)==="vencido");
     const totalCobrar=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalProcesos(ca.procesos||[]),s),0);
     const totalCobrado=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalPagado(ca.procesos||[]),s),0);
     const pendiente=totalCobrar-totalCobrado;
     const eadElegibles=clientes.filter(c=>(c.casos||[]).some(ca=>{if(!ca.fechaAsilo)return false;const dias=Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000);return dias>=180;}));
-    const eadProximos=clientes.filter(c=>(c.casos||[]).some(ca=>{if(!ca.fechaAsilo)return false;const dias=Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000);return dias>=160&&dias<180;}));
+    const eadPróximos=clientes.filter(c=>(c.casos||[]).some(ca=>{if(!ca.fechaAsilo)return false;const dias=Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000);return dias>=160&&dias<180;}));
     const pagadoCompleto=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p>=t;});
     const conSaldo=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p<t;});
     const sinPago=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p===0;});
-    const sinFecha=clientes.filter(c=>!getProximaFecha(c)&&(c.casos||[]).length>0);
+    const sinFecha=clientes.filter(c=>!getPróximaFecha(c)&&(c.casos||[]).length>0);
     const sinDocumentos=clientes.filter(c=>(c.casos||[]).some(ca=>!ca.receiptNum&&!ca.foiaTracking&&ca.sistema==="uscis"));
-    return{alertas,alertas1dia,alertas3dias,alertas7dias,vencidos,totalCobrar,totalCobrado,pendiente,eadElegibles,eadProximos,pagadoCompleto,conSaldo,sinPago,sinFecha,sinDocumentos};
+    return{alertas,alertas1dia,alertas3dias,alertas7dias,vencidos,totalCobrar,totalCobrado,pendiente,eadElegibles,eadPróximos,pagadoCompleto,conSaldo,sinPago,sinFecha,sinDocumentos};
   },[clientes]);
 
   const generatePDF=()=>{
@@ -819,13 +819,13 @@ const loadTeam=async()=>{
                   const rows3=[];
                   datos.forEach(c=>{
                     const st=getStatusCliente(c);
-                    const pf=getProximaFecha(c);
+                    const pf=getPróximaFecha(c);
                     const dias=pf?getDias(pf):null;
                     const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
                     const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
                     const pct=getPct(totalP,pagadoP);
                     // Sistemas: texto limpio deduplicado, separado por "  "
-                    const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"A.P.","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelacion":"Cancelacion","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
+                    const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"A.P.","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelación":"Cancelación","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
                     const sistemasUnicos=[...new Set((c.casos||[]).map(ca=>(ca.sistema||"").toUpperCase()).filter(Boolean))];
                     const tiposUnicos=[...new Set((c.casos||[]).map(ca=>{const t=cleanTxt(ca.tipoCaso||"");return TIPO_SHORT[t]||t.split(" ")[0]||"";}).filter(Boolean))];
                     const sistemasStr=[...sistemasUnicos,...tiposUnicos].join(" · ");
@@ -934,7 +934,7 @@ const loadTeam=async()=>{
     {id:"dashboard",  label:t("Dashboard","Dashboard"),             icon:"📊", badge:isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
     {id:"clientes",   label:t("Clientes","Clients"),                icon:"👥", onClick:()=>{setActiveNav("monitor");window.scrollTo(0,160);}},
     {id:"formularios",label:t("Formularios","Forms"),               icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
-    {id:"nomina",     label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNomina(true)},
+    {id:"nomina",     label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNómina(true)},
     {id:"pagos",      label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
     {id:"cobros",     label:t("Cobros","Collections"),              icon:"💰", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
     {id:"equipo",     label:t("Equipo","Team"),                     icon:"🤝", show:isAdmin, onClick:()=>setShowTeam(true)},
@@ -1001,7 +1001,7 @@ const loadTeam=async()=>{
         </div>
         <div style={{flex:1,position:"relative"}}>
           <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#94A3B8",fontSize:14}}>🔍</span>
-          <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder={t("Buscar por nombre, A#, recibo, FOIA tracking, encargada, país...","Search by name, A#, receipt, FOIA tracking, agent, country...")} style={{width:"100%",padding:"9px 14px 9px 36px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#F8FAFC",outline:"none",boxSizing:"border-box"}}/>
+          <input value={búsqueda} onChange={e=>setBúsqueda(e.target.value)} placeholder={t("Buscar por nombre, A#, recibo, FOIA tracking, encargada, país...","Search by name, A#, receipt, FOIA tracking, agent, country...")} style={{width:"100%",padding:"9px 14px 9px 36px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#F8FAFC",outline:"none",boxSizing:"border-box"}}/>
         </div>
         <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#fff",cursor:"pointer",color:"#374151"}}>
           <option value="fecha">{t("Por fecha","By date")}</option>
@@ -1048,7 +1048,7 @@ const loadTeam=async()=>{
             </div>
           ):
           filtered.map(c=>{
-            const st=getStatusCliente(c);const scfg=STATUS_CONFIG[st];const pf=getProximaFecha(c);const dias=pf?getDias(pf):null;const exp=expandedId===c.id;
+            const st=getStatusCliente(c);const scfg=STATUS_CONFIG[st];const pf=getPróximaFecha(c);const dias=pf?getDias(pf):null;const exp=expandedId===c.id;
             const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
             const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
             const pct=getPct(totalP,pagadoP);const pc=pagoColor(pct);
@@ -1188,7 +1188,7 @@ const loadTeam=async()=>{
                             
                             {ca.fechaCorte&&ca.sistema!=="foia"&&<div style={{gridColumn:"1/-1",background:scfgCaso.bg,border:"2px solid "+scfgCaso.border,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                               <div>
-                                <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600,marginBottom:4}}>{ca.sistema==="eoir"?"Fecha de corte":(ca.tipoCaso||"").includes("I-589")?(ca.tipoCita==="huellas"?"Biometrics":"Fecha de entrevista"):"Fecha de cita"}</div>
+                                <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600,marginBottom:4}}>{ca.sistema==="eoir"?"Fecha de corte":(ca.tipoCaso||"").includes("I-589")?(ca.tipoCita==="huellas"?"Biométricos":"Fecha de entrevista"):"Fecha de cita"}</div>
                                 <div style={{fontSize:28,fontWeight:800,color:scfgCaso.color,lineHeight:1}}>{fmt(ca.fechaCorte)}</div>
                               </div>
                               <div style={{textAlign:"center"}}>
@@ -1199,7 +1199,7 @@ const loadTeam=async()=>{
                               </div>
                             </div>}
                             
-                            {ca.fechaHuellas&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Biometrics</div><div style={{fontSize:13,fontWeight:600}}>{fmt(ca.fechaHuellas)}</div></div>}
+                            {ca.fechaHuellas&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Biométricos</div><div style={{fontSize:13,fontWeight:600}}>{fmt(ca.fechaHuellas)}</div></div>}
 
                             
                             {ca.sistema==="foia"&&ca.foiaTracking&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Tracking #</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600,color:"#0891B2"}}>{ca.foiaTracking}</div></div>}
@@ -1411,7 +1411,7 @@ const loadTeam=async()=>{
                       pdoc.setFontSize(8);pdoc.setFont("helvetica","normal");pdoc.setTextColor(168,196,224);
                       pdoc.text("Recibido: "+new Date(b.fechaEnvio).toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),M,19);
                       const sections=[
-                        {title:"DATOS PERSONALES",rows:[["Nombre",b.nombre||"—"],[t("Teléfono","Phone"),b.telefono||"—"],["Email",b.email||"—"],[t("País de origen","Country of origin"),b.paisOrigen||"—"],["Numero Alien",b.alienNum||"—"],[t("Estado civil","Marital status"),b.estadoCivil||"—"]]},
+                        {title:"DATOS PERSONALES",rows:[["Nombre",b.nombre||"—"],[t("Teléfono","Phone"),b.telefono||"—"],["Email",b.email||"—"],[t("País de origen","Country of origin"),b.paisOrigen||"—"],["Número Alien",b.alienNum||"—"],[t("Estado civil","Marital status"),b.estadoCivil||"—"]]},
                         {title:"HISTORIAL MIGRATORIO",rows:[[t("Estatus migratorio","Immigration status"),b.estatusMigratorio||"—"],[t("Fecha entrada EE.UU.","US entry date"),b.fechaEntrada||"—"],[t("Cómo entró","How they entered"),b.formaEntrada||"—"],["Orden de deportacion",b.ordenDeportacion||"—"],["Proceso en corte EOIR",b.procesoEOIR||"—"]]},
                         {title:"FAMILIA",rows:[[t("Tiene hijos","Has children"),b.tieneHijos||"—"],[t("Familiares en EE.UU.","Family in US"),b.familiaUS||"—"]]},
                         {title:"AYUDA REQUERIDA",rows:[["Servicios",(b.tiposAyuda||[]).join(", ")||"—"],["Situacion",b.situacion||"—"]]},
@@ -1500,7 +1500,7 @@ const loadTeam=async()=>{
             </div>
             <div style={{background:"#FFFBEB",borderRadius:12,padding:"16px",border:"1px solid #FDE68A"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#D97706"}}>⚠️ Proximos 7 dias</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#D97706"}}>⚠️ Próximos 7 dias</div>
                 <div style={{fontSize:24,fontWeight:800,color:"#D97706"}}>{stats.alertas.length}</div>
               </div>
               {stats.alertas.slice(0,3).map((c,i)=>(
@@ -1964,7 +1964,7 @@ const loadTeam=async()=>{
                   <span style={{fontSize:18}}>🔴</span>
                   <span style={{fontSize:14,fontWeight:700,color:"#DC2626"}}>{t("Fechas Vencidas","Overdue Dates")} — {stats.vencidos.length} {t("cliente(s)","client(s)")}</span>
                 </div>
-                {stats.vencidos.map((c,i)=>{const pf=getProximaFecha(c);const dias=Math.abs(getDias(pf)||0);return(
+                {stats.vencidos.map((c,i)=>{const pf=getPróximaFecha(c);const dias=Math.abs(getDias(pf)||0);return(
                   <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.vencidos.length-1?"1px solid #FEE2E2":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#FFF5F5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                     <div>
                       <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
@@ -1986,7 +1986,7 @@ const loadTeam=async()=>{
                   <span style={{fontSize:18}}>🟡</span>
                   <span style={{fontSize:14,fontWeight:700,color:"#D97706"}}>{t("Próximas en 7 días","Upcoming in 7 days")} — {stats.alertas.length} {t("cliente(s)","client(s)")}</span>
                 </div>
-                {stats.alertas.map((c,i)=>{const pf=getProximaFecha(c);const dias=getDias(pf)||0;return(
+                {stats.alertas.map((c,i)=>{const pf=getPróximaFecha(c);const dias=getDias(pf)||0;return(
                   <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.alertas.length-1?"1px solid #FEF3C7":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#FFFDF0"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                     <div>
                       <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
@@ -2028,17 +2028,17 @@ const loadTeam=async()=>{
             )}
 
             {/* EAD PROXIMOS 20 DIAS */}
-            {stats.eadProximos.length>0&&(
+            {stats.eadPróximos.length>0&&(
               <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:12,overflow:"hidden"}}>
                 <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #BFDBFE"}}>
                   <span style={{fontSize:18}}>⏳</span>
-                  <span style={{fontSize:14,fontWeight:700,color:"#1D4ED8"}}>{t("Próximos a EAD (20 días)","Near EAD (20 days)")} — {stats.eadProximos.length} {t("cliente(s)","client(s)")}</span>
+                  <span style={{fontSize:14,fontWeight:700,color:"#1D4ED8"}}>{t("Próximos a EAD (20 días)","Near EAD (20 days)")} — {stats.eadPróximos.length} {t("cliente(s)","client(s)")}</span>
                 </div>
-                {stats.eadProximos.map((c,i)=>{
+                {stats.eadPróximos.map((c,i)=>{
                   const ca=(c.casos||[]).find(ca=>ca.fechaAsilo);
                   const dias=ca?Math.floor((new Date()-new Date(ca.fechaAsilo+"T00:00:00"))/86400000):0;
                   return(
-                    <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.eadProximos.length-1?"1px solid #DBEAFE":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#EFF6FF"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.eadPróximos.length-1?"1px solid #DBEAFE":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#EFF6FF"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                       <div>
                         <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
                         <div style={{fontSize:12,color:"#2563EB"}}>{ca?.tipoCaso||"—"}</div>
@@ -2319,7 +2319,7 @@ const loadTeam=async()=>{
     })()}
 
     
-    {showNomina&&isAdmin&&(()=>{
+    {showNómina&&isAdmin&&(()=>{
       const inicio = new Date(nominaPeriodoInicio+"T00:00:00");
       const fin = new Date(nominaPeriodoFin+"T23:59:59");
 
@@ -2338,7 +2338,7 @@ const loadTeam=async()=>{
         "Ajuste de estatus (I-485)": 150,
         "Peticion familiar (I-130)": 100,
         "Naturalizacion (N-400)": 80,
-        "Cancelacion de deportacion": 150,
+        "Cancelación de deportacion": 150,
         "FOIA": 40,
         "Consultoria": 30,
         "Advance Parole (I-131)": 60,
@@ -2361,14 +2361,14 @@ const loadTeam=async()=>{
             });
           });
         });
-        const totalNomina = Object.entries(procesos).reduce((sum,[nombre,data])=>{
-          const tarifa = tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
+        const totalNómina = Object.entries(procesos).reduce((sum,[nombre,data])=>{
+          const tarifa = tarifasNómina[nombre]!==undefined?tarifasNómina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
           return sum + (tarifa * data.cantidad);
         }, 0);
-        return {emp, clientes:clientesEmp.length, procesos, totalNomina};
+        return {emp, clientes:clientesEmp.length, procesos, totalNómina};
       });
 
-      const totalGeneral = nominaData.reduce((s,d)=>s+d.totalNomina, 0);
+      const totalGeneral = nominaData.reduce((s,d)=>s+d.totalNómina, 0);
 
       return(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16,overflowY:"auto"}}>
@@ -2376,7 +2376,7 @@ const loadTeam=async()=>{
 
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
               <div>
-                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>Nomina — {officeName}</h2>
+                <h2 style={{margin:0,fontSize:19,fontWeight:800,color:"#0F172A"}}>Nómina — {officeName}</h2>
                 <p style={{fontSize:12,color:"#64748B",margin:"3px 0 0"}}>Solo casos registrados en el periodo seleccionado</p>
               </div>
               <div style={{display:"flex",gap:8}}>
@@ -2388,7 +2388,7 @@ const loadTeam=async()=>{
                   pdfdoc.setFillColor(30,58,95);pdfdoc.rect(0,0,W,28,"F");
                   pdfdoc.setTextColor(255,255,255);pdfdoc.setFontSize(13);pdfdoc.setFont("helvetica","bold");
                   const onPDF=(officeData?.name||"Oficina").split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("");
-                  pdfdoc.text("Nomina — "+onPDF,margin,11);
+                  pdfdoc.text("Nómina — "+onPDF,margin,11);
                   pdfdoc.setFontSize(8);pdfdoc.setFont("helvetica","normal");pdfdoc.setTextColor(168,196,224);
                   pdfdoc.text("Periodo: "+nominaPeriodoInicio+" al "+nominaPeriodoFin+" | "+user.email,margin,19);
                   let yPos=36;
@@ -2396,10 +2396,10 @@ const loadTeam=async()=>{
                   nominaData.forEach((nd,empIdx)=>{
                     const empRows=Object.entries(nd.procesos).map(([nombre,data])=>{
                       const keyClean=nombre.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("").trim();
-                      const tarifa=tarifasNomina[keyClean]!==undefined?tarifasNomina[keyClean]:(TARIFAS_DEFAULT[nombre]||50);
+                      const tarifa=tarifasNómina[keyClean]!==undefined?tarifasNómina[keyClean]:(TARIFAS_DEFAULT[nombre]||50);
                       return[keyClean,String(data.cantidad),"$"+tarifa.toFixed(2),"$"+(tarifa*data.cantidad).toFixed(2)];
                     });
-                    const totalEmp=nd.totalNomina;
+                    const totalEmp=nd.totalNómina;
                     grandTotal+=totalEmp;
                     const empName=nd.emp.split("").filter(c=>{var n=c.charCodeAt(0);return n>=32&&n<=126;}).join("");
                     pdfdoc.setFillColor(241,245,249);pdfdoc.setDrawColor(226,232,240);
@@ -2440,7 +2440,7 @@ const loadTeam=async()=>{
                   pdfdoc.save("nomina-"+nominaPeriodoInicio+"-al-"+nominaPeriodoFin+".pdf");
                   showToastFn("PDF de nomina descargado");
                 }} style={{background:"#1E3A5F",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Descargar PDF","Download PDF") }</button>
-                <button onClick={()=>setShowNomina(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
+                <button onClick={()=>setShowNómina(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
               </div>
             </div>
             <div style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:16,border:"1px solid #E2E8F0"}}>
@@ -2448,14 +2448,14 @@ const loadTeam=async()=>{
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto auto",gap:10,alignItems:"end"}}>
                 <div>
                   <label style={{display:"block",fontSize:11,fontWeight:600,color:"#64748B",marginBottom:4,textTransform:"uppercase"}}>Desde</label>
-                  <input type="date" value={nominaPeriodoInicio} onChange={e=>setNominaPeriodoInicio(e.target.value)} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
+                  <input type="date" value={nominaPeriodoInicio} onChange={e=>setNóminaPeriodoInicio(e.target.value)} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
                 </div>
                 <div>
                   <label style={{display:"block",fontSize:11,fontWeight:600,color:"#64748B",marginBottom:4,textTransform:"uppercase"}}>Hasta</label>
-                  <input type="date" value={nominaPeriodoFin} onChange={e=>setNominaPeriodoFin(e.target.value)} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
+                  <input type="date" value={nominaPeriodoFin} onChange={e=>setNóminaPeriodoFin(e.target.value)} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
                 </div>
-                <button onClick={()=>{const d=new Date();setNominaPeriodoFin(d.toISOString().split("T")[0]);d.setDate(d.getDate()-7);setNominaPeriodoInicio(d.toISOString().split("T")[0]);}} style={{padding:"8px 14px",borderRadius:8,border:"1px solid #E2E8F0",background:"#F8FAFC",fontSize:12,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Esta semana</button>
-                <button onClick={()=>{const d=new Date();setNominaPeriodoFin(d.toISOString().split("T")[0]);d.setDate(1);setNominaPeriodoInicio(d.toISOString().split("T")[0]);}} style={{padding:"8px 14px",borderRadius:8,border:"1px solid #E2E8F0",background:"#F8FAFC",fontSize:12,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Este mes</button>
+                <button onClick={()=>{const d=new Date();setNóminaPeriodoFin(d.toISOString().split("T")[0]);d.setDate(d.getDate()-7);setNóminaPeriodoInicio(d.toISOString().split("T")[0]);}} style={{padding:"8px 14px",borderRadius:8,border:"1px solid #E2E8F0",background:"#F8FAFC",fontSize:12,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Esta semana</button>
+                <button onClick={()=>{const d=new Date();setNóminaPeriodoFin(d.toISOString().split("T")[0]);d.setDate(1);setNóminaPeriodoInicio(d.toISOString().split("T")[0]);}} style={{padding:"8px 14px",borderRadius:8,border:"1px solid #E2E8F0",background:"#F8FAFC",fontSize:12,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>Este mes</button>
               </div>
               <div style={{marginTop:10,fontSize:12,color:"#64748B",background:"#F0FDF4",borderRadius:8,padding:"8px 12px",border:"1px solid #BBF7D0"}}>
                 {clientesPeriodo.length} caso{clientesPeriodo.length!==1?"s":""} registrado{clientesPeriodo.length!==1?"s":""} en este periodo — Total nomina: <strong style={{color:"#16A34A"}}>{fmtMoney(totalGeneral)}</strong>
@@ -2468,15 +2468,15 @@ const loadTeam=async()=>{
                   <div key={nombre} style={{display:"flex",alignItems:"center",gap:8,background:"#F8FAFC",borderRadius:8,padding:"6px 10px",border:"1px solid #E2E8F0"}}>
                     <span style={{fontSize:12,flex:1,color:"#374151"}}>{nombre}</span>
                     <span style={{fontSize:11,color:"#94A3B8"}}>$</span>
-                    <input type="number" value={tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:defVal}
-                      onChange={e=>setTarifasNomina(p=>({...p,[nombre]:parseFloat(e.target.value)||0}))}
+                    <input type="number" value={tarifasNómina[nombre]!==undefined?tarifasNómina[nombre]:defVal}
+                      onChange={e=>setTarifasNómina(p=>({...p,[nombre]:parseFloat(e.target.value)||0}))}
                       style={{width:60,padding:"3px 6px",borderRadius:6,border:"1px solid #D1D5DB",fontSize:12,textAlign:"right",outline:"none"}}/>
                   </div>
                 ))}
               </div>
             </div>
             {empleadas.length===0?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}>No hay empleadas con clientes asignados</div>:
-            nominaData.map(({emp,clientes:numClientes,procesos,totalNomina})=>(
+            nominaData.map(({emp,clientes:numClientes,procesos,totalNómina})=>(
               <div key={emp} style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:12,border:"1px solid #E2E8F0"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                   <div>
@@ -2485,13 +2485,13 @@ const loadTeam=async()=>{
                   </div>
                   <div style={{textAlign:"right"}}>
                     <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase"}}>Total nomina</div>
-                    <div style={{fontSize:22,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(totalNomina)}</div>
+                    <div style={{fontSize:22,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(totalNómina)}</div>
                   </div>
                 </div>
                 {Object.keys(procesos).length>0?(
                   <div style={{background:"#F8FAFC",borderRadius:8,padding:"10px 12px",border:"1px solid #E2E8F0"}}>
                     {Object.entries(procesos).map(([nombre,data])=>{
-                      const tarifa=tarifasNomina[nombre]!==undefined?tarifasNomina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
+                      const tarifa=tarifasNómina[nombre]!==undefined?tarifasNómina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
                       return(
                         <div key={nombre} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px dashed #E2E8F0"}}>
                           <span style={{fontSize:13,color:"#374151"}}>{nombre}</span>
@@ -2525,7 +2525,7 @@ const loadTeam=async()=>{
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:480,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-            <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>⚙️ Configuracion de Oficina</h2>
+            <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>⚙️ Configuración de Oficina</h2>
             <button onClick={()=>setShowPagosConfig(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer"}}>✕</button>
           </div>
           
@@ -2552,7 +2552,7 @@ const loadTeam=async()=>{
               <input value={pagosConfig.zelleEmail||""} onChange={e=>setPagosConfig(p=>({...p,zelleEmail:e.target.value}))} placeholder="oficina@email.com" type="email" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
             </div>
             <div>
-              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Telefono de Zelle (opcional)</label>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Teléfono de Zelle (opcional)</label>
               <input value={pagosConfig.zelleTel||""} onChange={e=>setPagosConfig(p=>({...p,zelleTel:e.target.value}))} placeholder="(305) 555-1234" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
             </div>
           </div>
@@ -2702,14 +2702,14 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
           <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tipo de cita</label>
           <select value={caso.tipoCita||""} onChange={e=>onChange({...caso,tipoCita:e.target.value,fechaCorte:"",fechaHuellas:""})} style={{width:"100%",padding:"7px 9px",borderRadius:6,border:"1px solid #BFDBFE",fontSize:13,background:"#fff",cursor:"pointer"}}>
             <option value="">Seleccionar...</option>
-            <option value="huellas">Biometrics</option>
+            <option value="huellas">Biométricos</option>
             <option value="entrevista">🎤 Entrevista</option>
             <option value="ambas">📅 Ambas</option>
           </select>
         </div>
-        {caso.tipoCita==="huellas"&&<div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha Biometrics</label><input type="date" value={caso.fechaHuellas||""} onChange={e=>onChange({...caso,fechaHuellas:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div>}
+        {caso.tipoCita==="huellas"&&<div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha Biométricos</label><input type="date" value={caso.fechaHuellas||""} onChange={e=>onChange({...caso,fechaHuellas:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div>}
         {caso.tipoCita==="entrevista"&&<div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>🎤 Fecha de Entrevista</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div>}
-        {caso.tipoCita==="ambas"&&<><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}> Fecha Biometrics</label><input type="date" value={caso.fechaHuellas||""} onChange={e=>onChange({...caso,fechaHuellas:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>🎤 Fecha de Entrevista</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div></>}
+        {caso.tipoCita==="ambas"&&<><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}> Fecha Biométricos</label><input type="date" value={caso.fechaHuellas||""} onChange={e=>onChange({...caso,fechaHuellas:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>🎤 Fecha de Entrevista</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div></>}
         
         <div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#A5B4FC",marginBottom:3,textTransform:"uppercase"}}>⏱️ Fecha en que se ingresó el asilo</label><input type="date" value={caso.fechaAsilo||""} onChange={e=>onChange({...caso,fechaAsilo:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #4338CA",background:"#1E1B4B",color:"#fff",fontSize:13,outline:"none"}}/></div>
         {caso.fechaAsilo&&(()=>{const inicio=new Date(caso.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);const dias=Math.floor((hoy-inicio)/86400000);const pct=Math.min(100,Math.round((dias/180)*100));const color=dias>=180?"#4ADE80":dias>=120?"#FACC15":"#60A5FA";return(<div style={{background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:8,padding:"10px 12px"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{textAlign:"center",minWidth:50}}><div style={{fontSize:28,fontWeight:800,color,lineHeight:1}}>{dias}</div><div style={{fontSize:10,color:"#A5B4FC"}}>{t("días","days")}</div></div><div style={{flex:1}}><div style={{background:"#312E81",borderRadius:20,height:8,overflow:"hidden",marginBottom:4}}><div style={{height:"100%",borderRadius:20,background:color,width:`${pct}%`}}/></div><div style={{fontSize:11,color,fontWeight:600}}>{dias>=180?(dias>=180?"✅ Elegible para EAD":"✅ Eligible for EAD")+" — "+dias+(_lang==="es"?" días":" days"):(_lang==="es"?`⏳ Faltan ${180-dias} días para EAD`:`⏳ ${180-dias} days until EAD`)}</div></div></div></div>);})()} 
