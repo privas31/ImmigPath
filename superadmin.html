@@ -995,6 +995,8 @@ window.createOffice = async function() {
       isDemo: isDemo,
       demoEndsAt: isDemo ? demoEnd : null,
       accessType: isDemo ? 'demo' : 'active',
+      accessPassword: pass,
+      adminEmail: email,
       createdAt:serverTimestamp(), createdBy:currentUser.uid,
     });
     await setDoc(doc(db,'users',uid), {
@@ -1003,7 +1005,10 @@ window.createOffice = async function() {
       isActive:true, createdAt:serverTimestamp(),
     });
     // Mostrar link de acceso generado
-    const accessLink = window.location.origin + (plan==='basic' ? '/app-basico.html' : '/app.html') + '?o=' + officeRef.id;
+    const accessLink = 'https://immigpath.com' + (plan==='basic' ? '/app-basico.html' : '/app.html') + '?o=' + officeRef.id;
+    // Save access link to Firestore too
+    const { updateDoc } = window._firebase || {};
+    try { await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js").then(async m=>{ await m.updateDoc(m.doc(db,'offices',officeRef.id),{accessLink}); }); } catch(e){}
     const linkEl = document.getElementById('cred-link');
     if (linkEl) {
       linkEl.textContent = accessLink;
@@ -1089,9 +1094,13 @@ window.openEditOffice = function(id) {
           <div>
             <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Contraseña actual</label>
             <div style="display:flex;gap:8px;align-items:center">
-              <input type="text" readonly id="edit-cred-pass" value="${o.accessPassword||'(no guardada)'}" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;color:#CBD5E1;font-size:13px;outline:none;font-family:monospace">
-              <button onclick="navigator.clipboard.writeText(document.getElementById('edit-cred-pass').value).then(()=>showToast('Contraseña copiada','success'))" style="padding:9px 12px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.3);border-radius:8px;color:#A5B4FC;font-size:12px;cursor:pointer;white-space:nowrap">📋 Copiar</button>
+              <input type="text" readonly id="edit-cred-pass" value="${o.accessPassword||''}" placeholder="Sin contraseña guardada" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid ${o.accessPassword?'rgba(255,255,255,0.08)':'rgba(239,68,68,0.3)'};border-radius:8px;padding:9px 12px;color:${o.accessPassword?'#CBD5E1':'#FCA5A5'};font-size:13px;outline:none;font-family:monospace">
+              ${o.accessPassword
+                ? `<button onclick="navigator.clipboard.writeText(document.getElementById('edit-cred-pass').value).then(()=>showToast('Contraseña copiada','success'))" style="padding:9px 12px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.3);border-radius:8px;color:#A5B4FC;font-size:12px;cursor:pointer;white-space:nowrap">📋 Copiar</button>`
+                : `<span style="font-size:11px;color:#FCA5A5;white-space:nowrap">⚠️ No guardada</span>`
+              }
             </div>
+            ${!o.accessPassword ? `<div style="font-size:11px;color:#FCA5A5;margin-top:4px">Usa el campo "Nueva contraseña" para guardarla</div>` : ''}
           </div>
           <div>
             <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Nueva contraseña <span style="color:#64748B">(dejar vacío para no cambiar)</span></label>
