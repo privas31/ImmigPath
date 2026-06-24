@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- ImmigPath cliente.html v2 2026-06-20 03:54 -->
+<!-- ImmigPath portal-cliente v3 2026-06-23 -->
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
@@ -7,156 +7,249 @@
 <title>Mi Caso — ImmigPath</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh;}
-.header{background:linear-gradient(135deg,#0F172A 0%,#1E3A5F 100%);padding:20px 20px 24px;}
-.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
-.logo{color:#fff;font-size:16px;font-weight:700;}
-.lang-switch{display:flex;border:1px solid rgba(255,255,255,0.2);border-radius:8px;overflow:hidden;}
-.lang-switch button{padding:6px 14px;border:none;cursor:pointer;font-size:12px;transition:all 0.2s;}
-.greeting{color:#A8C4E0;font-size:13px;}
-.client-name{color:#fff;font-size:22px;font-weight:800;margin-top:2px;}
-.info-bar{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;}
-.info-chip{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;}
-.info-chip-label{font-size:10px;color:#A8C4E0;text-transform:uppercase;letter-spacing:0.04em;}
-.info-chip-val{font-size:13px;color:#fff;font-weight:600;font-family:monospace;}
-.container{max-width:560px;margin:0 auto;padding:20px 16px 60px;}
-.section-label{font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;}
-.caso-card{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;border:1px solid #E2E8F0;}
-.loading{display:flex;align-items:center;justify-content:center;min-height:50vh;flex-direction:column;gap:12px;color:#64748B;font-size:14px;}
-.error-screen{display:none;align-items:center;justify-content:center;min-height:50vh;flex-direction:column;gap:12px;text-align:center;padding:20px;}
-.footer{text-align:center;padding:20px;font-size:12px;color:#94A3B8;}
-.row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F1F5F9;gap:12px;}
-.row:last-child{border-bottom:none;}
-.row-label{font-size:12px;color:#64748B;flex-shrink:0;}
-.row-val{font-size:13px;font-weight:600;color:#0F172A;text-align:right;}
-.clock-box{background:#1E1B4B;border-radius:12px;padding:16px;margin-top:12px;}
+:root{
+  --navy:#0F172A;
+  --blue:#2563EB;
+  --blue-light:#EFF6FF;
+  --green:#16A34A;
+  --red:#DC2626;
+  --orange:#EA580C;
+  --amber:#D97706;
+  --slate:#64748B;
+  --border:#E2E8F0;
+  --bg:#F8FAFC;
+  --white:#fff;
+  --radius:14px;
+  --shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.06);
+}
+body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:var(--bg);min-height:100vh;color:var(--navy);}
 
-.i589-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#1E40AF,#3B82F6);color:#fff;border:none;border-radius:10px;padding:12px 20px;font-size:13px;font-weight:700;cursor:pointer;margin-top:16px;width:100%;justify-content:center;letter-spacing:0.02em;}
-.i589-btn:hover{opacity:0.92;}
-.i589-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
-.i589-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:1000;overflow-y:auto;padding:16px;}
+/* ── TOPBAR ── */
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+.topbar-logo{display:flex;align-items:center;gap:10px;}
+.topbar-logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#1E40AF,#3B82F6);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.topbar-logo-text{font-size:15px;font-weight:800;color:var(--navy);letter-spacing:-0.02em;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.lang-btn{padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:var(--white);color:var(--slate);font-weight:500;}
+.lang-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:700;}
+.forms-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:var(--white);color:var(--navy);}
+.forms-btn:hover{background:var(--bg);}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#1E3A5F 100%);padding:28px 20px 32px;color:#fff;}
+.hero-greeting{font-size:13px;color:#94A3B8;margin-bottom:4px;}
+.hero-name{font-size:26px;font-weight:800;letter-spacing:-0.02em;margin-bottom:16px;}
+.hero-chips{display:flex;gap:10px;flex-wrap:wrap;}
+.hero-chip{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:130px;}
+.hero-chip-label{font-size:10px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;font-weight:600;}
+.hero-chip-val{font-size:14px;color:#fff;font-weight:700;font-family:monospace;}
+
+/* ── ALERT BANNER ── */
+.alert-banner{display:none;background:#FEF2F2;border-left:4px solid var(--red);padding:14px 20px;gap:12px;}
+.alert-banner.visible{display:flex;align-items:flex-start;}
+.alert-banner-body{flex:1;}
+.alert-banner-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:3px;}
+.alert-banner-msg{font-size:13px;color:#7F1D1D;line-height:1.5;}
+.alert-banner-btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;margin-top:8px;}
+
+/* ── MAIN CONTENT ── */
+.container{max-width:600px;margin:0 auto;padding:20px 16px 80px;}
+.section-title{font-size:11px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px;}
+
+/* ── CASE CARD ── */
+.case-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px;}
+.case-card-header{padding:16px 18px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:10px;}
+.case-badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;}
+.case-type{font-size:14px;font-weight:600;color:var(--slate);}
+
+/* ── DATE BADGE ── */
+.date-badge{margin:0 18px 14px;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
+.date-badge-main{font-size:22px;font-weight:800;letter-spacing:-0.02em;}
+.date-badge-sub{font-size:12px;font-weight:600;margin-top:2px;}
+.date-badge-tag{font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,0.5);}
+
+/* ── INFO ROWS ── */
+.info-rows{padding:0 18px 4px;}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #F8FAFC;}
+.info-row:last-child{border-bottom:none;}
+.info-row-label{font-size:12px;color:var(--slate);}
+.info-row-val{font-size:13px;font-weight:600;color:var(--navy);text-align:right;max-width:60%;}
+
+/* ── STATUS BADGE ── */
+.status-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;}
+
+/* ── ASYLUM CLOCK ── */
+.clock-box{margin:0 18px 18px;background:#1E1B4B;border-radius:12px;padding:16px;}
+.clock-title{font-size:10px;font-weight:700;color:#A5B4FC;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px;}
+.clock-body{display:flex;align-items:center;gap:16px;}
+.clock-number{text-align:center;min-width:60px;}
+.clock-days{font-size:36px;font-weight:800;line-height:1;}
+.clock-label{font-size:10px;color:#A5B4FC;margin-top:3px;}
+.clock-bar-wrap{flex:1;}
+.clock-bar-header{display:flex;justify-content:space-between;margin-bottom:6px;}
+.clock-bar-filed{font-size:11px;color:#94A3B8;}
+.clock-bar-goal{font-size:11px;color:#94A3B8;}
+.clock-bar{background:#312E81;border-radius:20px;height:10px;overflow:hidden;margin-bottom:6px;}
+.clock-bar-fill{height:100%;border-radius:20px;transition:width 0.8s ease;}
+.clock-status{font-size:11px;font-weight:700;}
+
+/* ── I-589 SECTION ── */
+.i589-section{margin-top:20px;}
+.i589-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:18px;}
+.i589-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#1E40AF,var(--blue));color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.01em;margin-top:4px;}
+.i589-btn:hover{opacity:0.93;}
+.i589-disclaimer{font-size:11px;color:var(--slate);text-align:center;margin-top:8px;line-height:1.5;}
+.i589-saved{display:flex;align-items:flex-start;gap:12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px;}
+.i589-saved-icon{font-size:24px;flex-shrink:0;}
+.i589-saved-body{flex:1;}
+.i589-saved-title{font-size:13px;font-weight:700;color:var(--navy);}
+.i589-saved-status{font-size:12px;font-weight:600;margin-top:2px;}
+.i589-saved-date{font-size:11px;color:var(--slate);margin-top:2px;}
+.i589-note{margin-top:8px;background:#FEF2F2;border-radius:6px;padding:8px 10px;font-size:12px;color:var(--red);line-height:1.5;}
+.i589-edit-btn{background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;margin-top:10px;white-space:nowrap;}
+
+/* ── LOADING / ERROR ── */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px;color:var(--slate);}
+.loading-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.error-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:32px 20px;gap:12px;}
+.error-icon{font-size:56px;margin-bottom:4px;}
+.error-title{font-size:20px;font-weight:800;color:var(--navy);}
+.error-sub{font-size:14px;color:var(--slate);max-width:300px;line-height:1.6;}
+
+/* ── FOOTER ── */
+.footer{text-align:center;padding:20px;font-size:12px;color:#94A3B8;border-top:1px solid var(--border);background:var(--white);margin-top:20px;}
+.footer-office{font-weight:600;color:var(--slate);margin-bottom:3px;}
+
+/* ── FORMS DROPDOWN ── */
+.form-menu-wrap{position:relative;}
+.form-dropdown{display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--white);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.15);border:1px solid var(--border);min-width:230px;overflow:hidden;z-index:200;}
+.form-dropdown.open{display:block;}
+.form-dropdown-title{padding:9px 14px;font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid #F1F5F9;}
+.form-dropdown-item{display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;color:#374151;cursor:pointer;border:none;background:none;width:100%;text-align:left;}
+.form-dropdown-item:hover{background:var(--bg);}
+.form-dropdown-item.disabled{color:#CBD5E1;cursor:default;}
+.form-dropdown-item.disabled:hover{background:none;}
+.form-dropdown-soon{font-size:10px;margin-left:auto;color:#94A3B8;font-style:italic;}
+
+/* ── I589 MODAL ── */
+.i589-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.8);z-index:1000;overflow-y:auto;padding:16px;}
 .i589-modal.open{display:flex;align-items:flex-start;justify-content:center;}
-.i589-box{background:#fff;border-radius:16px;width:100%;max-width:560px;overflow:hidden;margin:auto;}
-.i589-header{background:linear-gradient(135deg,#0F172A,#1E3A5F);padding:20px;color:#fff;}
+.i589-box{background:var(--white);border-radius:16px;width:100%;max-width:560px;overflow:hidden;margin:auto;}
+.i589-header{background:linear-gradient(135deg,var(--navy),#1E3A5F);padding:20px;color:#fff;}
 .i589-body{padding:20px;}
-.i589-section{margin-bottom:24px;}
 .i589-section-title{font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;}
 .i589-field{margin-bottom:14px;}
 .i589-label{font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;display:block;}
 .i589-label span{color:#EF4444;margin-left:2px;}
-.i589-input{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#0F172A;outline:none;transition:border 0.2s;font-family:inherit;}
-.i589-input:focus{border-color:#3B82F6;box-shadow:0 0 0 3px rgba(59,130,246,0.1);}
-.i589-textarea{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#0F172A;outline:none;resize:vertical;font-family:inherit;line-height:1.6;}
-.i589-textarea:focus{border-color:#3B82F6;box-shadow:0 0 0 3px rgba(59,130,246,0.1);}
-.i589-select{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;font-size:13px;color:#0F172A;outline:none;background:#fff;font-family:inherit;}
-.i589-select:focus{border-color:#3B82F6;}
+.i589-input{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--navy);outline:none;transition:border 0.2s;font-family:inherit;}
+.i589-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.1);}
+.i589-textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--navy);outline:none;resize:vertical;font-family:inherit;line-height:1.6;}
+.i589-textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.1);}
+.i589-select{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--navy);outline:none;background:var(--white);font-family:inherit;}
+.i589-select:focus{border-color:var(--blue);}
 .i589-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .i589-hint{font-size:11px;color:#6B7280;margin-top:4px;font-style:italic;}
 .i589-narrative{background:#FFF7ED;border:1px solid #FED7AA;border-radius:12px;padding:16px;margin-bottom:16px;}
-.i589-narrative-title{font-size:14px;font-weight:800;color:#92400E;margin-bottom:4px;}
-.i589-narrative-sub{font-size:12px;color:#B45309;margin-bottom:14px;}
 .i589-q{margin-bottom:16px;}
 .i589-q-label{font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;display:flex;align-items:flex-start;gap:8px;}
 .i589-q-num{background:#1E40AF;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
 .i589-footer{padding:16px 20px;border-top:1px solid #F1F5F9;display:flex;gap:10px;}
 .i589-btn-save{flex:1;background:#1E40AF;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;}
-.i589-btn-save:hover{background:#1d4ed8;}
 .i589-btn-cancel{background:#F1F5F9;color:#374151;border:none;border-radius:10px;padding:12px 18px;font-size:14px;cursor:pointer;font-weight:600;}
-.i589-saved{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px;margin-top:12px;display:flex;align-items:center;gap:10px;}
 
-.alert-banner{display:none;background:linear-gradient(135deg,#FEF2F2,#FFF5F5);border-left:4px solid #EF4444;border-radius:0 0 12px 12px;padding:14px 20px;margin-bottom:0;}
-.alert-banner.visible{display:flex;align-items:flex-start;gap:12px;}
-.alert-banner-icon{font-size:22px;flex-shrink:0;margin-top:1px;}
-.alert-banner-body{flex:1;}
-.alert-banner-title{font-size:13px;font-weight:800;color:#DC2626;margin-bottom:3px;}
-.alert-banner-msg{font-size:13px;color:#7F1D1D;line-height:1.5;}
-.alert-banner-btn{background:#DC2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;margin-top:2px;}
-.alert-banner-btn:hover{background:#B91C1C;}
-
-.form-menu-wrap{position:relative;}
-.form-menu-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:8px;color:#fff;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;}
-.form-menu-btn:hover{background:rgba(255,255,255,0.22);}
-.form-dropdown{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.2);border:1px solid #E2E8F0;min-width:220px;overflow:hidden;z-index:500;}
-.form-dropdown.open{display:block;}
-.form-dropdown-title{padding:8px 14px;font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid #F1F5F9;}
-.form-dropdown-item{display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;color:#374151;cursor:pointer;border:none;background:none;width:100%;text-align:left;}
-.form-dropdown-item:hover{background:#F8FAFC;}
-.form-dropdown-item.disabled{color:#CBD5E1;cursor:default;}
-.form-dropdown-item.disabled:hover{background:none;}
-.form-dropdown-soon{font-size:10px;margin-left:auto;color:#94A3B8;font-style:italic;}
+@media(max-width:480px){
+  .hero-name{font-size:22px;}
+  .date-badge-main{font-size:18px;}
+  .clock-days{font-size:28px;}
+}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-top">
-    <div class="logo" id="office-name">ImmigPath</div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <div class="form-menu-wrap">
-        <button class="form-menu-btn" id="form-menu-btn" onclick="toggleFormMenu()">
-          📄 Formularios
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" id="form-menu-arrow"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="form-dropdown" id="form-dropdown">
-          <div class="form-dropdown-title">Selecciona un formulario</div>
-          <button class="form-dropdown-item" onclick="openFormulario('asilo')">🕊️ Asilo (I-589)</button>
-          <button class="form-dropdown-item disabled">💼 Permiso de trabajo (I-765) <span class="form-dropdown-soon">pronto</span></button>
-          <button class="form-dropdown-item disabled">🏠 Residencia (I-485) <span class="form-dropdown-soon">pronto</span></button>
-          <button class="form-dropdown-item disabled">👨‍👩‍👧 Petición familiar (I-130) <span class="form-dropdown-soon">pronto</span></button>
-          <button class="form-dropdown-item disabled">🗽 Ciudadanía (N-400) <span class="form-dropdown-soon">pronto</span></button>
-          <button class="form-dropdown-item disabled">📂 FOIA <span class="form-dropdown-soon">pronto</span></button>
-        </div>
-      </div>
-      <div class="lang-switch">
-        <button id="btn-es" onclick="setLang('es')" style="background:#1E3A5F;color:#fff;font-weight:700">ES</button>
-        <button id="btn-en" onclick="setLang('en')" style="color:#A8C4E0;background:transparent;font-weight:400">EN</button>
-      </div>
-    </div>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="topbar-logo-icon" id="office-logo-wrap">⚖️</div>
+    <span class="topbar-logo-text" id="office-name">ImmigPath</span>
   </div>
-  <div class="greeting" id="lbl-hola">Hola,</div>
-  <div class="client-name" id="client-name">—</div>
-  <div class="info-bar">
-    <div class="info-chip">
-      <div class="info-chip-label" id="lbl-pais">País de origen</div>
-      <div class="info-chip-val" id="val-pais">—</div>
+  <div class="topbar-right">
+    <div class="form-menu-wrap">
+      <button class="forms-btn" onclick="toggleFormMenu()">
+        📄 <span id="lbl-formularios">Formularios</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" id="form-arrow"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="form-dropdown" id="form-dropdown">
+        <div class="form-dropdown-title" id="lbl-seleccionar">Selecciona un formulario</div>
+        <button class="form-dropdown-item" onclick="openFormulario('asilo')">🕊️ Asilo (I-589)</button>
+        <button class="form-dropdown-item disabled">💼 Permiso de trabajo (I-765) <span class="form-dropdown-soon">pronto</span></button>
+        <button class="form-dropdown-item disabled">🏠 Residencia (I-485) <span class="form-dropdown-soon">pronto</span></button>
+        <button class="form-dropdown-item disabled">👨‍👩‍👧 Petición familiar (I-130) <span class="form-dropdown-soon">pronto</span></button>
+        <button class="form-dropdown-item disabled">🗽 Ciudadanía (N-400) <span class="form-dropdown-soon">pronto</span></button>
+      </div>
     </div>
-    <div class="info-chip">
-      <div class="info-chip-label" id="lbl-alien">Número Alien</div>
-      <div class="info-chip-val" id="val-alien">—</div>
-    </div>
+    <button class="lang-btn active" id="btn-es" onclick="setLang('es')">ES</button>
+    <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
   </div>
 </div>
 
-<div class="loading" id="loading">
-  <div style="font-size:36px">⏳</div>
-  <div id="lbl-loading">Cargando tu caso...</div>
-</div>
-
-<div class="error-screen" id="error">
-  <div style="font-size:48px">🔒</div>
-  <div style="font-size:18px;font-weight:700;color:#0F172A" id="lbl-err-title">Link no válido</div>
-  <div style="font-size:14px;color:#64748B;max-width:280px" id="lbl-err-sub">Este link no existe o ya no está disponible. Contacta a tu oficina.</div>
-</div>
-
-<!-- Banner alerta nota de oficina -->
+<!-- ALERT BANNER -->
 <div class="alert-banner" id="alert-banner">
-  <div class="alert-banner-icon">⚠️</div>
+  <div style="font-size:20px;flex-shrink:0;margin-top:1px">⚠️</div>
   <div class="alert-banner-body">
-    <div class="alert-banner-title">Tu oficina revisó tu formulario y dejó una nota</div>
+    <div class="alert-banner-title" id="lbl-alerta-title">Tu oficina revisó tu formulario y dejó una nota</div>
     <div class="alert-banner-msg" id="alert-banner-msg"></div>
     <button class="alert-banner-btn" onclick="document.getElementById('alert-banner').classList.remove('visible');openI589();" style="margin-top:8px">✏️ Ver y corregir formulario</button>
   </div>
 </div>
 
-<div id="main" style="display:none">
-  <div class="container">
-    <div class="section-label" id="lbl-casos">Mis Casos</div>
-    <div id="casos"></div>
+<!-- HERO -->
+<div class="hero" id="hero" style="display:none">
+  <div style="max-width:600px;margin:0 auto;">
+    <div class="hero-greeting" id="lbl-hola">Hola,</div>
+    <div class="hero-name" id="client-name">—</div>
+    <div class="hero-chips">
+      <div class="hero-chip">
+        <div class="hero-chip-label" id="lbl-pais">País de origen</div>
+        <div class="hero-chip-val" id="val-pais">—</div>
+      </div>
+      <div class="hero-chip">
+        <div class="hero-chip-label" id="lbl-alien">Número Alien (A#)</div>
+        <div class="hero-chip-val" id="val-alien">—</div>
+      </div>
+    </div>
   </div>
 </div>
 
+<!-- LOADING -->
+<div class="loading" id="loading">
+  <div class="loading-spinner"></div>
+  <div id="lbl-loading">Cargando tu caso...</div>
+</div>
 
-<!-- Modal I-589 -->
+<!-- ERROR -->
+<div class="error-screen" id="error">
+  <div class="error-icon">🔒</div>
+  <div class="error-title" id="lbl-err-title">Link no válido</div>
+  <div class="error-sub" id="lbl-err-sub">Este link no existe o ya no está disponible. Contacta a tu oficina.</div>
+</div>
+
+<!-- MAIN -->
+<div id="main" style="display:none">
+  <div class="container">
+    <div class="section-title" id="lbl-casos">Mis Casos</div>
+    <div id="casos"></div>
+    <div id="i589-section-wrap"></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer" id="footer" style="display:none">
+  <div class="footer-office" id="office-footer">ImmigPath</div>
+  <div id="lbl-footer">Para preguntas, contacta a tu oficina</div>
+</div>
+
+<!-- I-589 MODAL (unchanged content, new shell) -->
 <div class="i589-modal" id="i589-modal">
   <div class="i589-box">
     <div class="i589-header">
@@ -164,7 +257,7 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
         <div>
           <div style="font-size:11px;color:#A8C4E0;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Formulario USCIS</div>
           <div style="font-size:20px;font-weight:800">I-589 — Solicitud de Asilo</div>
-          <div style="font-size:12px;color:#A8C4E0;margin-top:4px" id="i589-step-label">Paso 1 de 5 — Información Personal (A.I)</div>
+          <div style="font-size:12px;color:#A8C4E0;margin-top:4px" id="i589-step-label">Paso 1 de 5 — Información Personal</div>
         </div>
         <button onclick="closeI589()" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:16px">✕</button>
       </div>
@@ -180,7 +273,6 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
       </div>
     </div>
     <div class="i589-body" id="i589-body">
-
       <!-- PASO 1 -->
       <div id="i589-step-1">
         <div class="i589-section-title">📋 Parte A.I — Información Sobre Usted</div>
@@ -193,7 +285,7 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
           <div class="i589-field"><label class="i589-label">5. Nombre(s) <span>*</span></label><input class="i589-input" id="f-nombre" placeholder="Como en pasaporte"></div>
         </div>
         <div class="i589-field"><label class="i589-label">6. Segundo nombre</label><input class="i589-input" id="f-middle" placeholder="Si aplica"></div>
-        <div class="i589-field"><label class="i589-label">7. Otros nombres / alias / nombre de soltera</label><input class="i589-input" id="f-alias" placeholder="Si aplica"></div>
+        <div class="i589-field"><label class="i589-label">7. Otros nombres / alias</label><input class="i589-input" id="f-alias" placeholder="Si aplica"></div>
         <div class="i589-field">
           <label class="i589-label">8. Residencia actual en EE.UU. <span>*</span></label>
           <input class="i589-input" id="f-direccion" placeholder="Calle y número" style="margin-bottom:6px">
@@ -213,7 +305,7 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
           <div class="i589-field"><label class="i589-label">15. Nacionalidad de nacimiento <span>*</span></label><input class="i589-input" id="f-nacionalidad-nac" placeholder="País"></div>
         </div>
         <div class="i589-row2">
-          <div class="i589-field"><label class="i589-label">16. Raza / Etnia / Grupo tribal</label><input class="i589-input" id="f-raza" placeholder="Si aplica"></div>
+          <div class="i589-field"><label class="i589-label">16. Raza / Etnia</label><input class="i589-input" id="f-raza" placeholder="Si aplica"></div>
           <div class="i589-field"><label class="i589-label">17. Religión</label><input class="i589-input" id="f-religion" placeholder="Si aplica"></div>
         </div>
         <div class="i589-field"><label class="i589-label">18. Procedimientos de inmigración <span>*</span></label>
@@ -223,7 +315,7 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
           <div class="i589-field"><label class="i589-label">19a. ¿Cuándo salió de su país? <span>*</span></label><input class="i589-input" id="f-fecha-salida" type="date"></div>
           <div class="i589-field"><label class="i589-label">19b. Número I-94</label><input class="i589-input" id="f-i94" placeholder="Si tiene"></div>
         </div>
-        <div class="i589-field"><label class="i589-label">19c. Entradas a EE.UU. (más reciente primero) <span>*</span></label>
+        <div class="i589-field"><label class="i589-label">19c. Entradas a EE.UU.</label>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
             <input class="i589-input" id="f-e1-fecha" type="date"><input class="i589-input" id="f-e1-lugar" placeholder="Lugar"><input class="i589-input" id="f-e1-estatus" placeholder="Visa/Estatus">
           </div>
@@ -244,7 +336,6 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
           <div class="i589-field"><label class="i589-label">25. Otros idiomas</label><input class="i589-input" id="f-otros-idiomas" placeholder="Si aplica"></div>
         </div>
       </div>
-
       <!-- PASO 2 -->
       <div id="i589-step-2" style="display:none">
         <div class="i589-section-title">👨‍👩‍👧 Parte A.II — Cónyuge e Hijos</div>
@@ -269,29 +360,27 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
           <button type="button" onclick="addHijo()" style="background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;width:100%;margin-top:8px">+ Agregar hijo/a</button>
         </div>
       </div>
-
       <!-- PASO 3 -->
       <div id="i589-step-3" style="display:none">
         <div class="i589-section-title">📍 Parte A.III — Antecedentes</div>
-        <div class="i589-field"><label class="i589-label">1. Última dirección en su país antes de EE.UU.</label>
-          <input class="i589-input" id="f-dir-origen" placeholder="Calle, Ciudad, Departamento/Provincia, País" style="margin-bottom:6px">
+        <div class="i589-field"><label class="i589-label">1. Última dirección en su país</label>
+          <input class="i589-input" id="f-dir-origen" placeholder="Calle, Ciudad, País" style="margin-bottom:6px">
           <div class="i589-row2"><input class="i589-input" id="f-dir-origen-desde" type="date" placeholder="Desde"><input class="i589-input" id="f-dir-origen-hasta" type="date" placeholder="Hasta"></div>
         </div>
         <div class="i589-field"><label class="i589-label">2. Residencias últimos 5 años</label><textarea class="i589-textarea" id="f-residencias" rows="3" placeholder="2022-2024: Miami, FL / 2019-2022: Managua, Nicaragua..."></textarea></div>
-        <div class="i589-field"><label class="i589-label">3. Educación (más reciente primero)</label><textarea class="i589-textarea" id="f-educacion" rows="3" placeholder="Nombre escuela/universidad, tipo, dirección, fechas..."></textarea></div>
-        <div class="i589-field"><label class="i589-label">4. Empleos últimos 5 años (más reciente primero)</label><textarea class="i589-textarea" id="f-empleos" rows="3" placeholder="Empleador, ocupación, dirección, fechas..."></textarea></div>
+        <div class="i589-field"><label class="i589-label">3. Educación</label><textarea class="i589-textarea" id="f-educacion" rows="3" placeholder="Nombre escuela, tipo, fechas..."></textarea></div>
+        <div class="i589-field"><label class="i589-label">4. Empleos últimos 5 años</label><textarea class="i589-textarea" id="f-empleos" rows="3" placeholder="Empleador, ocupación, fechas..."></textarea></div>
         <div class="i589-field"><label class="i589-label">5. Padres y hermanos</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px;font-size:10px;color:#94A3B8;font-weight:700;text-transform:uppercase"><span>Nombre completo</span><span>Ciudad y país de nacimiento</span><span>Ubicación actual</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px;font-size:10px;color:#94A3B8;font-weight:700;text-transform:uppercase"><span>Nombre</span><span>Ciudad y país de nacimiento</span><span>Ubicación actual</span></div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px"><input class="i589-input" id="f-madre-nombre" placeholder="Madre"><input class="i589-input" id="f-madre-nac" placeholder="Ciudad, País"><input class="i589-input" id="f-madre-ubicacion" placeholder="Ubicación"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px"><input class="i589-input" id="f-padre-nombre" placeholder="Padre"><input class="i589-input" id="f-padre-nac" placeholder="Ciudad, País"><input class="i589-input" id="f-padre-ubicacion" placeholder="Ubicación"></div>
-          <textarea class="i589-textarea" id="f-hermanos" rows="2" placeholder="Hermanos: Nombre, ciudad de nacimiento, ubicación (uno por línea)"></textarea>
+          <textarea class="i589-textarea" id="f-hermanos" rows="2" placeholder="Hermanos (uno por línea): Nombre, ciudad, ubicación"></textarea>
         </div>
       </div>
-
       <!-- PASO 4 -->
       <div id="i589-step-4" style="display:none">
         <div class="i589-section-title">📄 Parte B — Base de la Solicitud</div>
-        <div class="i589-field"><label class="i589-label">Solicito asilo basado en (seleccione todas las que apliquen) <span>*</span></label>
+        <div class="i589-field"><label class="i589-label">Solicito asilo basado en <span>*</span></label>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-base-raza"> Raza</label>
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-base-religion"> Religión</label>
@@ -301,47 +390,45 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-base-tortura"> Convención contra la Tortura</label>
           </div>
         </div>
-        <div class="i589-field"><label class="i589-label">B-2. ¿Ha sido arrestado/detenido en algún país?</label>
+        <div class="i589-field"><label class="i589-label">B-2. ¿Ha sido arrestado/detenido?</label>
           <select class="i589-select" id="f-arrestado" style="margin-bottom:6px"><option value="">—</option><option value="no">No</option><option value="si">Sí</option></select>
-          <textarea class="i589-textarea" id="f-arrestado-detalle" rows="2" placeholder="Si sí, explique las circunstancias..."></textarea>
+          <textarea class="i589-textarea" id="f-arrestado-detalle" rows="2" placeholder="Si sí, explique..."></textarea>
         </div>
-        <div class="i589-field"><label class="i589-label">B-3. ¿Ha pertenecido a alguna organización (partido político, sindicato, grupo religioso, militar)?</label>
+        <div class="i589-field"><label class="i589-label">B-3. ¿Ha pertenecido a alguna organización?</label>
           <select class="i589-select" id="f-organizacion" style="margin-bottom:6px"><option value="">—</option><option value="no">No</option><option value="si">Sí</option></select>
-          <textarea class="i589-textarea" id="f-organizacion-detalle" rows="2" placeholder="Si sí, nivel de participación, cargos, tiempo..."></textarea>
+          <textarea class="i589-textarea" id="f-organizacion-detalle" rows="2" placeholder="Si sí, explique..."></textarea>
         </div>
         <div class="i589-field"><label class="i589-label">B-4. ¿Teme ser torturado en su país?</label>
           <select class="i589-select" id="f-tortura" style="margin-bottom:6px"><option value="">—</option><option value="no">No</option><option value="si">Sí</option></select>
-          <textarea class="i589-textarea" id="f-tortura-detalle" rows="2" placeholder="Si sí, explique por qué y por quién..."></textarea>
+          <textarea class="i589-textarea" id="f-tortura-detalle" rows="2" placeholder="Si sí, explique..."></textarea>
         </div>
         <div class="i589-section-title" style="margin-top:20px">📋 Parte C — Información Adicional</div>
-        <div class="i589-field"><label class="i589-label">C-1. ¿Ha solicitado asilo anteriormente en EE.UU.?</label>
+        <div class="i589-field"><label class="i589-label">C-1. ¿Ha solicitado asilo antes en EE.UU.?</label>
           <select class="i589-select" id="f-solicitud-previa" style="margin-bottom:6px"><option value="">—</option><option value="no">No</option><option value="si">Sí</option></select>
-          <textarea class="i589-textarea" id="f-solicitud-previa-detalle" rows="2" placeholder="Si sí, explique la decisión y resultado..."></textarea>
+          <textarea class="i589-textarea" id="f-solicitud-previa-detalle" rows="2" placeholder="Si sí, explique..."></textarea>
         </div>
-        <div class="i589-field"><label class="i589-label">C-2. ¿Viajó por otros países antes de llegar a EE.UU.?</label>
+        <div class="i589-field"><label class="i589-label">C-2. ¿Viajó por otros países antes de llegar?</label>
           <select class="i589-select" id="f-otros-paises" style="margin-bottom:6px"><option value="">—</option><option value="no">No</option><option value="si">Sí</option></select>
-          <textarea class="i589-textarea" id="f-otros-paises-detalle" rows="2" placeholder="Si sí, países, tiempo de estadía, razón de salida..."></textarea>
+          <textarea class="i589-textarea" id="f-otros-paises-detalle" rows="2" placeholder="Si sí, países, tiempo, razón..."></textarea>
         </div>
-        <div class="i589-field"><label class="i589-label">C-5. ¿Está aplicando más de 1 año después de llegar a EE.UU.?</label>
+        <div class="i589-field"><label class="i589-label">C-5. ¿Aplica más de 1 año después de llegar?</label>
           <select class="i589-select" id="f-mas-un-anio" style="margin-bottom:6px"><option value="">—</option><option value="no">No</option><option value="si">Sí</option></select>
-          <textarea class="i589-textarea" id="f-mas-un-anio-detalle" rows="2" placeholder="Si sí, explique por qué no aplicó en el primer año..."></textarea>
+          <textarea class="i589-textarea" id="f-mas-un-anio-detalle" rows="2" placeholder="Si sí, explique por qué..."></textarea>
         </div>
       </div>
-
       <!-- PASO 5 -->
       <div id="i589-step-5" style="display:none">
         <div class="i589-narrative">
-          <div class="i589-narrative-title">🕊️ ¿Por qué necesitas protección?</div>
-          <div class="i589-narrative-sub">Cuéntanos con tus propias palabras. No hay respuestas incorrectas — solo tu historia.</div>
-          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">1</span> ¿Qué te pasó o qué temes si regresas? (Parte B-A)</label><textarea class="i589-textarea" id="f-q1" rows="5" placeholder="Qué pasó, cuándo, quién te hizo daño, por qué ocurrió..."></textarea></div>
-          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">2</span> ¿Qué daño temes si regresas? (Parte B-B)</label><textarea class="i589-textarea" id="f-q2" rows="4" placeholder="¿Qué podría pasarte? ¿Quién? ¿Por qué?"></textarea></div>
-          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">3</span> ¿Quién te amenazó o persiguió?</label><textarea class="i589-textarea" id="f-q3" rows="3" placeholder="Gobierno, grupo armado, pandilla, persona específica..."></textarea></div>
-          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">4</span> ¿Cuándo ocurrió? Incidentes específicos</label><textarea class="i589-textarea" id="f-q4" rows="3" placeholder="Fechas, lugares, eventos específicos..."></textarea></div>
-          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">5</span> ¿Por qué fuiste elegido/a?</label><textarea class="i589-textarea" id="f-q5" rows="3" placeholder="Raza, religión, opinión política, grupo social..."></textarea></div>
-          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">6</span> ¿Hay familiares en peligro?</label><textarea class="i589-textarea" id="f-q6" rows="3" placeholder="Nombre, parentesco y situación de cada uno..."></textarea></div>
+          <div style="font-size:15px;font-weight:800;color:#92400E;margin-bottom:4px">🕊️ ¿Por qué necesitas protección?</div>
+          <div style="font-size:12px;color:#B45309;margin-bottom:14px">Cuéntanos con tus propias palabras. No hay respuestas incorrectas.</div>
+          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">1</span> ¿Qué te pasó o qué temes si regresas?</label><textarea class="i589-textarea" id="f-q1" rows="5" placeholder="Qué pasó, cuándo, quién te hizo daño, por qué..."></textarea></div>
+          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">2</span> ¿Qué daño temes si regresas?</label><textarea class="i589-textarea" id="f-q2" rows="4" placeholder="¿Qué podría pasarte? ¿Quién? ¿Por qué?"></textarea></div>
+          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">3</span> ¿Quién te amenazó o persiguió?</label><textarea class="i589-textarea" id="f-q3" rows="3" placeholder="Gobierno, grupo armado, pandilla..."></textarea></div>
+          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">4</span> ¿Cuándo ocurrió? Incidentes específicos</label><textarea class="i589-textarea" id="f-q4" rows="3" placeholder="Fechas, lugares, eventos..."></textarea></div>
+          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">5</span> ¿Por qué fuiste elegido/a?</label><textarea class="i589-textarea" id="f-q5" rows="3" placeholder="Raza, religión, opinión política..."></textarea></div>
+          <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">6</span> ¿Hay familiares en peligro?</label><textarea class="i589-textarea" id="f-q6" rows="3" placeholder="Nombre, parentesco y situación..."></textarea></div>
         </div>
       </div>
-
     </div>
     <div class="i589-footer">
       <button class="i589-btn-cancel" id="i589-btn-back" onclick="i589Prev()" style="display:none">← Anterior</button>
@@ -352,14 +439,9 @@ body{font-family:'Segoe UI',Inter,sans-serif;background:#F1F5F9;min-height:100vh
   </div>
 </div>
 
-<div class="footer">
-  <div id="office-footer">ImmigPath</div>
-  <div id="lbl-footer">Para preguntas contacta tu oficina</div>
-</div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
@@ -372,25 +454,26 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
-
 const params   = new URLSearchParams(window.location.search);
 const clientId = params.get("id");
 
-// ── Traducciones ─────────────────────────────────────────────────────────────
 const T = {
   es:{hola:"Hola,",pais:"País de origen",alien:"Número Alien (A#)",casos:"Mis Casos",
       loading:"Cargando tu caso...",err_title:"Link no válido",
       err_sub:"Este link no existe o ya no está disponible. Contacta a tu oficina.",
       footer:"Para preguntas contacta tu oficina",
       recibo_asilo:"N° Recibo de Asilo",recibo_wp:"N° Recibo Permiso de Trabajo",
-      huellas:"Fecha de Huellas (Biometrics)",entrevista:"Fecha de Entrevista USCIS",
+      huellas:"Cita de Biometrics",entrevista:"Fecha de Entrevista USCIS",
       corte:"Fecha de Corte EOIR",ead_vence:"Vencimiento Permiso de Trabajo",
       ead_recibo:"N° Recibo Permiso de Trabajo",estatus:"Estatus del Caso",
       tribunal:"Corte",juez:"Juez",foia_num:"N° Tracking FOIA",foia_est:"Estado FOIA",
       clock_title:"Reloj de Asilo",clock_dias:"días desde la solicitud",
       clock_ead:"✅ Elegible para permiso de trabajo",clock_falta:"días para aplicar al permiso",
       hoy:"¡Hoy!",en:"en",hace:"hace",dia:"día",dias:"días",
-      activo:"Caso Activo",aprobado:"Aprobado",ref_eoir:"Referido a Corte",denegado:"Denegado"},
+      activo:"✅ Caso Activo",aprobado:"🔵 Aprobado",ref_eoir:"⚖️ Referido a Corte",denegado:"🔴 Denegado",
+      formularios:"Formularios",seleccionar:"Selecciona un formulario",
+      alerta_title:"Tu oficina revisó tu formulario y dejó una nota",
+      prox_fecha:"Próxima fecha",sin_casos:"No hay casos registrados aún."},
   en:{hola:"Hello,",pais:"Country of origin",alien:"Alien Number (A#)",casos:"My Cases",
       loading:"Loading your case...",err_title:"Invalid link",
       err_sub:"This link does not exist or is no longer available. Contact your office.",
@@ -403,12 +486,14 @@ const T = {
       clock_title:"Asylum Clock",clock_dias:"days since filing",
       clock_ead:"✅ Eligible for work permit",clock_falta:"days to apply for work permit",
       hoy:"Today!",en:"in",hace:"ago",dia:"day",dias:"days",
-      activo:"Active Case",aprobado:"Approved",ref_eoir:"Referred to Court",denegado:"Denied"}
+      activo:"✅ Active Case",aprobado:"🔵 Approved",ref_eoir:"⚖️ Referred to Court",denegado:"🔴 Denied",
+      formularios:"Forms",seleccionar:"Select a form",
+      alerta_title:"Your office reviewed your form and left a note",
+      prox_fecha:"Next date",sin_casos:"No cases registered yet."}
 };
 
 let lang = "es";
 let clientData = null;
-
 function t(k){ return T[lang][k]||k; }
 
 function fmt(f){
@@ -416,28 +501,17 @@ function fmt(f){
   const [y,m,d]=f.split("-");
   return `${m}/${d}/${y}`;
 }
-
 function getDias(f){
   if(!f) return null;
   const hoy=new Date(); hoy.setHours(0,0,0,0);
   return Math.round((new Date(f+"T00:00:00")-hoy)/86400000);
 }
-
 function fmtAlien(a){
   const c=(a||"").replace(/\D/g,"").slice(0,9);
   if(c.length<=3)return c;
   if(c.length<=6)return c.slice(0,3)+"-"+c.slice(3);
   return c.slice(0,3)+"-"+c.slice(3,6)+"-"+c.slice(6);
 }
-
-function diasStr(dias){
-  if(dias===null) return "";
-  if(dias===0) return `<span style="color:#EA580C;font-weight:700"> — ${t("hoy")}</span>`;
-  const abs=Math.abs(dias), unit=abs===1?t("dia"):t("dias");
-  if(dias>0) return `<span style="color:#2563EB;font-size:11px"> — ${t("en")} ${abs} ${unit}</span>`;
-  return `<span style="color:#DC2626;font-size:11px"> — ${t("hace")} ${abs} ${unit}</span>`;
-}
-
 function stColor(dias){
   if(dias===null) return {c:"#6B7280",bg:"#F9FAFB",b:"#E5E7EB"};
   if(dias<0)  return {c:"#DC2626",bg:"#FEF2F2",b:"#FECACA"};
@@ -446,13 +520,12 @@ function stColor(dias){
   if(dias<=14) return {c:"#2563EB",bg:"#EFF6FF",b:"#BFDBFE"};
   return {c:"#16A34A",bg:"#F0FDF4",b:"#BBF7D0"};
 }
-
-function row(label,val,mono=false){
-  if(!val) return "";
-  return `<div class="row">
-    <span class="row-label">${label}</span>
-    <span class="row-val" style="${mono?"font-family:monospace":""}">${val}</span>
-  </div>`;
+function diasLabel(dias){
+  if(dias===null) return "";
+  if(dias===0) return t("hoy");
+  const abs=Math.abs(dias), unit=abs===1?t("dia"):t("dias");
+  if(dias>0) return `${t("en")} ${abs} ${unit}`;
+  return `${t("hace")} ${abs} ${unit}`;
 }
 
 function render(c){
@@ -465,121 +538,122 @@ function render(c){
   document.getElementById("val-alien").textContent   = c.alienNum?fmtAlien(c.alienNum):"—";
   document.getElementById("lbl-casos").textContent   = t("casos");
   document.getElementById("lbl-footer").textContent  = t("footer");
+  document.getElementById("lbl-formularios").textContent = t("formularios");
+  document.getElementById("lbl-seleccionar").textContent = t("seleccionar");
+  document.getElementById("lbl-alerta-title").textContent = t("alerta_title");
 
-  const sys={
-    uscis:{color:"#0369A1",bg:"#F0F9FF",border:"#BAE6FD",label:"USCIS"},
-    eoir: {color:"#7C3AED",bg:"#F5F3FF",border:"#DDD6FE",label:"EOIR"},
-    foia: {color:"#0891B2",bg:"#ECFEFF",border:"#A5F3FC",label:"FOIA"},
+  const SYS = {
+    uscis:{color:"#0369A1",bg:"#F0F9FF",border:"#BAE6FD",label:"USCIS",icon:"🏛"},
+    eoir: {color:"#7C3AED",bg:"#F5F3FF",border:"#DDD6FE",label:"EOIR",icon:"⚖️"},
+    foia: {color:"#0891B2",bg:"#ECFEFF",border:"#A5F3FC",label:"FOIA",icon:"📂"},
   };
 
-  let html="";
+  let html = "";
   (c.casos||[]).forEach(ca=>{
-    const s=sys[ca.sistema]||sys.uscis;
-    let rows="";
-    let fechaMain=null;
+    const s = SYS[ca.sistema]||SYS.uscis;
+    let rows = "";
+    let fechaMain = null;
 
     if(ca.sistema==="uscis"){
-      if(ca.receiptNum) rows+=row(t("recibo_asilo"),ca.receiptNum,true);
-      if(ca.alienNum)   rows+=row(t("alien"),fmtAlien(ca.alienNum),true);
-      if(ca.fechaHuellas){
-        const d=getDias(ca.fechaHuellas);
-        rows+=row(t("huellas"),(fmt(ca.fechaHuellas)||"")+diasStr(d));
-        if(!fechaMain) fechaMain=ca.fechaHuellas;
-      }
-      if(ca.fechaCorte){
-        const d=getDias(ca.fechaCorte);
-        rows+=row(t("entrevista"),(fmt(ca.fechaCorte)||"")+diasStr(d));
-        if(!fechaMain) fechaMain=ca.fechaCorte;
-      }
+      if(ca.receiptNum) rows+=infoRow(t("recibo_asilo"),ca.receiptNum,true);
+      if(ca.alienNum)   rows+=infoRow(t("alien"),fmtAlien(ca.alienNum),true);
+      if(ca.fechaHuellas){ const d=getDias(ca.fechaHuellas); rows+=infoRow(t("huellas"),fmt(ca.fechaHuellas)); if(!fechaMain)fechaMain=ca.fechaHuellas; }
+      if(ca.fechaCorte){  const d=getDias(ca.fechaCorte);  rows+=infoRow(t("entrevista"),fmt(ca.fechaCorte)); if(!fechaMain)fechaMain=ca.fechaCorte; }
       if(ca.tieneEAD==="si"){
-        if(ca.eadReceipt) rows+=row(t("ead_recibo"),ca.eadReceipt,true);
-        if(ca.eadVence)   rows+=row(t("ead_vence"),fmt(ca.eadVence)||"");
+        if(ca.eadReceipt) rows+=infoRow(t("ead_recibo"),ca.eadReceipt,true);
+        if(ca.eadVence)   rows+=infoRow(t("ead_vence"),fmt(ca.eadVence));
       }
       if(ca.estatusCaso){
         const estMap={activo:t("activo"),aprobado:t("aprobado"),referido_eoir:t("ref_eoir"),denegado:t("denegado")};
-        rows+=row(t("estatus"),estMap[ca.estatusCaso]||ca.estatusCaso);
+        const estColor={activo:"#16A34A",aprobado:"#0369A1",referido_eoir:"#7C3AED",denegado:"#DC2626"};
+        const estBg={activo:"#F0FDF4",aprobado:"#F0F9FF",referido_eoir:"#F5F3FF",denegado:"#FEF2F2"};
+        rows+=`<div class="info-row"><span class="info-row-label">${t("estatus")}</span><span class="status-chip" style="background:${estBg[ca.estatusCaso]||"#F9FAFB"};color:${estColor[ca.estatusCaso]||"#374151"}">${estMap[ca.estatusCaso]||ca.estatusCaso}</span></div>`;
       }
     }
     if(ca.sistema==="eoir"){
-      if(ca.alienNum)  rows+=row(t("alien"),fmtAlien(ca.alienNum),true);
-      if(ca.corte)     rows+=row(t("tribunal"),ca.corte);
-      if(ca.juez)      rows+=row(t("juez"),ca.juez);
-      if(ca.fechaCorte){
-        const d=getDias(ca.fechaCorte);
-        rows+=row(t("corte"),(fmt(ca.fechaCorte)||"")+diasStr(d));
-        fechaMain=ca.fechaCorte;
-      }
+      if(ca.alienNum)  rows+=infoRow(t("alien"),fmtAlien(ca.alienNum),true);
+      if(ca.corte)     rows+=infoRow(t("tribunal"),ca.corte);
+      if(ca.juez)      rows+=infoRow(t("juez"),ca.juez);
+      if(ca.fechaCorte){ rows+=infoRow(t("corte"),fmt(ca.fechaCorte)); fechaMain=ca.fechaCorte; }
     }
     if(ca.sistema==="foia"){
-      if(ca.foiaTracking) rows+=row(t("foia_num"),ca.foiaTracking,true);
-      if(ca.foiaEstado)   rows+=row(t("foia_est"),ca.foiaEstado);
+      if(ca.foiaTracking) rows+=infoRow(t("foia_num"),ca.foiaTracking,true);
+      if(ca.foiaEstado)   rows+=infoRow(t("foia_est"),ca.foiaEstado);
     }
 
-    // Badge fecha principal
-    let fechaBadge="";
+    // Date badge
+    let dateBadge = "";
     if(fechaMain){
       const d=getDias(fechaMain); const st=stColor(d);
-      fechaBadge=`<div style="background:${st.bg};border:1px solid ${st.b};border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <div style="font-size:20px;font-weight:800;color:${st.c}">${fmt(fechaMain)}</div>
-        <div style="font-size:12px;color:${st.c};font-weight:600">${diasStr(d).replace(/<[^>]+>/g,"")}</div>
+      const lbl=diasLabel(d);
+      dateBadge=`<div class="date-badge" style="background:${st.bg};border:1px solid ${st.b}">
+        <div>
+          <div style="font-size:11px;color:${st.c};font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">${t("prox_fecha")}</div>
+          <div class="date-badge-main" style="color:${st.c}">${fmt(fechaMain)}</div>
+          <div class="date-badge-sub" style="color:${st.c}">${lbl}</div>
+        </div>
+        <div class="date-badge-tag" style="color:${st.c}">${d===0?"🔔 HOY":d<0?"🔴 Vencida":d<=7?"⚡ Próxima":"📅"}</div>
       </div>`;
     }
 
-    // Reloj de asilo
-    let clock="";
+    // Asylum clock
+    let clock = "";
     if(ca.fechaAsilo){
       const hoy=new Date(); hoy.setHours(0,0,0,0);
       const dr=Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000);
       const pct=Math.min(100,Math.round((dr/180)*100));
-      const clr=dr>=180?"#16A34A":dr>=120?"#D97706":"#2563EB";
+      const clr=dr>=180?"#4ADE80":dr>=120?"#FACC15":"#60A5FA";
       clock=`<div class="clock-box">
-        <div style="font-size:11px;font-weight:700;color:#A5B4FC;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em">${t("clock_title")}</div>
-        <div style="display:flex;align-items:center;gap:14px">
-          <div style="text-align:center;min-width:56px">
-            <div style="font-size:34px;font-weight:800;color:${clr};line-height:1">${dr}</div>
-            <div style="font-size:10px;color:#A5B4FC;margin-top:2px">${t("clock_dias")}</div>
+        <div class="clock-title">${t("clock_title")}</div>
+        <div class="clock-body">
+          <div class="clock-number">
+            <div class="clock-days" style="color:${clr}">${dr}</div>
+            <div class="clock-label">${t("clock_dias")}</div>
           </div>
-          <div style="flex:1">
-            <div style="background:#312E81;border-radius:20px;height:10px;overflow:hidden;margin-bottom:6px">
-              <div style="height:100%;border-radius:20px;background:${clr};width:${pct}%"></div>
+          <div class="clock-bar-wrap">
+            <div class="clock-bar-header">
+              <span class="clock-bar-filed">Presentado: ${fmt(ca.fechaAsilo)}</span>
+              <span class="clock-bar-goal">Meta: 180 días</span>
             </div>
-            <div style="font-size:11px;color:${clr};font-weight:700">
-              ${dr>=180?t("clock_ead"):`${180-dr} ${t("clock_falta")}`}
-            </div>
+            <div class="clock-bar"><div class="clock-bar-fill" style="background:${clr};width:${pct}%"></div></div>
+            <div class="clock-status" style="color:${clr}">${dr>=180?t("clock_ead"):`⏳ ${180-dr} ${t("clock_falta")}`}</div>
           </div>
         </div>
       </div>`;
     }
 
-    html+=`<div class="caso-card" style="border-top:4px solid ${s.color}">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-        <span style="background:${s.bg};color:${s.color};border:1px solid ${s.border};border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700">${s.label}</span>
-        <span style="font-size:13px;color:#374151;font-weight:500">${ca.tipoCaso||""}</span>
+    html+=`<div class="case-card">
+      <div class="case-card-header" style="border-top:3px solid ${s.color}">
+        <span class="case-badge" style="background:${s.bg};color:${s.color};border:1px solid ${s.border}">${s.icon} ${s.label}</span>
+        <span class="case-type">${ca.tipoCaso||""}</span>
       </div>
-      ${fechaBadge}
-      ${rows}
+      ${dateBadge}
+      <div class="info-rows">${rows}</div>
       ${clock}
     </div>`;
   });
 
-  if(!(c.casos||[]).length) html=`<div style="text-align:center;padding:30px;color:#94A3B8;font-size:14px">No hay casos registrados aún.</div>`;
-  document.getElementById("casos").innerHTML=html;
+  if(!(c.casos||[]).length) html=`<div style="text-align:center;padding:40px;color:#94A3B8;font-size:14px">${t("sin_casos")}</div>`;
+  document.getElementById("casos").innerHTML = html;
 }
 
-// Exponer setLang globalmente
+function infoRow(label, val, mono=false){
+  if(!val) return "";
+  return `<div class="info-row">
+    <span class="info-row-label">${label}</span>
+    <span class="info-row-val" style="${mono?"font-family:monospace":"}"}">${val}</span>
+  </div>`;
+}
+
 window.setLang = function(l){
   lang=l;
-  document.getElementById("btn-es").style.cssText = l==="es"
-    ? "background:#1E3A5F;color:#fff;font-weight:700;padding:6px 14px;border:none;cursor:pointer;font-size:12px"
-    : "background:transparent;color:#A8C4E0;font-weight:400;padding:6px 14px;border:none;cursor:pointer;font-size:12px";
-  document.getElementById("btn-en").style.cssText = l==="en"
-    ? "background:#1E3A5F;color:#fff;font-weight:700;padding:6px 14px;border:none;cursor:pointer;font-size:12px"
-    : "background:transparent;color:#A8C4E0;font-weight:400;padding:6px 14px;border:none;cursor:pointer;font-size:12px";
+  document.getElementById("btn-es").classList.toggle("active", l==="es");
+  document.getElementById("btn-en").classList.toggle("active", l==="en");
   if(clientData) render(clientData);
+  if(clientData) window.renderI589Status(clientData);
 };
 
-
-// Cargar datos
+// Load data
 if(!clientId){
   document.getElementById("loading").style.display="none";
   document.getElementById("error").style.display="flex";
@@ -590,208 +664,189 @@ if(!clientId){
       document.getElementById("error").style.display="flex";
       return;
     }
-    clientData=snap.data();
-    // Cargar nombre de oficina
+    clientData = snap.data();
     if(clientData.officeId){
       getDoc(doc(db,"offices",clientData.officeId)).then(os=>{
         if(os.exists()){
           const n=os.data().name||"ImmigPath";
           document.getElementById("office-name").textContent=n;
           document.getElementById("office-footer").textContent=n;
+          const logo=os.data().logoUrl;
+          if(logo){
+            const wrap=document.getElementById("office-logo-wrap");
+            wrap.innerHTML=`<img src="${logo}" style="width:32px;height:32px;border-radius:8px;object-fit:contain">`;
+          }
         }
       }).catch(()=>{});
     }
     render(clientData);
+    document.getElementById("hero").style.display="block";
     document.getElementById("main").style.display="block";
-    // Pequeño delay para que el DOM esté listo
+    document.getElementById("footer").style.display="block";
     setTimeout(()=>{ if(window.renderI589Status) window.renderI589Status(clientData); }, 50);
   }).catch(e=>{
-    console.error("Error:",e);
     document.getElementById("loading").style.display="none";
     document.getElementById("error").style.display="flex";
   });
 }
-// ── I-589 funciones ───────────────────────────────────────────────────────────
-window.renderI589Status = function(c){
-  const prev = document.getElementById("i589-section");
-  if(prev) prev.remove();
 
-  const container = document.getElementById("casos");
+// I-589
+window.renderI589Status = function(c){
+  const wrap = document.getElementById("i589-section-wrap");
   const draft = c.i589Draft;
   const statusMap = {
-    pendiente_revision: { label:"⏳ Pendiente de revisión",  color:"#D97706", bg:"#FFFBEB", border:"#FDE68A" },
-    en_revision:        { label:"🔍 En revisión por la oficina", color:"#2563EB", bg:"#EFF6FF", border:"#BFDBFE" },
-    aprobado:           { label:"✅ Aprobado — listo para enviar", color:"#16A34A", bg:"#F0FDF4", border:"#BBF7D0" },
-    devuelto:           { label:"↩️ Devuelto — requiere correcciones", color:"#DC2626", bg:"#FEF2F2", border:"#FECACA" },
+    pendiente_revision: {label:"⏳ Pendiente de revisión", color:"#D97706", bg:"#FFFBEB", border:"#FDE68A"},
+    en_revision:        {label:"🔍 En revisión por la oficina", color:"#2563EB", bg:"#EFF6FF", border:"#BFDBFE"},
+    aprobado:           {label:"✅ Aprobado — listo para enviar", color:"#16A34A", bg:"#F0FDF4", border:"#BBF7D0"},
+    devuelto:           {label:"↩️ Requiere correcciones", color:"#DC2626", bg:"#FEF2F2", border:"#FECACA"},
   };
-
   let inner = "";
   if(!draft){
-    inner = `
-      <button class="i589-btn" onclick="openI589()">
-        📄 Completar formulario I-589 (Asilo)
-      </button>
-      <div style="font-size:11px;color:#94A3B8;text-align:center;margin-top:8px">
-        Tu oficina revisará el formulario antes de enviarlo a USCIS
-      </div>`;
+    inner=`<div class="i589-card">
+      <div style="font-size:13px;color:#64748B;margin-bottom:14px;line-height:1.6">Completa el formulario I-589 de Solicitud de Asilo. Tu oficina lo revisará antes de enviarlo a USCIS.</div>
+      <button class="i589-btn" onclick="openI589()">📄 Completar formulario I-589</button>
+      <div class="i589-disclaimer">Tu oficina revisará el formulario antes de enviarlo a USCIS</div>
+    </div>`;
   } else {
-    const st = statusMap[draft.status] || statusMap.pendiente_revision;
-    inner = `
+    const st=statusMap[draft.status]||statusMap.pendiente_revision;
+    inner=`<div class="i589-card">
       <div class="i589-saved">
-        <div style="font-size:24px">${st.label.split(" ")[0]}</div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:#0F172A">Formulario I-589</div>
-          <div style="font-size:12px;color:${st.color};font-weight:600;margin-top:2px">${st.label}</div>
-          <div style="font-size:11px;color:#94A3B8;margin-top:2px">Guardado el ${new Date(draft.savedAt).toLocaleDateString("es")}</div>
-          ${draft.status==="devuelto" && draft.comentarioOficina
-            ? `<div style="margin-top:6px;background:#FEF2F2;border-radius:6px;padding:8px;font-size:12px;color:#DC2626"><strong>Nota de la oficina:</strong> ${draft.comentarioOficina}</div>`
-            : ""}
+        <div class="i589-saved-icon">${st.label.split(" ")[0]}</div>
+        <div class="i589-saved-body">
+          <div class="i589-saved-title">Formulario I-589</div>
+          <div class="i589-saved-status" style="color:${st.color}">${st.label}</div>
+          <div class="i589-saved-date">Guardado el ${new Date(draft.savedAt).toLocaleDateString("es-US",{day:"2-digit",month:"short",year:"numeric"})}</div>
+          ${draft.status==="devuelto"&&draft.comentarioOficina?`<div class="i589-note"><strong>Nota de la oficina:</strong> ${draft.comentarioOficina}</div>`:""}
         </div>
-        <button onclick="openI589()" style="background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
-          ${draft.status==="devuelto"?"✏️ Corregir":"✏️ Editar"}
-        </button>
-      </div>`;
+      </div>
+      <button class="i589-edit-btn" onclick="openI589()">${draft.status==="devuelto"?"✏️ Corregir formulario":"✏️ Editar formulario"}</button>
+    </div>`;
   }
-
-  const section = document.createElement("div");
-  section.id = "i589-section";
-  section.style.cssText = "margin-top:24px;";
-  section.innerHTML = `<div class="section-label">📄 Formulario I-589</div>${inner}`;
-  container.parentNode.insertBefore(section, container.nextSibling);
-
-  // Banner de alerta en la parte superior si la oficina devolvió con nota
-  const banner    = document.getElementById("alert-banner");
-  const bannerMsg = document.getElementById("alert-banner-msg");
-  if(banner && bannerMsg){
-    if(draft && draft.status === "devuelto" && draft.comentarioOficina){
-      bannerMsg.textContent = draft.comentarioOficina;
+  wrap.innerHTML=`<div class="i589-section"><div class="section-title">📄 Formulario I-589</div>${inner}</div>`;
+  // Alert banner
+  const banner=document.getElementById("alert-banner");
+  const bannerMsg=document.getElementById("alert-banner-msg");
+  if(banner&&bannerMsg){
+    if(draft&&draft.status==="devuelto"&&draft.comentarioOficina){
+      bannerMsg.textContent=draft.comentarioOficina;
       banner.classList.add("visible");
-      banner.scrollIntoView({ behavior:"smooth", block:"start" });
     } else {
       banner.classList.remove("visible");
     }
   }
-}
+};
 
-window.openI589 = function(){
+window.openI589=function(){
   i589Step=1; updateI589Step();
   if(clientData){
-    const parts=(clientData.nombre||'').trim().split(' ');
+    const parts=(clientData.nombre||"").trim().split(" ");
     const s=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.value=v;};
-    s('f-apellido', parts.length>1?parts.slice(-1)[0]:clientData.nombre||'');
-    s('f-nombre',   parts.length>1?parts.slice(0,-1).join(' '):'');
-    s('f-telefono', clientData.telefono||'');
-    s('f-alien',    clientData.alienNum||'');
-    s('f-nacionalidad',     clientData.paisOrigen||'');
-    s('f-nacionalidad-nac', clientData.paisOrigen||'');
+    s("f-apellido",parts.length>1?parts.slice(-1)[0]:clientData.nombre||"");
+    s("f-nombre",parts.length>1?parts.slice(0,-1).join(" "):"");
+    s("f-telefono",clientData.telefono||"");
+    s("f-alien",clientData.alienNum||"");
+    s("f-nacionalidad",clientData.paisOrigen||"");
+    s("f-nacionalidad-nac",clientData.paisOrigen||"");
   }
   if(clientData?.i589Draft) loadDraft(clientData.i589Draft);
-  document.getElementById('i589-modal').classList.add('open');
-  document.body.style.overflow='hidden';
+  document.getElementById("i589-modal").classList.add("open");
+  document.body.style.overflow="hidden";
 };
 window.closeI589=function(){
-  document.getElementById('i589-modal').classList.remove('open');
-  document.body.style.overflow='';
+  document.getElementById("i589-modal").classList.remove("open");
+  document.body.style.overflow="";
 };
 let i589Step=1;
-const I589_LABELS=['Paso 1 de 5 — Información Personal (A.I)','Paso 2 de 5 — Cónyuge e Hijos (A.II)','Paso 3 de 5 — Antecedentes (A.III)','Paso 4 de 5 — Base de la Solicitud (B/C)','Paso 5 de 5 — Tu Historia'];
+const I589_LABELS=["Paso 1 de 5 — Información Personal","Paso 2 de 5 — Cónyuge e Hijos","Paso 3 de 5 — Antecedentes","Paso 4 de 5 — Base de la Solicitud","Paso 5 de 5 — Tu Historia"];
 function updateI589Step(){
   for(let i=1;i<=5;i++){
-    const el=document.getElementById('i589-step-'+i);
-    if(el) el.style.display=i===i589Step?'block':'none';
-    const dot=document.getElementById('sdot-'+i);
-    if(dot) dot.style.background=i<=i589Step?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.2)';
+    const el=document.getElementById("i589-step-"+i);
+    if(el)el.style.display=i===i589Step?"block":"none";
+    const dot=document.getElementById("sdot-"+i);
+    if(dot)dot.style.background=i<=i589Step?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.2)";
   }
-  const lbl=document.getElementById('i589-step-label');
-  if(lbl) lbl.textContent=I589_LABELS[i589Step-1];
-  const back=document.getElementById('i589-btn-back');
-  const next=document.getElementById('i589-btn-next');
-  if(back) back.style.display=i589Step>1?'block':'none';
-  if(next) next.textContent=i589Step===5?'💾 Guardar y enviar a mi oficina':'Siguiente →';
-  document.getElementById('i589-body')?.scrollTo(0,0);
+  const lbl=document.getElementById("i589-step-label");
+  if(lbl)lbl.textContent=I589_LABELS[i589Step-1];
+  const back=document.getElementById("i589-btn-back");
+  const next=document.getElementById("i589-btn-next");
+  if(back)back.style.display=i589Step>1?"block":"none";
+  if(next)next.textContent=i589Step===5?"💾 Guardar y enviar a mi oficina":"Siguiente →";
+  document.getElementById("i589-body")?.scrollTo(0,0);
 }
-window.i589Next=function(){ if(i589Step<5){i589Step++;updateI589Step();}else saveI589(); };
-window.i589Prev=function(){ if(i589Step>1){i589Step--;updateI589Step();} };
-window.toggleConyuge=function(){ const v=document.getElementById('f-tiene-conyuge')?.value; const s=document.getElementById('f-conyuge-section'); if(s) s.style.display=v==='si'?'block':'none'; };
-window.toggleHijos=function(){ const v=document.getElementById('f-tiene-hijos')?.value; const s=document.getElementById('f-hijos-section'); if(s) s.style.display=v==='si'?'block':'none'; if(v==='si'&&document.getElementById('f-hijos-list')?.children.length===0) addHijo(); };
+window.i589Next=function(){if(i589Step<5){i589Step++;updateI589Step();}else saveI589();};
+window.i589Prev=function(){if(i589Step>1){i589Step--;updateI589Step();}};
+window.toggleConyuge=function(){const v=document.getElementById("f-tiene-conyuge")?.value;const s=document.getElementById("f-conyuge-section");if(s)s.style.display=v==="si"?"block":"none";};
+window.toggleHijos=function(){const v=document.getElementById("f-tiene-hijos")?.value;const s=document.getElementById("f-hijos-section");if(s)s.style.display=v==="si"?"block":"none";if(v==="si"&&document.getElementById("f-hijos-list")?.children.length===0)addHijo();};
 window.addHijo=function(){
-  const list=document.getElementById('f-hijos-list');
+  const list=document.getElementById("f-hijos-list");
   const idx=list.children.length;
-  const div=document.createElement('div');
-  div.style.cssText='background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:12px;margin-bottom:10px';
+  const div=document.createElement("div");
+  div.style.cssText="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:12px;margin-bottom:10px";
   div.innerHTML=`<div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">Hijo/a ${idx+1}</div>
-    <div class="i589-row2"><div class="i589-field"><label class="i589-label">Apellido(s)</label><input class="i589-input" id="f-h${idx}-apellido" placeholder="Apellido"></div><div class="i589-field"><label class="i589-label">Nombre(s)</label><input class="i589-input" id="f-h${idx}-nombre" placeholder="Nombre"></div></div>
-    <div class="i589-row2"><div class="i589-field"><label class="i589-label">Fecha de nacimiento</label><input class="i589-input" id="f-h${idx}-dob" type="date"></div><div class="i589-field"><label class="i589-label">Nacionalidad</label><input class="i589-input" id="f-h${idx}-nac" placeholder="País"></div></div>
-    <div class="i589-row2"><div class="i589-field"><label class="i589-label">Ciudad y país de nacimiento</label><input class="i589-input" id="f-h${idx}-ciudad" placeholder="Ciudad, País"></div><div class="i589-field"><label class="i589-label">Sexo</label><select class="i589-select" id="f-h${idx}-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option></select></div></div>
-    <div class="i589-row2"><div class="i589-field"><label class="i589-label">¿Está en EE.UU.?</label><select class="i589-select" id="f-h${idx}-enusa"><option value="">—</option><option value="si">Sí</option><option value="no">No</option></select></div><div class="i589-field"><label class="i589-label">¿Incluir en solicitud?</label><select class="i589-select" id="f-h${idx}-incluir"><option value="">—</option><option value="si">Sí</option><option value="no">No</option></select></div></div>`;
+    <div class="i589-row2"><div class="i589-field"><label class="i589-label">Apellido(s)</label><input class="i589-input" id="f-h${idx}-apellido"></div><div class="i589-field"><label class="i589-label">Nombre(s)</label><input class="i589-input" id="f-h${idx}-nombre"></div></div>
+    <div class="i589-row2"><div class="i589-field"><label class="i589-label">Fecha de nacimiento</label><input class="i589-input" id="f-h${idx}-dob" type="date"></div><div class="i589-field"><label class="i589-label">Nacionalidad</label><input class="i589-input" id="f-h${idx}-nac"></div></div>
+    <div class="i589-row2"><div class="i589-field"><label class="i589-label">Ciudad y país de nacimiento</label><input class="i589-input" id="f-h${idx}-ciudad"></div><div class="i589-field"><label class="i589-label">Sexo</label><select class="i589-select" id="f-h${idx}-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option></select></div></div>
+    <div class="i589-row2"><div class="i589-field"><label class="i589-label">¿En EE.UU.?</label><select class="i589-select" id="f-h${idx}-enusa"><option value="">—</option><option value="si">Sí</option><option value="no">No</option></select></div><div class="i589-field"><label class="i589-label">¿Incluir?</label><select class="i589-select" id="f-h${idx}-incluir"><option value="">—</option><option value="si">Sí</option><option value="no">No</option></select></div></div>`;
   list.appendChild(div);
 };
-function g(id){return document.getElementById(id)?.value||'';}
+function g(id){return document.getElementById(id)?.value||"";}
 function gc(id){return document.getElementById(id)?.checked||false;}
 function collectDraft(){
-  const nh=document.getElementById('f-hijos-list')?.children.length||0;
+  const nh=document.getElementById("f-hijos-list")?.children.length||0;
   const hijos=[];
-  for(let i=0;i<nh;i++) hijos.push({apellido:g(`f-h${i}-apellido`),nombre:g(`f-h${i}-nombre`),dob:g(`f-h${i}-dob`),nac:g(`f-h${i}-nac`),ciudad:g(`f-h${i}-ciudad`),sexo:g(`f-h${i}-sexo`),enusa:g(`f-h${i}-enusa`),incluir:g(`f-h${i}-incluir`)});
-  return {alien:g('f-alien'),ssn:g('f-ssn'),apellido:g('f-apellido'),nombre:g('f-nombre'),middle:g('f-middle'),alias:g('f-alias'),direccion:g('f-direccion'),ciudad:g('f-ciudad'),estado:g('f-estado'),zip:g('f-zip'),telefono:g('f-telefono'),sexo:g('f-sexo'),'estado-civil':g('f-estado-civil'),dob:g('f-dob'),'ciudad-nac':g('f-ciudad-nac'),nacionalidad:g('f-nacionalidad'),'nacionalidad-nac':g('f-nacionalidad-nac'),raza:g('f-raza'),religion:g('f-religion'),'court-status':g('f-court-status'),'fecha-salida':g('f-fecha-salida'),i94:g('f-i94'),'e1-fecha':g('f-e1-fecha'),'e1-lugar':g('f-e1-lugar'),'e1-estatus':g('f-e1-estatus'),'e2-fecha':g('f-e2-fecha'),'e2-lugar':g('f-e2-lugar'),'e2-estatus':g('f-e2-estatus'),'pais-pasaporte':g('f-pais-pasaporte'),pasaporte:g('f-pasaporte'),'pasaporte-vence':g('f-pasaporte-vence'),idioma:g('f-idioma'),ingles:g('f-ingles'),'otros-idiomas':g('f-otros-idiomas'),'tiene-conyuge':g('f-tiene-conyuge'),'c-apellido':g('f-c-apellido'),'c-nombre':g('f-c-nombre'),'c-dob':g('f-c-dob'),'c-nacionalidad':g('f-c-nacionalidad'),'c-ciudad-nac':g('f-c-ciudad-nac'),'c-fecha-mat':g('f-c-fecha-mat'),'c-sexo':g('f-c-sexo'),'c-enusa':g('f-c-enusa'),'c-incluir':g('f-c-incluir'),'tiene-hijos':g('f-tiene-hijos'),hijos,'dir-origen':g('f-dir-origen'),'dir-origen-desde':g('f-dir-origen-desde'),'dir-origen-hasta':g('f-dir-origen-hasta'),residencias:g('f-residencias'),educacion:g('f-educacion'),empleos:g('f-empleos'),'madre-nombre':g('f-madre-nombre'),'madre-nac':g('f-madre-nac'),'madre-ubicacion':g('f-madre-ubicacion'),'padre-nombre':g('f-padre-nombre'),'padre-nac':g('f-padre-nac'),'padre-ubicacion':g('f-padre-ubicacion'),hermanos:g('f-hermanos'),'base-raza':gc('f-base-raza'),'base-religion':gc('f-base-religion'),'base-nacionalidad':gc('f-base-nacionalidad'),'base-opinion':gc('f-base-opinion'),'base-grupo':gc('f-base-grupo'),'base-tortura':gc('f-base-tortura'),arrestado:g('f-arrestado'),'arrestado-detalle':g('f-arrestado-detalle'),organizacion:g('f-organizacion'),'organizacion-detalle':g('f-organizacion-detalle'),tortura:g('f-tortura'),'tortura-detalle':g('f-tortura-detalle'),'solicitud-previa':g('f-solicitud-previa'),'solicitud-previa-detalle':g('f-solicitud-previa-detalle'),'otros-paises':g('f-otros-paises'),'otros-paises-detalle':g('f-otros-paises-detalle'),'mas-un-anio':g('f-mas-un-anio'),'mas-un-anio-detalle':g('f-mas-un-anio-detalle'),q1:g('f-q1'),q2:g('f-q2'),q3:g('f-q3'),q4:g('f-q4'),q5:g('f-q5'),q6:g('f-q6'),savedAt:new Date().toISOString(),status:'pendiente_revision'};
+  for(let i=0;i<nh;i++)hijos.push({apellido:g(`f-h${i}-apellido`),nombre:g(`f-h${i}-nombre`),dob:g(`f-h${i}-dob`),nac:g(`f-h${i}-nac`),ciudad:g(`f-h${i}-ciudad`),sexo:g(`f-h${i}-sexo`),enusa:g(`f-h${i}-enusa`),incluir:g(`f-h${i}-incluir`)});
+  return{alien:g("f-alien"),ssn:g("f-ssn"),apellido:g("f-apellido"),nombre:g("f-nombre"),middle:g("f-middle"),alias:g("f-alias"),direccion:g("f-direccion"),ciudad:g("f-ciudad"),estado:g("f-estado"),zip:g("f-zip"),telefono:g("f-telefono"),sexo:g("f-sexo"),"estado-civil":g("f-estado-civil"),dob:g("f-dob"),"ciudad-nac":g("f-ciudad-nac"),nacionalidad:g("f-nacionalidad"),"nacionalidad-nac":g("f-nacionalidad-nac"),raza:g("f-raza"),religion:g("f-religion"),"court-status":g("f-court-status"),"fecha-salida":g("f-fecha-salida"),i94:g("f-i94"),"e1-fecha":g("f-e1-fecha"),"e1-lugar":g("f-e1-lugar"),"e1-estatus":g("f-e1-estatus"),"e2-fecha":g("f-e2-fecha"),"e2-lugar":g("f-e2-lugar"),"e2-estatus":g("f-e2-estatus"),"pais-pasaporte":g("f-pais-pasaporte"),pasaporte:g("f-pasaporte"),"pasaporte-vence":g("f-pasaporte-vence"),idioma:g("f-idioma"),ingles:g("f-ingles"),"otros-idiomas":g("f-otros-idiomas"),"tiene-conyuge":g("f-tiene-conyuge"),"c-apellido":g("f-c-apellido"),"c-nombre":g("f-c-nombre"),"c-dob":g("f-c-dob"),"c-nacionalidad":g("f-c-nacionalidad"),"c-ciudad-nac":g("f-c-ciudad-nac"),"c-fecha-mat":g("f-c-fecha-mat"),"c-sexo":g("f-c-sexo"),"c-enusa":g("f-c-enusa"),"c-incluir":g("f-c-incluir"),"tiene-hijos":g("f-tiene-hijos"),hijos,"dir-origen":g("f-dir-origen"),"dir-origen-desde":g("f-dir-origen-desde"),"dir-origen-hasta":g("f-dir-origen-hasta"),residencias:g("f-residencias"),educacion:g("f-educacion"),empleos:g("f-empleos"),"madre-nombre":g("f-madre-nombre"),"madre-nac":g("f-madre-nac"),"madre-ubicacion":g("f-madre-ubicacion"),"padre-nombre":g("f-padre-nombre"),"padre-nac":g("f-padre-nac"),"padre-ubicacion":g("f-padre-ubicacion"),hermanos:g("f-hermanos"),"base-raza":gc("f-base-raza"),"base-religion":gc("f-base-religion"),"base-nacionalidad":gc("f-base-nacionalidad"),"base-opinion":gc("f-base-opinion"),"base-grupo":gc("f-base-grupo"),"base-tortura":gc("f-base-tortura"),arrestado:g("f-arrestado"),"arrestado-detalle":g("f-arrestado-detalle"),organizacion:g("f-organizacion"),"organizacion-detalle":g("f-organizacion-detalle"),tortura:g("f-tortura"),"tortura-detalle":g("f-tortura-detalle"),"solicitud-previa":g("f-solicitud-previa"),"solicitud-previa-detalle":g("f-solicitud-previa-detalle"),"otros-paises":g("f-otros-paises"),"otros-paises-detalle":g("f-otros-paises-detalle"),"mas-un-anio":g("f-mas-un-anio"),"mas-un-anio-detalle":g("f-mas-un-anio-detalle"),q1:g("f-q1"),q2:g("f-q2"),q3:g("f-q3"),q4:g("f-q4"),q5:g("f-q5"),q6:g("f-q6"),savedAt:new Date().toISOString(),status:"pendiente_revision"};
 }
 function loadDraft(d){
-  const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!==undefined&&v!==null&&v!=='')el.value=v;};
-  ['alien','ssn','apellido','nombre','middle','alias','direccion','ciudad','estado','zip','telefono','sexo','estado-civil','dob','ciudad-nac','nacionalidad','nacionalidad-nac','raza','religion','court-status','fecha-salida','i94','e1-fecha','e1-lugar','e1-estatus','e2-fecha','e2-lugar','e2-estatus','pais-pasaporte','pasaporte','pasaporte-vence','idioma','ingles','otros-idiomas','tiene-conyuge','c-apellido','c-nombre','c-dob','c-nacionalidad','c-ciudad-nac','c-fecha-mat','c-sexo','c-enusa','c-incluir','tiene-hijos','dir-origen','dir-origen-desde','dir-origen-hasta','residencias','educacion','empleos','madre-nombre','madre-nac','madre-ubicacion','padre-nombre','padre-nac','padre-ubicacion','hermanos','arrestado','arrestado-detalle','organizacion','organizacion-detalle','tortura','tortura-detalle','solicitud-previa','solicitud-previa-detalle','otros-paises','otros-paises-detalle','mas-un-anio','mas-un-anio-detalle','q1','q2','q3','q4','q5','q6'].forEach(k=>s('f-'+k,d[k]));
-  ['raza','religion','nacionalidad','opinion','grupo','tortura'].forEach(k=>{const el=document.getElementById('f-base-'+k);if(el)el.checked=!!d['base-'+k];});
-  if(d['tiene-conyuge']==='si') toggleConyuge();
-  if(d['tiene-hijos']==='si'){document.getElementById('f-tiene-hijos').value='si';toggleHijos();(d.hijos||[]).forEach((_,i)=>{if(i>0)addHijo();});(d.hijos||[]).forEach((h,i)=>{const s2=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.value=v;};s2(`f-h${i}-apellido`,h.apellido);s2(`f-h${i}-nombre`,h.nombre);s2(`f-h${i}-dob`,h.dob);s2(`f-h${i}-nac`,h.nac);s2(`f-h${i}-ciudad`,h.ciudad);s2(`f-h${i}-sexo`,h.sexo);s2(`f-h${i}-enusa`,h.enusa);s2(`f-h${i}-incluir`,h.incluir);});}
+  const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!==undefined&&v!==null&&v!=="")el.value=v;};
+  ["alien","ssn","apellido","nombre","middle","alias","direccion","ciudad","estado","zip","telefono","sexo","estado-civil","dob","ciudad-nac","nacionalidad","nacionalidad-nac","raza","religion","court-status","fecha-salida","i94","e1-fecha","e1-lugar","e1-estatus","e2-fecha","e2-lugar","e2-estatus","pais-pasaporte","pasaporte","pasaporte-vence","idioma","ingles","otros-idiomas","tiene-conyuge","c-apellido","c-nombre","c-dob","c-nacionalidad","c-ciudad-nac","c-fecha-mat","c-sexo","c-enusa","c-incluir","tiene-hijos","dir-origen","dir-origen-desde","dir-origen-hasta","residencias","educacion","empleos","madre-nombre","madre-nac","madre-ubicacion","padre-nombre","padre-nac","padre-ubicacion","hermanos","arrestado","arrestado-detalle","organizacion","organizacion-detalle","tortura","tortura-detalle","solicitud-previa","solicitud-previa-detalle","otros-paises","otros-paises-detalle","mas-un-anio","mas-un-anio-detalle","q1","q2","q3","q4","q5","q6"].forEach(k=>s("f-"+k,d[k]));
+  ["raza","religion","nacionalidad","opinion","grupo","tortura"].forEach(k=>{const el=document.getElementById("f-base-"+k);if(el)el.checked=!!d["base-"+k];});
+  if(d["tiene-conyuge"]==="si")toggleConyuge();
+  if(d["tiene-hijos"]==="si"){document.getElementById("f-tiene-hijos").value="si";toggleHijos();(d.hijos||[]).forEach((_,i)=>{if(i>0)addHijo();});(d.hijos||[]).forEach((h,i)=>{const s2=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.value=v;};s2(`f-h${i}-apellido`,h.apellido);s2(`f-h${i}-nombre`,h.nombre);s2(`f-h${i}-dob`,h.dob);s2(`f-h${i}-nac`,h.nac);s2(`f-h${i}-ciudad`,h.ciudad);s2(`f-h${i}-sexo`,h.sexo);s2(`f-h${i}-enusa`,h.enusa);s2(`f-h${i}-incluir`,h.incluir);});}
 }
 window.saveI589=async function(){
-  const req=['f-apellido','f-nombre','f-sexo','f-dob','f-ciudad-nac','f-nacionalidad','f-fecha-salida'];
+  const req=["f-apellido","f-nombre","f-sexo","f-dob","f-ciudad-nac","f-nacionalidad","f-fecha-salida"];
   let valid=true;
-  req.forEach(id=>{const el=document.getElementById(id);if(el&&!el.value.trim()){el.style.borderColor='#EF4444';valid=false;}else if(el)el.style.borderColor='#E2E8F0';});
-  if(!valid){i589Step=1;updateI589Step();alert('Por favor completa los campos obligatorios (*)');return;}
-  const btn=document.getElementById('i589-btn-next');
-  if(btn){btn.textContent='Guardando...';btn.disabled=true;}
+  req.forEach(id=>{const el=document.getElementById(id);if(el&&!el.value.trim()){el.style.borderColor="#EF4444";valid=false;}else if(el)el.style.borderColor="#E2E8F0";});
+  if(!valid){i589Step=1;updateI589Step();alert("Por favor completa los campos obligatorios (*)");return;}
+  const btn=document.getElementById("i589-btn-next");
+  if(btn){btn.textContent="Guardando...";btn.disabled=true;}
   try{
     const draft=collectDraft();
-    await setDoc(doc(db,'clientes',clientId),{i589Draft:draft},{merge:true});
+    await setDoc(doc(db,"clientes",clientId),{i589Draft:draft},{merge:true});
     clientData.i589Draft=draft;
     closeI589();
     window.renderI589Status(clientData);
-    const t=document.createElement('div');
-    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.2)';
-    t.textContent='✅ Formulario guardado — tu oficina lo revisará pronto';
-    document.body.appendChild(t);
-    setTimeout(()=>t.remove(),4000);
+    const toast=document.createElement("div");
+    toast.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.2);white-space:nowrap";
+    toast.textContent="✅ Formulario guardado — tu oficina lo revisará pronto";
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(),4000);
   }catch(err){
-    alert('Error al guardar: '+err.message);
-    if(btn){btn.textContent='💾 Guardar y enviar a mi oficina';btn.disabled=false;}
+    alert("Error al guardar: "+err.message);
+    if(btn){btn.textContent="💾 Guardar y enviar a mi oficina";btn.disabled=false;}
   }
 };
 
-// ── Menú Formularios ─────────────────────────────────────────────────────────
-window.toggleFormMenu = function(){
-  const dd    = document.getElementById('form-dropdown');
-  const arrow = document.getElementById('form-menu-arrow');
-  dd.classList.toggle('open');
-  if(arrow) arrow.style.transform = dd.classList.contains('open') ? 'rotate(180deg)' : '';
+// Forms menu
+window.toggleFormMenu=function(){
+  const dd=document.getElementById("form-dropdown");
+  const arrow=document.getElementById("form-arrow");
+  dd.classList.toggle("open");
+  if(arrow)arrow.style.transform=dd.classList.contains("open")?"rotate(180deg)":"";
 };
-
-document.addEventListener('click', function(e){
-  const wrap = document.querySelector('.form-menu-wrap');
-  if(wrap && !wrap.contains(e.target)){
-    document.getElementById('form-dropdown')?.classList.remove('open');
-    const arrow = document.getElementById('form-menu-arrow');
-    if(arrow) arrow.style.transform = '';
+document.addEventListener("click",function(e){
+  const wrap=document.querySelector(".form-menu-wrap");
+  if(wrap&&!wrap.contains(e.target)){
+    document.getElementById("form-dropdown")?.classList.remove("open");
+    const arrow=document.getElementById("form-arrow");
+    if(arrow)arrow.style.transform="";
   }
 });
-
-window.openFormulario = function(tipo){
-  document.getElementById('form-dropdown')?.classList.remove('open');
-  const arrow = document.getElementById('form-menu-arrow');
-  if(arrow) arrow.style.transform = '';
-  if(tipo === 'asilo') {
-    if(window.openI589) openI589();
-    else console.error('openI589 no definida');
-  }
+window.openFormulario=function(tipo){
+  document.getElementById("form-dropdown")?.classList.remove("open");
+  if(tipo==="asilo"&&window.openI589)openI589();
 };
-
 </script>
 </body>
 </html>
