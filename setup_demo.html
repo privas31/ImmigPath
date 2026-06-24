@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ImmigPath Demo Setup</title>
+<style>
+body{font-family:system-ui;background:#0F172A;color:#fff;padding:32px;max-width:600px;margin:0 auto;}
+button{background:#2563EB;color:#fff;border:none;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:16px;}
+button:disabled{background:#374151;cursor:not-allowed;}
+.status{margin-top:20px;padding:14px;border-radius:10px;font-size:13px;line-height:1.7;}
+.ok{background:#064E3B;border:1px solid #059669;}
+.err{background:#7F1D1D;border:1px solid #DC2626;}
+.info{background:#1E3A5F;border:1px solid #2563EB;}
+.progress{width:100%;background:#1E293B;border-radius:20px;height:8px;margin-top:12px;}
+.bar{height:100%;border-radius:20px;background:#2563EB;transition:width 0.4s;}
+</style>
+</head>
+<body>
+<h2>🚀 ImmigPath Demo Setup</h2>
+<p style="color:#94A3B8">Esto creará 8 clientes ficticios en la oficina demo.</p>
+<div id="status" class="status info">Listo para crear clientes demo...</div>
+<div class="progress"><div class="bar" id="bar" style="width:0%"></div></div>
+<button id="btn" onclick="createDemo()">✅ Crear Clientes Demo</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
+  authDomain: "immigration-platform-11380.firebaseapp.com",
+  projectId: "immigration-platform-11380",
+  storageBucket: "immigration-platform-11380.firebasestorage.app",
+  messagingSenderId: "682062748742",
+  appId: "1:682062748742:web:5b2466ddf7d8ae05a67e47"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const OFFICE_ID = "rrNezpcmCqLaU5pmhuJL";
+
+const demoClientes = [
+  {
+    nombre: "María García Rodríguez", paisOrigen: "Honduras", alienNum: "213456789",
+    telefono: "305-555-0101", email: "maria.garcia@demo.com", encargada: "Ana López",
+    officeId: OFFICE_ID, portalActivo: true,
+    createdAt: new Date(Date.now() - 30*24*60*60*1000).toISOString(),
+    casos: [{id:"caso1",sistema:"uscis",tipoCaso:"I-589 Asilo",receiptNum:"ZAR2350125091",
+      alienNum:"213456789",fechaAsilo:new Date(Date.now()-95*24*60*60*1000).toISOString().split('T')[0],
+      fechaHuellas:new Date(Date.now()+12*24*60*60*1000).toISOString().split('T')[0],
+      estatusCaso:"activo",nota:"Cliente con caso fuerte. Tiene testigos y documentación completa.",
+      procesos:[{nombre:"Asilo I-589",precio:"1500",pagado:"800",notas:"Cuota inicial pagada"}]}]
+  },
+  {
+    nombre: "Carlos Mendoza Fuentes", paisOrigen: "El Salvador", alienNum: "314567890",
+    telefono: "786-555-0202", email: "carlos.mendoza@demo.com", encargada: "María Pérez",
+    officeId: OFFICE_ID, portalActivo: true,
+    createdAt: new Date(Date.now() - 60*24*60*60*1000).toISOString(),
+    casos: [{id:"caso1",sistema:"eoir",tipoCaso:"EOIR - Corte de Inmigración",
+      alienNum:"314567890",corte:"Miami Immigration Court",juez:"Hon. Robert Williams",
+      fechaCorte:new Date(Date.now()+45*24*60*60*1000).toISOString().split('T')[0],
+      estatusCaso:"activo",nota:"Audiencia máster programada. Necesita intérprete.",
+      procesos:[{nombre:"Representación EOIR",precio:"2500",pagado:"2500",notas:"Pagado completo"}]}]
+  },
+  {
+    nombre: "Ana Lucía Torres Vega", paisOrigen: "Guatemala", alienNum: "415678901",
+    telefono: "954-555-0303", email: "ana.torres@demo.com", encargada: "Ana López",
+    officeId: OFFICE_ID, portalActivo: true,
+    createdAt: new Date(Date.now() - 180*24*60*60*1000).toISOString(),
+    casos: [{id:"caso1",sistema:"uscis",tipoCaso:"I-589 Asilo",receiptNum:"ZAR2240089432",
+      alienNum:"415678901",fechaAsilo:new Date(Date.now()-185*24*60*60*1000).toISOString().split('T')[0],
+      estatusCaso:"activo",nota:"Elegible para EAD. Notificar cliente urgente.",
+      procesos:[
+        {nombre:"Asilo I-589",precio:"1500",pagado:"1500",notas:"Pagado"},
+        {nombre:"I-765 Permiso de Trabajo",precio:"600",pagado:"300",notas:"En proceso"}]}]
+  },
+  {
+    nombre: "José Antonio Reyes López", paisOrigen: "Nicaragua", alienNum: "516789012",
+    telefono: "407-555-0404", email: "jose.reyes@demo.com", encargada: "María Pérez",
+    officeId: OFFICE_ID, portalActivo: false,
+    createdAt: new Date(Date.now() - 10*24*60*60*1000).toISOString(),
+    casos: [{id:"caso1",sistema:"foia",tipoCaso:"FOIA - Expediente USCIS",
+      foiaTracking:"COW2024001234",foiaEstado:"Solicitud enviada. Esperando respuesta en 20 días hábiles.",
+      estatusCaso:"activo",procesos:[{nombre:"FOIA Request",precio:"300",pagado:"300",notas:"Pagado"}]}]
+  },
+  {
+    nombre: "Daniela Herrera Morales", paisOrigen: "Venezuela", alienNum: "617890123",
+    telefono: "561-555-0505", email: "daniela.herrera@demo.com", encargada: "Ana López",
+    officeId: OFFICE_ID, portalActivo: true,
+    createdAt: new Date(Date.now() - 5*24*60*60*1000).toISOString(),
+    casos: [{id:"caso1",sistema:"uscis",tipoCaso:"I-589 Asilo",
+      alienNum:"617890123",fechaAsilo:new Date(Date.now()-20*24*60*60*1000).toISOString().split('T')[0],
+      fechaHuellas:new Date(Date.now()-2*24*60*60*1000).toISOString().split('T')[0],
+      estatusCaso:"activo",nota:"Fecha de biométricos vencida. Contactar cliente para reprogramar.",
+      procesos:[{nombre:"Asilo I-589",precio:"1500",pagado:"500",notas:"Primera cuota"}]}]
+  },
+  {
+    nombre: "Roberto Castillo Jiménez", paisOrigen: "Colombia", alienNum: "718901234",
+    telefono: "305-555-0606", email: "roberto.castillo@demo.com", encargada: "María Pérez",
+    officeId: OFFICE_ID, portalActivo: true,
+    createdAt: new Date(Date.now() - 90*24*60*60*1000).toISOString(),
+    casos: [{id:"caso1",sistema:"uscis",tipoCaso:"I-589 Asilo",receiptNum:"ZAR2350098765",
+      alienNum:"718901234",fechaAsilo:new Date(Date.now()-160*24*60*60*1000).toISOString().split('T')[0],
+      fechaCorte:new Date(Date.now()+7*24*60*60*1000).toISOString().split('T')[0],
+      estatusCaso:"activo",nota:"Entrevista de asilo en 7 días. Preparar cliente.",
+      procesos:[
+        {nombre:"Asilo I-589",precio:"1500",pagado:"1500",notas:"Pagado completo"},
+        {nombre:"Preparación entrevista",precio:"400",pagado:"400",notas:"Sesión completada"}]}]
+  },
+  {
+    nombre: "Sofía Ramírez Castro", paisOrigen: "Ecuador", alienNum: "819012345",
+    telefono: "786-555-0707", email: "sofia.ramirez@demo.com", encargada: "Ana López",
+    officeId: OFFICE_ID, portalActivo: true,
+    createdAt: new Date(Date.now() - 120*24*60*60*1000).toISOString(),
+    casos: [
+      {id:"caso1",sistema:"uscis",tipoCaso:"I-589 Asilo",receiptNum:"ZAR2240056789",
+        alienNum:"819012345",fechaAsilo:new Date(Date.now()-200*24*60*60*1000).toISOString().split('T')[0],
+        estatusCaso:"aprobado",nota:"¡Asilo aprobado! Pendiente iniciar I-485.",
+        procesos:[{nombre:"Asilo I-589",precio:"1500",pagado:"1500",notas:"Pagado"}]},
+      {id:"caso2",sistema:"uscis",tipoCaso:"I-485 Residencia",alienNum:"819012345",
+        estatusCaso:"activo",nota:"Iniciando proceso de residencia permanente.",
+        procesos:[{nombre:"I-485 Residencia",precio:"2000",pagado:"0",notas:"Pendiente pago inicial"}]}
+    ]
+  },
+  {
+    nombre: "Miguel Ángel Flores Díaz", paisOrigen: "Mexico", alienNum: "920123456",
+    telefono: "954-555-0808", email: "miguel.flores@demo.com", encargada: "María Pérez",
+    officeId: OFFICE_ID, portalActivo: false,
+    createdAt: new Date(Date.now() - 45*24*60*60*1000).toISOString(),
+    casos: [{id:"caso1",sistema:"eoir",tipoCaso:"EOIR - Cancelación de Remoción",
+      alienNum:"920123456",corte:"Orlando Immigration Court",juez:"Hon. Patricia Johnson",
+      fechaCorte:new Date(Date.now()+3*24*60*60*1000).toISOString().split('T')[0],
+      estatusCaso:"activo",nota:"Audiencia en 3 días. Toda la documentación lista.",
+      procesos:[{nombre:"Cancelación de Remoción",precio:"3500",pagado:"2000",notas:"Pendiente balance"}]}]
+  }
+];
+
+window.createDemo = async function() {
+  const btn = document.getElementById('btn');
+  const status = document.getElementById('status');
+  const bar = document.getElementById('bar');
+  btn.disabled = true;
+  
+  try {
+    // Delete existing demo clients
+    status.className = 'status info';
+    status.innerHTML = '🗑️ Limpiando clientes anteriores...';
+    const q = query(collection(db,"clientes"), where("officeId","==",OFFICE_ID));
+    const existing = await getDocs(q);
+    for(const d of existing.docs) await deleteDoc(doc(db,"clientes",d.id));
+    
+    // Create new demo clients
+    let created = 0;
+    for(const cliente of demoClientes) {
+      status.innerHTML = `⏳ Creando cliente ${created+1} de ${demoClientes.length}: <strong>${cliente.nombre}</strong>`;
+      await addDoc(collection(db,"clientes"), cliente);
+      created++;
+      bar.style.width = (created/demoClientes.length*100)+'%';
+      await new Promise(r=>setTimeout(r,300));
+    }
+    
+    bar.style.width = '100%';
+    bar.style.background = '#059669';
+    status.className = 'status ok';
+    status.innerHTML = `✅ ¡Demo lista! Se crearon <strong>${created} clientes</strong> ficticios.<br><br>
+      <a href="https://immigpath.com/app.html?o=rrNezpcmCqLaU5pmhuJL" target="_blank" style="color:#34D399;font-weight:700">
+        → Abrir demo en ImmigPath
+      </a>`;
+    btn.textContent = '✅ Demo creada exitosamente';
+    
+  } catch(e) {
+    status.className = 'status err';
+    status.innerHTML = '❌ Error: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '🔄 Intentar de nuevo';
+  }
+};
+</script>
+</body>
+</html>
