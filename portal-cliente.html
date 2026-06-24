@@ -22,7 +22,7 @@
   --radius:14px;
   --shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.06);
 }
-body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:var(--bg);min-height:100vh;color:var(--navy);}
+body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-height:100vh;color:var(--navy);}
 
 /* ── TOPBAR ── */
 .topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
@@ -167,17 +167,22 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:var(--bg);min-
 </head>
 <body>
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="topbar-logo">
-    <div class="topbar-logo-icon" id="office-logo-wrap">⚖️</div>
-    <span class="topbar-logo-text" id="office-name">ImmigPath</span>
+<!-- HEADER: Logo + Formularios + Lang -->
+<div style="background:#fff;border-bottom:1px solid #E2E8F0;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+  <!-- LEFT: Office logo + name -->
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div id="office-logo-wrap" style="width:40px;height:40px;background:linear-gradient(135deg,#1E40AF,#3B82F6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">⚖️</div>
+    <div>
+      <div style="font-size:15px;font-weight:800;color:#0F172A;letter-spacing:-0.01em;" id="office-name">ImmigPath</div>
+      <div style="font-size:11px;color:#94A3B8;font-weight:500;">Portal del Cliente</div>
+    </div>
   </div>
-  <div class="topbar-right">
+  <!-- RIGHT: Forms button + Lang switch -->
+  <div style="display:flex;align-items:center;gap:10px;">
     <div class="form-menu-wrap">
-      <button class="forms-btn" onclick="toggleFormMenu()">
+      <button onclick="toggleFormMenu()" style="display:flex;align-items:center;gap:7px;padding:9px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:9px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;">
         📄 <span id="lbl-formularios">Formularios</span>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" id="form-arrow"><path d="M6 9l6 6 6-6"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="form-arrow"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="form-dropdown" id="form-dropdown">
         <div class="form-dropdown-title" id="lbl-seleccionar">Selecciona un formulario</div>
@@ -188,8 +193,11 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:var(--bg);min-
         <button class="form-dropdown-item disabled">🗽 Ciudadanía (N-400) <span class="form-dropdown-soon">pronto</span></button>
       </div>
     </div>
-    <button class="lang-btn active" id="btn-es" onclick="setLang('es')">ES</button>
-    <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+    <!-- Lang switch -->
+    <div style="display:flex;border:1.5px solid #E2E8F0;border-radius:9px;overflow:hidden;">
+      <button id="btn-es" onclick="setLang('es')" style="padding:8px 14px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:#2563EB;color:#fff;">ES</button>
+      <button id="btn-en" onclick="setLang('en')" style="padding:8px 14px;border:none;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:#94A3B8;">EN</button>
+    </div>
   </div>
 </div>
 
@@ -203,19 +211,35 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:var(--bg);min-
   </div>
 </div>
 
-<!-- HERO -->
-<div class="hero" id="hero" style="display:none">
+<!-- CLIENT HERO — clean white card style -->
+<div id="hero" style="display:none;background:#F8FAFC;border-bottom:1px solid #E2E8F0;padding:24px;">
   <div style="max-width:600px;margin:0 auto;">
-    <div class="hero-greeting" id="lbl-hola">Hola,</div>
-    <div class="hero-name" id="client-name">—</div>
-    <div class="hero-chips">
-      <div class="hero-chip">
-        <div class="hero-chip-label" id="lbl-pais">País de origen</div>
-        <div class="hero-chip-val" id="val-pais">—</div>
+    <div style="background:#fff;border-radius:16px;border:1px solid #E2E8F0;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <!-- Avatar -->
+        <div id="client-avatar" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#2563EB,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0;">P</div>
+        <!-- Name + greeting -->
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;color:#94A3B8;margin-bottom:2px;" id="lbl-hola">Hola,</div>
+          <div style="font-size:20px;font-weight:800;color:#0F172A;letter-spacing:-0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="client-name">—</div>
+        </div>
       </div>
-      <div class="hero-chip">
-        <div class="hero-chip-label" id="lbl-alien">Número Alien (A#)</div>
-        <div class="hero-chip-val" id="val-alien">—</div>
+      <!-- Info chips -->
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:9px 14px;flex:1;min-width:130px;">
+          <span style="font-size:18px;">🌍</span>
+          <div>
+            <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;" id="lbl-pais">País de origen</div>
+            <div style="font-size:14px;font-weight:700;color:#0F172A;" id="val-pais">—</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:9px 14px;flex:1;min-width:130px;">
+          <span style="font-size:18px;">🪪</span>
+          <div>
+            <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;" id="lbl-alien">Número Alien</div>
+            <div style="font-size:14px;font-weight:700;color:#0F172A;font-family:monospace;" id="val-alien">—</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -532,6 +556,12 @@ function render(c){
   // Header
   document.getElementById("client-name").textContent = c.nombre||"—";
   document.getElementById("lbl-hola").textContent    = t("hola");
+  // Set avatar initials
+  const avatarEl=document.getElementById("client-avatar");
+  if(avatarEl){
+    const initials=(c.nombre||"?").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase();
+    avatarEl.textContent=initials;
+  }
   document.getElementById("lbl-pais").textContent    = t("pais");
   document.getElementById("lbl-alien").textContent   = t("alien");
   document.getElementById("val-pais").textContent    = c.paisOrigen||"—";
@@ -647,8 +677,10 @@ function infoRow(label, val, mono=false){
 
 window.setLang = function(l){
   lang=l;
-  document.getElementById("btn-es").classList.toggle("active", l==="es");
-  document.getElementById("btn-en").classList.toggle("active", l==="en");
+  const es=document.getElementById("btn-es");
+  const en=document.getElementById("btn-en");
+  if(es){es.style.background=l==="es"?"#2563EB":"transparent";es.style.color=l==="es"?"#fff":"#94A3B8";es.style.fontWeight=l==="es"?"700":"500";}
+  if(en){en.style.background=l==="en"?"#2563EB":"transparent";en.style.color=l==="en"?"#fff":"#94A3B8";en.style.fontWeight=l==="en"?"700":"500";}
   if(clientData) render(clientData);
   if(clientData) window.renderI589Status(clientData);
 };
@@ -674,7 +706,9 @@ if(!clientId){
           const logo=os.data().logoUrl;
           if(logo){
             const wrap=document.getElementById("office-logo-wrap");
-            wrap.innerHTML=`<img src="${logo}" style="width:32px;height:32px;border-radius:8px;object-fit:contain">`;
+            wrap.style.background="transparent";
+            wrap.style.padding="2px";
+            wrap.innerHTML=`<img src="${logo}" style="width:40px;height:40px;border-radius:10px;object-fit:contain">`;
           }
         }
       }).catch(()=>{});
