@@ -210,27 +210,25 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-he
           <div style="font-size:20px;font-weight:800;color:#0F172A;letter-spacing:-0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="client-name">—</div>
         </div>
       </div>
-      <!-- Info chips -->
-      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:8px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:9px 14px;flex:1;min-width:130px;">
+      <!-- Info chips + Formularios in one row -->
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:9px 14px;flex:1;min-width:120px;">
           <span style="font-size:18px;">🌍</span>
           <div>
             <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;" id="lbl-pais">País de origen</div>
             <div style="font-size:14px;font-weight:700;color:#0F172A;" id="val-pais">—</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:9px 14px;flex:1;min-width:130px;">
+        <div style="display:flex;align-items:center;gap:8px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:9px 14px;flex:1;min-width:120px;">
           <span style="font-size:18px;">🪪</span>
           <div>
             <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;" id="lbl-alien">Número Alien</div>
             <div style="font-size:14px;font-weight:700;color:#0F172A;font-family:monospace;" id="val-alien">—</div>
           </div>
         </div>
-      </div>
-      <!-- Formularios button inside card -->
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid #F1F5F9;">
-        <div class="form-menu-wrap">
-          <button onclick="toggleFormMenu()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:9px;font-size:13px;font-weight:600;color:#1D4ED8;cursor:pointer;">
+        <!-- Formularios right next to alien chip -->
+        <div class="form-menu-wrap" style="flex-shrink:0;">
+          <button onclick="toggleFormMenu()" style="display:inline-flex;align-items:center;gap:7px;padding:10px 16px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;font-size:13px;font-weight:600;color:#1D4ED8;cursor:pointer;white-space:nowrap;height:100%;">
             📄 <span id="lbl-formularios">Formularios</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="form-arrow"><path d="M6 9l6 6 6-6"/></svg>
           </button>
