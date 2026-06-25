@@ -21,6 +21,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
     // ═══ IMMIGRATION-PLATFORM — MULTI-OFICINA ═══
     const firebaseConfig = {
@@ -35,7 +36,8 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    window._firebase = { auth, db, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, setDoc, getDoc };
+    const storage = getStorage(app);
+    window._firebase = { auth, db, storage, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, setDoc, getDoc, ref, uploadBytesResumable, getDownloadURL, deleteObject };
 
     // Cargar logo y nombre de oficina desde ?o= antes del login
     (async()=>{
@@ -208,6 +210,201 @@ function LoginScreen({onLogin}){
     </div></div>);
 }
 
+// ── DOCUMENTO PANEL COMPONENT ──
+const TIPOS_DOC = [
+  "🪪 Identificación / Pasaporte",
+  "🔒 Social Security",
+  "📄 Permiso de trabajo / EAD",
+  "🚗 Licencia de conducir",
+  "📋 I-9",
+  "📋 W-4",
+  "🏛️ I-485 Ajuste de estatus",
+  "🏛️ I-130 Petición familiar",
+  "🏛️ I-765 Permiso de trabajo",
+  "🏛️ I-589 Asilo",
+  "🏛️ I-131 Advance Parole",
+  "🏛️ N-400 Naturalización",
+  "📂 FOIA",
+  "📸 Fotos migratorias",
+  "🏠 Evidencia de domicilio",
+  "💼 Carta de empleo",
+  "💌 Carta de apoyo",
+  "✍️ Contrato firmado",
+  "📃 Otro documento"
+];
+
+function DocPanel({clienteId, clienteNombre, officeData, userData, docsCliente, setDocsCliente, uploadingDoc, setUploadingDoc, uploadProgress, setUploadProgress, showToastFn}){
+  const [tipoSeleccionado, setTipoSeleccionado] = React.useState(TIPOS_DOC[0]);
+  const [notaDoc, setNotaDoc] = React.useState("");
+  const [fechaVence, setFechaVence] = React.useState("");
+  const [confirmEliminar, setConfirmEliminar] = React.useState(null);
+  const docs = docsCliente[clienteId] || [];
+  const uploading = uploadingDoc[clienteId] || false;
+  const progress = uploadProgress[clienteId] || 0;
+
+  async function cargarDocs(){
+    const {db, collection, query, where, getDocs, orderBy} = window._firebase;
+    const officeId = officeData?.id || userData?.officeId;
+    try {
+      const q = query(collection(db,"documentos_clientes"), where("clienteId","==",clienteId), where("officeId","==",officeId), orderBy("createdAt","desc"));
+      const snap = await getDocs(q);
+      const lista = snap.docs.map(d=>({id:d.id,...d.data()}));
+      setDocsCliente(prev=>({...prev,[clienteId]:lista}));
+    } catch(e){ console.error(e); }
+  }
+
+  React.useEffect(()=>{ if(!docsCliente[clienteId]) cargarDocs(); },[clienteId]);
+
+  async function subirDocumento(e){
+    const archivo = e.target.files[0];
+    if(!archivo) return;
+    const maxSize = 10 * 1024 * 1024;
+    if(archivo.size > maxSize){ showToastFn("❌ El archivo excede 10MB"); return; }
+    const {storage, ref, uploadBytesResumable, getDownloadURL, db, collection, addDoc} = window._firebase;
+    const officeId = officeData?.id || userData?.officeId;
+    const path = `documentos/${officeId}/${clienteId}/${Date.now()}_${archivo.name}`;
+    const storageRef = ref(storage, path);
+    setUploadingDoc(prev=>({...prev,[clienteId]:true}));
+    setUploadProgress(prev=>({...prev,[clienteId]:0}));
+    const uploadTask = uploadBytesResumable(storageRef, archivo);
+    uploadTask.on("state_changed",
+      snap=>{ const pct = Math.round((snap.bytesTransferred/snap.totalBytes)*100); setUploadProgress(prev=>({...prev,[clienteId]:pct})); },
+      err=>{ showToastFn("❌ Error al subir: "+err.message); setUploadingDoc(prev=>({...prev,[clienteId]:false})); },
+      async ()=>{
+        const url = await getDownloadURL(uploadTask.snapshot.ref);
+        await addDoc(collection(db,"documentos_clientes"),{
+          officeId, clienteId,
+          clienteNombre: clienteNombre||"",
+          nombre: archivo.name,
+          tipo: tipoSeleccionado,
+          nota: notaDoc,
+          fechaVence: fechaVence||null,
+          url, path,
+          tamaño: archivo.size,
+          createdAt: new Date(),
+          subidoPor: window._firebase.auth.currentUser?.email||""
+        });
+        setUploadingDoc(prev=>({...prev,[clienteId]:false}));
+        setNotaDoc(""); setFechaVence("");
+        showToastFn("✅ Documento subido correctamente");
+        cargarDocs();
+        e.target.value="";
+      }
+    );
+  }
+
+  async function eliminarDoc(docData){
+    const {storage, ref, deleteObject, db, doc, deleteDoc} = window._firebase;
+    try {
+      if(docData.path){ const sRef = ref(storage, docData.path); await deleteObject(sRef).catch(()=>{}); }
+      await deleteDoc(doc(db,"documentos_clientes",docData.id));
+      showToastFn("🗑️ Documento eliminado");
+      setConfirmEliminar(null);
+      cargarDocs();
+    } catch(e){ showToastFn("❌ Error: "+e.message); }
+  }
+
+  const fmtSize = b => b>1048576 ? (b/1048576).toFixed(1)+"MB" : (b/1024).toFixed(0)+"KB";
+  const fmtFecha = f => { if(!f) return null; const d=new Date(f+"T00:00:00"); return d.toLocaleDateString("es-US",{day:"2-digit",month:"short",year:"numeric"}); };
+  const hoy = new Date().toISOString().slice(0,10);
+  const vencidos = docs.filter(d=>d.fechaVence&&d.fechaVence<hoy);
+  const porVencer = docs.filter(d=>{if(!d.fechaVence||d.fechaVence<hoy)return false; const diff=(new Date(d.fechaVence)-new Date())/(86400000); return diff<=30;});
+
+  return(
+    <div style={{padding:"16px 20px"}}>
+
+      {/* Alertas de vencimiento */}
+      {vencidos.length>0&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#991B1B"}}>
+        🔴 <strong>{vencidos.length} documento(s) vencido(s):</strong> {vencidos.map(d=>d.tipo).join(", ")}
+      </div>}
+      {porVencer.length>0&&<div style={{background:"#FEF9C3",border:"1px solid #FDE047",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#854D0E"}}>
+        ⚠️ <strong>{porVencer.length} documento(s) por vencer (30 días):</strong> {porVencer.map(d=>d.tipo).join(", ")}
+      </div>}
+
+      {/* Subir documento */}
+      <div style={{background:"#F8FAFC",border:"1px dashed #CBD5E1",borderRadius:10,padding:"14px 16px",marginBottom:16}}>
+        <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10}}>📤 Subir nuevo documento</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          <div>
+            <label style={{fontSize:11,color:"#64748B",fontWeight:600,display:"block",marginBottom:3}}>TIPO DE DOCUMENTO</label>
+            <select value={tipoSeleccionado} onChange={e=>setTipoSeleccionado(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:12,background:"#fff",outline:"none"}}>
+              {TIPOS_DOC.map(t=><option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:11,color:"#64748B",fontWeight:600,display:"block",marginBottom:3}}>FECHA DE VENCIMIENTO (opcional)</label>
+            <input type="date" value={fechaVence} onChange={e=>setFechaVence(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:12,outline:"none"}}/>
+          </div>
+        </div>
+        <div style={{marginBottom:10}}>
+          <label style={{fontSize:11,color:"#64748B",fontWeight:600,display:"block",marginBottom:3}}>NOTA (opcional)</label>
+          <input type="text" value={notaDoc} onChange={e=>setNotaDoc(e.target.value)} placeholder="Ej. Vence en marzo, renovación pendiente..." style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:12,outline:"none"}}/>
+        </div>
+        {uploading?(
+          <div style={{marginTop:8}}>
+            <div style={{fontSize:11,color:"#6366F1",marginBottom:4}}>⬆️ Subiendo... {progress}%</div>
+            <div style={{background:"#E0E7FF",borderRadius:4,height:6}}><div style={{background:"#6366F1",height:6,borderRadius:4,width:progress+"%",transition:"width .3s"}}></div></div>
+          </div>
+        ):(
+          <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#1E2D5A",color:"#fff",borderRadius:7,fontSize:12,fontWeight:600,cursor:"pointer"}}>
+            📎 Seleccionar archivo (PDF, JPG, PNG — máx. 10MB)
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style={{display:"none"}} onChange={subirDocumento}/>
+          </label>
+        )}
+      </div>
+
+      {/* Lista de documentos */}
+      {docs.length===0?(
+        <div style={{textAlign:"center",padding:"24px",color:"#94A3B8",fontSize:13}}>
+          📂 No hay documentos subidos todavía para este cliente.
+        </div>
+      ):(
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{fontSize:11,fontWeight:600,color:"#64748B",marginBottom:4}}>{docs.length} DOCUMENTO(S) REGISTRADO(S)</div>
+          {docs.map(d=>{
+            const vencido = d.fechaVence&&d.fechaVence<hoy;
+            const proxVencer = d.fechaVence&&!vencido&&(new Date(d.fechaVence)-new Date())/(86400000)<=30;
+            return(
+              <div key={d.id} style={{background:"#fff",border:`1px solid ${vencido?"#FECACA":proxVencer?"#FDE047":"#E2E8F0"}`,borderRadius:9,padding:"10px 14px",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:22,flexShrink:0}}>{d.tipo?.split(" ")[0]||"📄"}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"#0F172A"}}>{d.tipo}</div>
+                  <div style={{fontSize:11,color:"#64748B"}}>{d.nombre} · {fmtSize(d.tamaño||0)}</div>
+                  {d.nota&&<div style={{fontSize:11,color:"#94A3B8",fontStyle:"italic"}}>💬 {d.nota}</div>}
+                  {d.fechaVence&&<div style={{fontSize:11,fontWeight:600,color:vencido?"#DC2626":proxVencer?"#D97706":"#16A34A"}}>
+                    {vencido?"🔴 Vencido":"proxVencer"?"⚠️ Vence pronto":"✅ Vigente"}: {fmtFecha(d.fechaVence)}
+                  </div>}
+                  <div style={{fontSize:10,color:"#CBD5E1"}}>Subido por {d.subidoPor}</div>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <a href={d.url} target="_blank" rel="noopener noreferrer" style={{padding:"5px 10px",background:"#EFF6FF",color:"#1D4ED8",borderRadius:6,fontSize:11,fontWeight:600,textDecoration:"none",border:"1px solid #BFDBFE"}}>👁️ Ver</a>
+                  <a href={d.url} download={d.nombre} target="_blank" rel="noopener noreferrer" style={{padding:"5px 10px",background:"#F0FDF4",color:"#16A34A",borderRadius:6,fontSize:11,fontWeight:600,textDecoration:"none",border:"1px solid #BBF7D0"}}>⬇️ Descargar</a>
+                  <button onClick={()=>setConfirmEliminar(d)} style={{padding:"5px 10px",background:"#FEF2F2",color:"#DC2626",borderRadius:6,fontSize:11,fontWeight:600,border:"1px solid #FECACA",cursor:"pointer"}}>🗑️</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Confirmar eliminación */}
+      {confirmEliminar&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999}}>
+          <div style={{background:"#fff",borderRadius:12,padding:"24px",maxWidth:380,width:"90%",textAlign:"center"}}>
+            <div style={{fontSize:36,marginBottom:12}}>🗑️</div>
+            <div style={{fontSize:15,fontWeight:700,marginBottom:6}}>¿Eliminar documento?</div>
+            <div style={{fontSize:13,color:"#64748B",marginBottom:20}}>"{confirmEliminar.tipo}" — Esta acción no se puede deshacer.</div>
+            <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+              <button onClick={()=>setConfirmEliminar(null)} style={{padding:"8px 18px",background:"#F1F5F9",border:"none",borderRadius:7,cursor:"pointer",fontSize:13,fontWeight:600}}>Cancelar</button>
+              <button onClick={()=>eliminarDoc(confirmEliminar)} style={{padding:"8px 18px",background:"#DC2626",color:"#fff",border:"none",borderRadius:7,cursor:"pointer",fontSize:13,fontWeight:600}}>Sí, eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 //  MAIN APP 
 function App(){
   const[user,setUser]=useState(null);const[userData,setUserData]=useState(null);const[officeData,setOfficeData]=useState(null);const[officeLogo,setOfficeLogo]=useState(null);
@@ -219,6 +416,7 @@ function App(){
   const[búsqueda,setBúsqueda]=useState("");const[saving,setSaving]=useState(false);
   const[toast,setToast]=useState(null);const[sortBy,setSortBy]=useState("fecha");
   const[confirmDelete,setConfirmDelete]=useState(null);const[expandedId,setExpandedId]=useState(null);const[activeCasoTab,setActiveCasoTab]=useState({});
+  const[docsCliente,setDocsCliente]=useState({});const[activeDocTab,setActiveDocTab]=useState({});const[uploadingDoc,setUploadingDoc]=useState({});const[uploadProgress,setUploadProgress]=useState({});
   const[showPDF,setShowPDF]=useState(false);
   const[showHistorial,setShowHistorial]=useState(false);
   const[showAlertas,setShowAlertas]=useState(false);
@@ -1136,8 +1334,7 @@ const loadTeam=async()=>{
                           {sys.icon} {ca.tipoCaso||sys.label}
                         </button>
                       );})}
-                    </div>
-                    {(c.casos||[])[casoTab]&&(()=>{
+                      <button style={{background:"transparent",border:"none",borderBottom:casoTab==="docs"?"2px solid #7C3AED":"2px solid transparent",color:casoTab==="docs"?"#7C3AED":"#64748B",fontWeight:casoTab==="docs"?700:400,fontSize:12,padding:"10px 14px",cursor:"pointer",whiteSpace:"nowrap",marginBottom:"-1px"}} onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))}>\n                        📂 Documentos\n                      </button>\n                    </div>\n                    {casoTab==="docs"?(\n                      <DocPanel clienteId={c.id} clienteNombre={c.nombre} officeData={officeData} userData={userData} docsCliente={docsCliente} setDocsCliente={setDocsCliente} uploadingDoc={uploadingDoc} setUploadingDoc={setUploadingDoc} uploadProgress={uploadProgress} setUploadProgress={setUploadProgress} showToastFn={showToastFn}/>\n                    ):(c.casos||[])[casoTab]&&(()=>{
                       const ca=(c.casos||[])[casoTab];const sys=SISTEMAS[ca.sistema]||SISTEMAS.uscis;
                       const diasFecha=getDias(ca.fechaCorte);const scfgCaso=STATUS_CONFIG[getStatus(ca.fechaCorte)];
                       return(
@@ -1260,8 +1457,8 @@ const loadTeam=async()=>{
                           </div>
                         </div>
                       );
-                    })()}
-                    {exp&&(c.casos||[]).length===0&&<div style={{padding:"16px",textAlign:"center",color:"#94A3B8",fontSize:13,borderTop:"1px solid #F1F5F9"}}>Sin casos registrados.</div>}
+                    })())}
+                    {exp&&(c.casos||[]).length===0&&casoTab!=="docs"&&<div style={{padding:"16px",textAlign:"center",color:"#94A3B8",fontSize:13,borderTop:"1px solid #F1F5F9"}}>Sin casos registrados.</div>}
                   </div>
                 )}
               </div>
