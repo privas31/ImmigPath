@@ -1428,7 +1428,7 @@ const loadTeam=async()=>{
                           {sys.icon} {ca.tipoCaso||sys.label}
                         </button>
                       );})}\
-                      <button onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))} style={{background:"transparent",border:"none",borderBottom:casoTab==="docs"?"2px solid #7C3AED":"2px solid transparent",color:casoTab==="docs"?"#7C3AED":"#64748B",fontWeight:casoTab==="docs"?700:400,fontSize:12,padding:"10px 14px",cursor:"pointer",whiteSpace:"nowrap",marginBottom:"-1px"}} onClick={()=>{setActiveCasoTab(p=>({...p,[c.id]:"docs"}));if(!docsCliente[c.id])cargarDocsCliente(c.id);}}>
+                      <button onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))} style={{background:"transparent",border:"none",borderBottom:casoTab==="docs"?"2px solid #7C3AED":"2px solid transparent",color:casoTab==="docs"?"#7C3AED":"#64748B",fontWeight:casoTab==="docs"?700:400,fontSize:12,padding:"10px 14px",cursor:"pointer",whiteSpace:"nowrap",marginBottom:"-1px"}}>
                         📂 Documentos
                       </button>                    </div>
                     {casoTab==="docs"?(
@@ -1556,7 +1556,7 @@ const loadTeam=async()=>{
                           </div>
                         </div>
                       );
-                    })())}
+                    })()}
                     {exp&&(c.casos||[]).length===0&&casoTab!=="docs"&&<div style={{padding:"16px",textAlign:"center",color:"#94A3B8",fontSize:13,borderTop:"1px solid #F1F5F9"}}>Sin casos registrados.</div>}
                   </div>
                 )}
