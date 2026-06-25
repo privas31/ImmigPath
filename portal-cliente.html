@@ -121,6 +121,14 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-he
 .footer{text-align:center;padding:20px;font-size:12px;color:#94A3B8;border-top:1px solid var(--border);background:var(--white);margin-top:20px;}
 .footer-office{font-weight:600;color:var(--slate);margin-bottom:3px;}
 
+/* ── SIGNATURE PAD ── */
+.sig-wrap{border:1.5px solid #E2E8F0;border-radius:10px;background:#F8FAFC;position:relative;overflow:hidden;cursor:crosshair;touch-action:none;}
+.sig-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:13px;color:#94A3B8;gap:6px;}
+.sig-actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+.sig-clear{font-size:12px;padding:5px 12px;border-radius:8px;cursor:pointer;background:transparent;border:1px solid #E2E8F0;color:#64748B;}
+.sig-legal{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px 14px;font-size:11px;color:#64748B;line-height:1.6;margin-top:12px;}
+.sig-saved{display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:12px 14px;margin-top:8px;}
+
 /* ── FULL FORM MODAL ── */
 .form-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:1000;overflow-y:auto;padding:16px;}
 .form-modal.open{display:flex;align-items:flex-start;justify-content:center;}
@@ -480,6 +488,17 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-he
           <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">5</span> ¿Por qué fuiste elegido/a?</label><textarea class="i589-textarea" id="f-q5" rows="3" placeholder="Raza, religión, opinión política..."></textarea></div>
           <div class="i589-q"><label class="i589-q-label"><span class="i589-q-num">6</span> ¿Hay familiares en peligro?</label><textarea class="i589-textarea" id="f-q6" rows="3" placeholder="Nombre, parentesco y situación..."></textarea></div>
         </div>
+      </div>
+      <!-- FIRMA I-589 -->
+      <div id="i589-step-5-firma" style="margin-top:20px">
+        <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">✍️ Firma del Solicitante</div>
+        <div style="font-size:13px;color:#6B7280;margin-bottom:12px;line-height:1.5">Firma en el recuadro con el dedo o el mouse para certificar que toda la información es correcta.</div>
+        <div class="sig-wrap" style="height:120px"><canvas id="sig-canvas-i589"></canvas><div class="sig-hint" id="sig-hint-i589">✏️ Firma aquí</div></div>
+        <div class="sig-actions">
+          <div style="font-size:11px;color:#94A3B8">🔒 Guardada de forma segura</div>
+          <button class="sig-clear" onclick="clearSig('i589')">🗑 Limpiar</button>
+        </div>
+        <div class="sig-legal">Al firmar, certifico bajo pena de perjurio que toda la información en este formulario es completa, verdadera y correcta.</div>
       </div>
     </div>
     <div class="i589-footer">
@@ -863,7 +882,7 @@ function collectDraft(){
   const nh=document.getElementById("f-hijos-list")?.children.length||0;
   const hijos=[];
   for(let i=0;i<nh;i++)hijos.push({apellido:g(`f-h${i}-apellido`),nombre:g(`f-h${i}-nombre`),dob:g(`f-h${i}-dob`),nac:g(`f-h${i}-nac`),ciudad:g(`f-h${i}-ciudad`),sexo:g(`f-h${i}-sexo`),enusa:g(`f-h${i}-enusa`),incluir:g(`f-h${i}-incluir`)});
-  return{alien:g("f-alien"),ssn:g("f-ssn"),apellido:g("f-apellido"),nombre:g("f-nombre"),middle:g("f-middle"),alias:g("f-alias"),direccion:g("f-direccion"),ciudad:g("f-ciudad"),estado:g("f-estado"),zip:g("f-zip"),telefono:g("f-telefono"),sexo:g("f-sexo"),"estado-civil":g("f-estado-civil"),dob:g("f-dob"),"ciudad-nac":g("f-ciudad-nac"),nacionalidad:g("f-nacionalidad"),"nacionalidad-nac":g("f-nacionalidad-nac"),raza:g("f-raza"),religion:g("f-religion"),"court-status":g("f-court-status"),"fecha-salida":g("f-fecha-salida"),i94:g("f-i94"),"e1-fecha":g("f-e1-fecha"),"e1-lugar":g("f-e1-lugar"),"e1-estatus":g("f-e1-estatus"),"e2-fecha":g("f-e2-fecha"),"e2-lugar":g("f-e2-lugar"),"e2-estatus":g("f-e2-estatus"),"pais-pasaporte":g("f-pais-pasaporte"),pasaporte:g("f-pasaporte"),"pasaporte-vence":g("f-pasaporte-vence"),idioma:g("f-idioma"),ingles:g("f-ingles"),"otros-idiomas":g("f-otros-idiomas"),"tiene-conyuge":g("f-tiene-conyuge"),"c-apellido":g("f-c-apellido"),"c-nombre":g("f-c-nombre"),"c-dob":g("f-c-dob"),"c-nacionalidad":g("f-c-nacionalidad"),"c-ciudad-nac":g("f-c-ciudad-nac"),"c-fecha-mat":g("f-c-fecha-mat"),"c-sexo":g("f-c-sexo"),"c-enusa":g("f-c-enusa"),"c-incluir":g("f-c-incluir"),"tiene-hijos":g("f-tiene-hijos"),hijos,"dir-origen":g("f-dir-origen"),"dir-origen-desde":g("f-dir-origen-desde"),"dir-origen-hasta":g("f-dir-origen-hasta"),residencias:g("f-residencias"),educacion:g("f-educacion"),empleos:g("f-empleos"),"madre-nombre":g("f-madre-nombre"),"madre-nac":g("f-madre-nac"),"madre-ubicacion":g("f-madre-ubicacion"),"padre-nombre":g("f-padre-nombre"),"padre-nac":g("f-padre-nac"),"padre-ubicacion":g("f-padre-ubicacion"),hermanos:g("f-hermanos"),"base-raza":gc("f-base-raza"),"base-religion":gc("f-base-religion"),"base-nacionalidad":gc("f-base-nacionalidad"),"base-opinion":gc("f-base-opinion"),"base-grupo":gc("f-base-grupo"),"base-tortura":gc("f-base-tortura"),arrestado:g("f-arrestado"),"arrestado-detalle":g("f-arrestado-detalle"),organizacion:g("f-organizacion"),"organizacion-detalle":g("f-organizacion-detalle"),tortura:g("f-tortura"),"tortura-detalle":g("f-tortura-detalle"),"solicitud-previa":g("f-solicitud-previa"),"solicitud-previa-detalle":g("f-solicitud-previa-detalle"),"otros-paises":g("f-otros-paises"),"otros-paises-detalle":g("f-otros-paises-detalle"),"mas-un-anio":g("f-mas-un-anio"),"mas-un-anio-detalle":g("f-mas-un-anio-detalle"),q1:g("f-q1"),q2:g("f-q2"),q3:g("f-q3"),q4:g("f-q4"),q5:g("f-q5"),q6:g("f-q6"),savedAt:new Date().toISOString(),status:"pendiente_revision"};
+  return{alien:g("f-alien"),ssn:g("f-ssn"),apellido:g("f-apellido"),nombre:g("f-nombre"),middle:g("f-middle"),alias:g("f-alias"),direccion:g("f-direccion"),ciudad:g("f-ciudad"),estado:g("f-estado"),zip:g("f-zip"),telefono:g("f-telefono"),sexo:g("f-sexo"),"estado-civil":g("f-estado-civil"),dob:g("f-dob"),"ciudad-nac":g("f-ciudad-nac"),nacionalidad:g("f-nacionalidad"),"nacionalidad-nac":g("f-nacionalidad-nac"),raza:g("f-raza"),religion:g("f-religion"),"court-status":g("f-court-status"),"fecha-salida":g("f-fecha-salida"),i94:g("f-i94"),"e1-fecha":g("f-e1-fecha"),"e1-lugar":g("f-e1-lugar"),"e1-estatus":g("f-e1-estatus"),"e2-fecha":g("f-e2-fecha"),"e2-lugar":g("f-e2-lugar"),"e2-estatus":g("f-e2-estatus"),"pais-pasaporte":g("f-pais-pasaporte"),pasaporte:g("f-pasaporte"),"pasaporte-vence":g("f-pasaporte-vence"),idioma:g("f-idioma"),ingles:g("f-ingles"),"otros-idiomas":g("f-otros-idiomas"),"tiene-conyuge":g("f-tiene-conyuge"),"c-apellido":g("f-c-apellido"),"c-nombre":g("f-c-nombre"),"c-dob":g("f-c-dob"),"c-nacionalidad":g("f-c-nacionalidad"),"c-ciudad-nac":g("f-c-ciudad-nac"),"c-fecha-mat":g("f-c-fecha-mat"),"c-sexo":g("f-c-sexo"),"c-enusa":g("f-c-enusa"),"c-incluir":g("f-c-incluir"),"tiene-hijos":g("f-tiene-hijos"),hijos,"dir-origen":g("f-dir-origen"),"dir-origen-desde":g("f-dir-origen-desde"),"dir-origen-hasta":g("f-dir-origen-hasta"),residencias:g("f-residencias"),educacion:g("f-educacion"),empleos:g("f-empleos"),"madre-nombre":g("f-madre-nombre"),"madre-nac":g("f-madre-nac"),"madre-ubicacion":g("f-madre-ubicacion"),"padre-nombre":g("f-padre-nombre"),"padre-nac":g("f-padre-nac"),"padre-ubicacion":g("f-padre-ubicacion"),hermanos:g("f-hermanos"),"base-raza":gc("f-base-raza"),"base-religion":gc("f-base-religion"),"base-nacionalidad":gc("f-base-nacionalidad"),"base-opinion":gc("f-base-opinion"),"base-grupo":gc("f-base-grupo"),"base-tortura":gc("f-base-tortura"),arrestado:g("f-arrestado"),"arrestado-detalle":g("f-arrestado-detalle"),organizacion:g("f-organizacion"),"organizacion-detalle":g("f-organizacion-detalle"),tortura:g("f-tortura"),"tortura-detalle":g("f-tortura-detalle"),"solicitud-previa":g("f-solicitud-previa"),"solicitud-previa-detalle":g("f-solicitud-previa-detalle"),"otros-paises":g("f-otros-paises"),"otros-paises-detalle":g("f-otros-paises-detalle"),"mas-un-anio":g("f-mas-un-anio"),"mas-un-anio-detalle":g("f-mas-un-anio-detalle"),q1:g("f-q1"),q2:g("f-q2"),q3:g("f-q3"),q4:g("f-q4"),q5:g("f-q5"),q6:g("f-q6"),savedAt:new Date().toISOString(),status:"pendiente_revision",firma:window._pendingSig||undefined};
 }
 function loadDraft(d){
   const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!==undefined&&v!==null&&v!=="")el.value=v;};
@@ -943,6 +962,7 @@ function collectFormData(tipo) {
   });
   data.savedAt = new Date().toISOString();
   data.status = 'pendiente_revision';
+  if(window._pendingSig) { data.firma = window._pendingSig; window._pendingSig = null; }
   return data;
 }
 
@@ -1210,6 +1230,17 @@ function renderFormStatus(tipo, nombre, draft) {
         <div class="form-field"><label class="form-label">5. Email del solicitante (si aplica)</label><input class="form-input" id="i765-email" type="email" placeholder="Email Address"></div>
         <div class="form-field"><label class="form-label">Notas adicionales para la oficina</label>
           <textarea class="form-textarea" id="i765-notas" rows="3" placeholder="Cualquier información adicional..."></textarea>
+        </div>
+        <!-- FIRMA I-765 -->
+        <div style="margin-top:16px">
+          <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">✍️ Firma del Solicitante</div>
+          <div style="font-size:13px;color:#6B7280;margin-bottom:12px;line-height:1.5">Firma en el recuadro con el dedo o el mouse.</div>
+          <div class="sig-wrap" style="height:120px"><canvas id="sig-canvas-i765"></canvas><div class="sig-hint" id="sig-hint-i765">✏️ Firma aquí</div></div>
+          <div class="sig-actions">
+            <div style="font-size:11px;color:#94A3B8">🔒 Guardada de forma segura</div>
+            <button class="sig-clear" onclick="clearSig('i765')">🗑 Limpiar</button>
+          </div>
+          <div class="sig-legal">Al firmar, certifico bajo pena de perjurio que toda la información en este formulario es completa, verdadera y correcta.</div>
         </div>
       </div>
     </div>
@@ -1864,6 +1895,17 @@ function renderFormStatus(tipo, nombre, draft) {
         <div class="form-field"><label class="form-label">Información adicional o hijos adicionales (más de 2)</label>
           <textarea class="form-textarea" id="i485-notas" rows="4" placeholder="Escribe aquí información adicional, aclaraciones, hijos adicionales (3, 4, etc.) con todos sus datos..."></textarea>
         </div>
+        <!-- FIRMA I-485 -->
+        <div style="margin-top:16px">
+          <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">✍️ Firma del Solicitante</div>
+          <div style="font-size:13px;color:#6B7280;margin-bottom:12px;line-height:1.5">Firma en el recuadro con el dedo o el mouse.</div>
+          <div class="sig-wrap" style="height:120px"><canvas id="sig-canvas-i485"></canvas><div class="sig-hint" id="sig-hint-i485">✏️ Firma aquí</div></div>
+          <div class="sig-actions">
+            <div style="font-size:11px;color:#94A3B8">🔒 Guardada de forma segura</div>
+            <button class="sig-clear" onclick="clearSig('i485')">🗑 Limpiar</button>
+          </div>
+          <div class="sig-legal">Al firmar, certifico bajo pena de perjurio que toda la información en este formulario es completa, verdadera y correcta.</div>
+        </div>
       </div>
     </div>
     <div class="form-footer">
@@ -2446,6 +2488,17 @@ function renderFormStatus(tipo, nombre, draft) {
         <div class="form-part-title">Parte 9 — Información adicional</div>
         <div class="form-field"><label class="form-label">Usa este espacio para cualquier información adicional que no cupiera en los campos anteriores</label>
           <textarea class="form-textarea" id="i130-notas" rows="4" placeholder="Información adicional — indica el número de parte y campo al que te refieres..."></textarea>
+        </div>
+        <!-- FIRMA I-130 -->
+        <div style="margin-top:16px">
+          <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">✍️ Firma del Peticionario</div>
+          <div style="font-size:13px;color:#6B7280;margin-bottom:12px;line-height:1.5">Firma en el recuadro con el dedo o el mouse.</div>
+          <div class="sig-wrap" style="height:120px"><canvas id="sig-canvas-i130"></canvas><div class="sig-hint" id="sig-hint-i130">✏️ Firma aquí</div></div>
+          <div class="sig-actions">
+            <div style="font-size:11px;color:#94A3B8">🔒 Guardada de forma segura</div>
+            <button class="sig-clear" onclick="clearSig('i130')">🗑 Limpiar</button>
+          </div>
+          <div class="sig-legal">Al firmar, certifico bajo pena de perjurio que toda la información en este formulario es completa, verdadera y correcta.</div>
         </div>
       </div>
     </div>
