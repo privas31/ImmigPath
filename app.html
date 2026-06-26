@@ -240,14 +240,14 @@ function DocPanel({clienteId, clienteNombre, officeData, userData, docsCliente, 
   const progress = uploadProgress[clienteId] || 0;
 
   async function cargarDocs(){
-    const {db, collection, query, where, getDocs, orderBy} = window._firebase;
+    const {db, collection, query, where, getDocs} = window._firebase;
     const officeId = officeData?.id || userData?.officeId;
     try {
-      const q = query(collection(db,"documentos_clientes"), where("clienteId","==",clienteId), where("officeId","==",officeId), orderBy("createdAt","desc"));
+      const q = query(collection(db,"documentos_clientes"), where("clienteId","==",clienteId), where("officeId","==",officeId));
       const snap = await getDocs(q);
       const lista = snap.docs.map(d=>({id:d.id,...d.data()}));
       setDocsCliente(prev=>({...prev,[clienteId]:lista}));
-    } catch(e){ console.error(e); }
+    } catch(e){ console.error("cargarDocs error:",e.message); showToastFn("❌ Error cargando docs: "+e.message); }
   }
 
   React.useEffect(()=>{ if(!docsCliente[clienteId]) cargarDocs(); },[clienteId]);
@@ -268,24 +268,34 @@ function DocPanel({clienteId, clienteNombre, officeData, userData, docsCliente, 
       snap=>{ const pct = Math.round((snap.bytesTransferred/snap.totalBytes)*100); setUploadProgress(prev=>({...prev,[clienteId]:pct})); },
       err=>{ showToastFn("❌ Error al subir: "+err.message); setUploadingDoc(prev=>({...prev,[clienteId]:false})); },
       async ()=>{
-        const url = await getDownloadURL(uploadTask.snapshot.ref);
-        await addDoc(collection(db,"documentos_clientes"),{
-          officeId, clienteId,
-          clienteNombre: clienteNombre||"",
-          nombre: archivo.name,
-          tipo: tipoSeleccionado,
-          nota: notaDoc,
-          fechaVence: fechaVence||null,
-          url, path,
-          tamaño: archivo.size,
-          createdAt: new Date(),
-          subidoPor: window._firebase.auth.currentUser?.email||""
-        });
-        setUploadingDoc(prev=>({...prev,[clienteId]:false}));
-        setNotaDoc(""); setFechaVence("");
-        showToastFn("✅ Documento subido correctamente");
-        cargarDocs();
-        e.target.value="";
+        try{
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          const {db, collection, addDoc} = window._firebase;
+          await addDoc(collection(db,"documentos_clientes"),{
+            officeId, clienteId,
+            clienteNombre: clienteNombre||"",
+            nombre: archivo.name,
+            tipo: tipoSeleccionado,
+            nota: notaDoc||"",
+            url, path,
+            tamaño: archivo.size,
+            createdAt: new Date().toISOString(),
+            subidoPor: window._firebase.auth.currentUser?.email||""
+          });
+          setUploadingDoc(prev=>({...prev,[clienteId]:false}));
+          setNotaDoc("");
+          showToastFn("✅ Documento subido correctamente");
+          e.target.value="";
+          // Reload docs
+          const officeId2 = officeData?.id || userData?.officeId;
+          const q2 = window._firebase.query(collection(db,"documentos_clientes"), window._firebase.where("clienteId","==",clienteId), window._firebase.where("officeId","==",officeId2));
+          const snap2 = await window._firebase.getDocs(q2);
+          const lista = snap2.docs.map(d=>({id:d.id,...d.data()}));
+          setDocsCliente(prev=>({...prev,[clienteId]:lista}));
+        }catch(err2){
+          showToastFn("❌ Error al guardar: "+err2.message);
+          setUploadingDoc(prev=>({...prev,[clienteId]:false}));
+        }
       }
     );
   }
