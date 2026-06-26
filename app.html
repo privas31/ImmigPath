@@ -212,24 +212,21 @@ function LoginScreen({onLogin}){
 
 // ── DOCUMENTO PANEL COMPONENT ──
 const TIPOS_DOC = [
-  "🪪 Identificación / Pasaporte",
+  "🪪 Pasaporte",
   "🔒 Social Security",
   "📄 Permiso de trabajo / EAD",
   "🚗 Licencia de conducir",
-  "📋 I-9",
-  "📋 W-4",
-  "🏛️ I-485 Ajuste de estatus",
-  "🏛️ I-130 Petición familiar",
-  "🏛️ I-765 Permiso de trabajo",
-  "🏛️ I-589 Asilo",
-  "🏛️ I-131 Advance Parole",
-  "🏛️ N-400 Naturalización",
-  "📂 FOIA",
+  "🌎 Visa",
+  "🛬 I-94",
+  "🫵 Tarjeta consular",
+  "📋 I-9 / W-4",
+  "🔵 Huellas (Biométricos)",
+  "📬 Recibo USCIS",
+  "🔢 Tracking Number",
+  "💳 EAD Card",
+  "📨 Notice of Action",
+  "📃 Carta de decisión",
   "📸 Fotos migratorias",
-  "🏠 Evidencia de domicilio",
-  "💼 Carta de empleo",
-  "💌 Carta de apoyo",
-  "✍️ Contrato firmado",
   "📃 Otro documento"
 ];
 
@@ -324,21 +321,17 @@ function DocPanel({clienteId, clienteNombre, officeData, userData, docsCliente, 
       {/* Subir documento */}
       <div style={{background:"#F8FAFC",border:"1px dashed #CBD5E1",borderRadius:10,padding:"14px 16px",marginBottom:16}}>
         <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10}}>📤 Subir nuevo documento</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1.5fr",gap:10,marginBottom:10}}>
           <div>
-            <label style={{fontSize:11,color:"#64748B",fontWeight:600,display:"block",marginBottom:3}}>TIPO DE DOCUMENTO</label>
+            <label style={{fontSize:11,color:"#64748B",fontWeight:600,display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:".4px"}}>Tipo de documento</label>
             <select value={tipoSeleccionado} onChange={e=>setTipoSeleccionado(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:12,background:"#fff",outline:"none"}}>
               {TIPOS_DOC.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div>
-            <label style={{fontSize:11,color:"#64748B",fontWeight:600,display:"block",marginBottom:3}}>FECHA DE VENCIMIENTO (opcional)</label>
-            <input type="date" value={fechaVence} onChange={e=>setFechaVence(e.target.value)} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:12,outline:"none"}}/>
+            <label style={{fontSize:11,color:"#64748B",fontWeight:600,display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:".4px"}}>Nota (opcional)</label>
+            <textarea value={notaDoc} onChange={e=>setNotaDoc(e.target.value)} placeholder="Ej. Pasaporte vence en 2027, número A123456789..." style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:12,outline:"none",resize:"none",height:72,fontFamily:"inherit"}}/>
           </div>
-        </div>
-        <div style={{marginBottom:10}}>
-          <label style={{fontSize:11,color:"#64748B",fontWeight:600,display:"block",marginBottom:3}}>NOTA (opcional)</label>
-          <input type="text" value={notaDoc} onChange={e=>setNotaDoc(e.target.value)} placeholder="Ej. Vence en marzo, renovación pendiente..." style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:12,outline:"none"}}/>
         </div>
         {uploading?(
           <div style={{marginTop:8}}>
