@@ -381,7 +381,22 @@ function DocPanel({clienteId, clienteNombre, officeData, userData, docsCliente, 
                 </div>
                 <div style={{display:"flex",gap:6,flexShrink:0}}>
                   <a href={d.url} target="_blank" rel="noopener noreferrer" style={{padding:"5px 10px",background:"#EFF6FF",color:"#1D4ED8",borderRadius:6,fontSize:11,fontWeight:600,textDecoration:"none",border:"1px solid #BFDBFE"}}>👁️ Ver</a>
-                  <a href={d.url} download={d.nombre} target="_blank" rel="noopener noreferrer" style={{padding:"5px 10px",background:"#F0FDF4",color:"#16A34A",borderRadius:6,fontSize:11,fontWeight:600,textDecoration:"none",border:"1px solid #BBF7D0"}}>⬇️ Descargar</a>
+                  <button onClick={async()=>{
+                      try{
+                        const resp=await fetch(d.url);
+                        const blob=await resp.blob();
+                        const burl=URL.createObjectURL(blob);
+                        const a=document.createElement("a");
+                        a.href=burl;
+                        a.download=d.nombre||"documento";
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(burl);
+                      }catch(e){
+                        window.open(d.url,"_blank");
+                      }
+                    }} style={{padding:"5px 10px",background:"#F0FDF4",color:"#16A34A",borderRadius:6,fontSize:11,fontWeight:600,border:"1px solid #BBF7D0",cursor:"pointer"}}>⬇️ Descargar</button>
                   <button onClick={()=>setConfirmEliminar(d)} style={{padding:"5px 10px",background:"#FEF2F2",color:"#DC2626",borderRadius:6,fontSize:11,fontWeight:600,border:"1px solid #FECACA",cursor:"pointer"}}>🗑️</button>
                 </div>
               </div>
@@ -2936,7 +2951,7 @@ const loadTeam=async()=>{
           <div style={{marginBottom:18}}>
             <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:8,textTransform:"uppercase"}}>Metodo de pago</label>
             <div style={{display:"flex",gap:8}}>
-              {[["zelle","💚 Zelle"],["stripe","💳 Stripe/Tarjeta"]].map(([val,label])=>(
+              {[["zelle","💚 Zelle"],["stripe","💳 Tarjeta"]].map(([val,label])=>(
                 <button key={val} onClick={()=>setCobrarMetodo(val)} style={{flex:1,padding:"10px",borderRadius:8,border:cobrarMetodo===val?"2px solid #1E3A5F":"1px solid #E2E8F0",background:cobrarMetodo===val?"#EFF6FF":"#F8FAFC",color:cobrarMetodo===val?"#1E3A5F":"#64748B",fontWeight:cobrarMetodo===val?700:400,fontSize:13,cursor:"pointer"}}>{label}</button>
               ))}
             </div>
@@ -2950,7 +2965,7 @@ const loadTeam=async()=>{
 *Concepto:* ${cobrarConcepto}
 *Monto:* $${parseFloat(cobrarMonto||0).toFixed(2)}
 
-*Pagar via ${cobrarMetodo==="zelle"?"Zelle":"Stripe/Tarjeta"}:*
+*Pagar via ${cobrarMetodo==="zelle"?"Zelle":"Tarjeta"}:*
 ${zelleInfo}
 
 Gracias — ${officeData?.name||"ImmigPath"}`;
