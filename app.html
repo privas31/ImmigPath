@@ -416,7 +416,7 @@ function App(){
   const[clientes,setClientes]=useState([]);const[loading,setLoading]=useState(false);
   const[showModal,setShowModal]=useState(false);const[editId,setEditId]=useState(null);const[formCliente,setFormCliente]=useState(emptyCliente);
   const[filtroStatus,setFiltroStatus]=useState("todos");const[filtroSistema,setFiltroSistema]=useState("todos");
-  const[búsqueda,setBúsqueda]=useState("");const[saving,setSaving]=useState(false);
+  const[búsqueda,setBúsqueda]=useState("");const[busquedaActiva,setBusquedaActiva]=useState("");const[saving,setSaving]=useState(false);
   const[toast,setToast]=useState(null);const[sortBy,setSortBy]=useState("fecha");
   const[confirmDelete,setConfirmDelete]=useState(null);const[expandedId,setExpandedId]=useState(null);const[activeCasoTab,setActiveCasoTab]=useState({});
   const[docsCliente,setDocsCliente]=useState({});const[activeDocTab,setActiveDocTab]=useState({});const[uploadingDoc,setUploadingDoc]=useState({});const[uploadProgress,setUploadProgress]=useState({});
@@ -1220,9 +1220,25 @@ const loadTeam=async()=>{
             </button>
           ))}
         </div>
-        <div style={{flex:1,position:"relative"}}>
+        <div style={{flex:1,display:"flex",gap:8,alignItems:"center"}}>
+          <div style={{flex:1,position:"relative"}}>
           <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#94A3B8",fontSize:14}}>🔍</span>
-          <input value={búsqueda} onChange={e=>setBúsqueda(e.target.value)} placeholder={t("Buscar por nombre, A#, recibo, FOIA tracking, encargada, país...","Search by name, A#, receipt, FOIA tracking, agent, country...")} style={{width:"100%",padding:"9px 14px 9px 36px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#F8FAFC",outline:"none",boxSizing:"border-box"}}/>
+          <input
+              value={búsqueda}
+              onChange={e=>setBúsqueda(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&setBusquedaActiva(búsqueda)}
+              placeholder={t("Nombre del cliente o A#...","Client name or A#...")}
+              style={{flex:1,padding:"9px 14px 9px 36px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#F8FAFC",outline:"none",boxSizing:"border-box"}}
+            />
+          </div>
+          <button
+            onClick={()=>setBusquedaActiva(búsqueda)}
+            style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}
+          >{t("Buscar","Search")}</button>
+          {busquedaActiva&&<button
+            onClick={()=>{setBúsqueda("");setBusquedaActiva("");}}
+            style={{padding:"9px 14px",borderRadius:8,border:"1px solid #E2E8F0",background:"#fff",color:"#374151",fontSize:13,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}
+          >{t("Ver todos","Show all")}</button>}
         </div>
         <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#fff",cursor:"pointer",color:"#374151"}}>
           <option value="fecha">{t("Por fecha","By date")}</option>
@@ -1252,7 +1268,7 @@ const loadTeam=async()=>{
       </div>
       <div style={{padding:"24px 32px 48px"}}>
 
-      {!loading&&(stats.vencidos.length>0||stats.alertas1dia.length>0||stats.alertas3dias.length>0)&&(
+      {!loading&&!busquedaActiva&&(stats.vencidos.length>0||stats.alertas1dia.length>0||stats.alertas3dias.length>0)&&(
         <div style={{marginBottom:16,borderRadius:12,overflow:"hidden",border:"1px solid #FECACA",background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
           {stats.vencidos.length>0&&(
             <div style={{background:"#FEF2F2",padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,borderBottom:stats.alertas1dia.length>0||stats.alertas3dias.length>0?"1px solid #FECACA":"none"}}>
@@ -1302,7 +1318,10 @@ const loadTeam=async()=>{
         </div>
       ):(
         <div style={{display:"grid",gap:8}}>
-          {filtered.map(c=>{
+          {(busquedaActiva.trim()
+            ? clientes.filter(c=>c.nombre.toLowerCase().includes(busquedaActiva.trim().toLowerCase())||(c.alienNum||"").toLowerCase().includes(busquedaActiva.trim().toLowerCase()))
+            : filtered
+          ).map(c=>{
             const st=getStatusCliente(c);const scfg=STATUS_CONFIG[st];const pf=getPróximaFecha(c);const dias=pf?getDias(pf):null;const exp=expandedId===c.id;
             const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
             const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
