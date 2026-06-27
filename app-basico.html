@@ -136,7 +136,7 @@ function ProcesosEditor({procesos,onChange}){
       <div style={{fontSize:12,fontWeight:700,color:"#D97706"}}>💰 Pagos de este proceso</div>
       <button onClick={add} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>+ Agregar pago</button>
     </div>
-    {procesos.length===0&&<div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:"6px 0"}}>{t("Sin pagos registrados","No payments recorded")}</div>}
+    {procesos.length===0&&<div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:"6px 0"}}>Sin pagos registrados</div>}
     {procesos.map((p,i)=>(
       <div key={p.id||i} style={{background:"#fff",borderRadius:7,padding:"9px 11px",marginBottom:7,border:"1px solid #FDE68A"}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
@@ -286,6 +286,7 @@ function DocPanel({clienteId, clienteNombre, officeData, userData, docsCliente, 
           setNotaDoc("");
           showToastFn("✅ Documento subido correctamente");
           e.target.value="";
+          // Reload docs
           const officeId2 = officeData?.id || userData?.officeId;
           const q2 = window._firebase.query(collection(db,"documentos_clientes"), window._firebase.where("clienteId","==",clienteId), window._firebase.where("officeId","==",officeId2));
           const snap2 = await window._firebase.getDocs(q2);
@@ -380,7 +381,22 @@ function DocPanel({clienteId, clienteNombre, officeData, userData, docsCliente, 
                 </div>
                 <div style={{display:"flex",gap:6,flexShrink:0}}>
                   <a href={d.url} target="_blank" rel="noopener noreferrer" style={{padding:"5px 10px",background:"#EFF6FF",color:"#1D4ED8",borderRadius:6,fontSize:11,fontWeight:600,textDecoration:"none",border:"1px solid #BFDBFE"}}>👁️ Ver</a>
-                  <a href={d.url} download={d.nombre} target="_blank" rel="noopener noreferrer" style={{padding:"5px 10px",background:"#F0FDF4",color:"#16A34A",borderRadius:6,fontSize:11,fontWeight:600,textDecoration:"none",border:"1px solid #BBF7D0"}}>⬇️ Descargar</a>
+                  <button onClick={async()=>{
+                      try{
+                        const resp=await fetch(d.url);
+                        const blob=await resp.blob();
+                        const burl=URL.createObjectURL(blob);
+                        const a=document.createElement("a");
+                        a.href=burl;
+                        a.download=d.nombre||"documento";
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(burl);
+                      }catch(e){
+                        window.open(d.url,"_blank");
+                      }
+                    }} style={{padding:"5px 10px",background:"#F0FDF4",color:"#16A34A",borderRadius:6,fontSize:11,fontWeight:600,border:"1px solid #BBF7D0",cursor:"pointer"}}>⬇️ Descargar</button>
                   <button onClick={()=>setConfirmEliminar(d)} style={{padding:"5px 10px",background:"#FEF2F2",color:"#DC2626",borderRadius:6,fontSize:11,fontWeight:600,border:"1px solid #FECACA",cursor:"pointer"}}>🗑️</button>
                 </div>
               </div>
@@ -859,11 +875,13 @@ const loadTeam=async()=>{
           const cambios=[];
           const usuario=userData?.displayName||user.email;
           const fmtFecha=(f)=>f?new Date(f+"T00:00:00").toLocaleDateString("es-US",{day:"2-digit",month:"short",year:"numeric"}):"—";
+          // Datos del cliente
           if(prevCliente.nombre!==formCliente.nombre) cambios.push({icono:"✏️",texto:`Nombre: "${prevCliente.nombre||"—"}" → "${formCliente.nombre}"`});
           if(prevCliente.alienNum!==formCliente.alienNum) cambios.push({icono:"🪪",texto:`A#: ${prevCliente.alienNum||"—"} → ${formCliente.alienNum||"—"}`});
           if(prevCliente.encargada!==formCliente.encargada) cambios.push({icono:"👤",texto:`Encargada: ${prevCliente.encargada||"Sin asignar"} → ${formCliente.encargada||"Sin asignar"}`});
           if(prevCliente.telefono!==formCliente.telefono) cambios.push({icono:"📱",texto:`Teléfono: ${prevCliente.telefono||"—"} → ${formCliente.telefono||"—"}`});
           if(prevCliente.paisOrigen!==formCliente.paisOrigen) cambios.push({icono:"🌍",texto:`País: ${prevCliente.paisOrigen||"—"} → ${formCliente.paisOrigen||"—"}`});
+          // Casos
           const casosNew=formCliente.casos||[];
           const casosOld=prevCliente.casos||[];
           if(casosNew.length>casosOld.length) cambios.push({icono:"📁",texto:`Nuevo caso agregado: ${casosNew[casosNew.length-1].tipoCaso||"Sin tipo"}`});
@@ -881,6 +899,7 @@ const loadTeam=async()=>{
             if(prev.foiaTracking!==ca.foiaTracking&&ca.foiaTracking) cambios.push({icono:"📂",texto:`[${label}] FOIA Tracking: ${prev.foiaTracking||"—"} → ${ca.foiaTracking}`});
             if(prev.foiaEstado!==ca.foiaEstado&&ca.foiaEstado) cambios.push({icono:"📂",texto:`[${label}] Estado FOIA: ${prev.foiaEstado||"—"} → ${ca.foiaEstado}`});
             if(prev.nota!==ca.nota&&ca.nota) cambios.push({icono:"📝",texto:`[${label}] Notas actualizadas`});
+            // Pagos/procesos
             const procNew=ca.procesos||[];
             const procOld=prev.procesos||[];
             if(procNew.length>procOld.length) cambios.push({icono:"💵",texto:`[${label}] Nuevo pago agregado: ${procNew[procNew.length-1].nombre||""}`});
@@ -898,6 +917,12 @@ const loadTeam=async()=>{
               usuarioEmail:user.email,
               fecha:new Date().toISOString(),
             });
+            // Refresh historial if open
+            if(showHistorial&&historialCliente?.id===editId){
+              const q=query(collection(db,"historial"),where("clienteId","==",editId),orderBy("fecha","desc"));
+              const snap=await getDocs(q);
+              setHistorialData(snap.docs.map(d=>({id:d.id,...d.data()})));
+            }
           }
         }catch(he){console.error("Historial error:",he);}
         setClientes(prev=>prev.map(c=>c.id===editId?{...c,...formCliente,officeId}:c));
@@ -1033,7 +1058,7 @@ const loadTeam=async()=>{
                     let tiempoStr="—";
                     if(dias!==null){
                       if(dias<0) tiempoStr="Hace "+Math.abs(dias)+"d";
-                      else if(dias===0) tiempoStr=t("Hoy","Today");
+                      else if(dias===0) tiempoStr="Hoy";
                       else tiempoStr="+"+dias+"d";
                     }
                     // Fecha de ingreso del cliente al sistema
@@ -1128,24 +1153,28 @@ const loadTeam=async()=>{
   //  PERMISOS POR ROL 
   const isAdmin = userData?.role==="office_admin" || userData?.role==="superadmin";
 
-  // ── SIDEBAR NAV ITEMS (Básico) ────────────────────────────────────────────
+  // ── SIDEBAR NAV ITEMS ──────────────────────────────────────────────────────
   const navItems = [
-    {id:"monitor",    label:t("Monitor Oficina","Office Monitor"),  icon:"🖥"},
-    {id:"dashboard",  label:t("Dashboard","Dashboard"),             icon:"📊", badge:isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
-    {id:"clientes",   label:t("Clientes","Clients"),                icon:"👥", onClick:()=>{setActiveNav("monitor");window.scrollTo(0,160);}},
-    {id:"formularios",label:t("Formularios","Forms"),               icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
-    {id:"nomina",     label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNómina(true)},
-    {id:"pagos",      label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
-    {id:"cobros",     label:t("Cobros","Collections"),              icon:"💰", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
-    {id:"equipo",     label:t("Equipo","Team"),                     icon:"🤝", show:isAdmin, onClick:()=>setShowTeam(true)},
-    {id:"usuarios",   label:t("Usuarios","Users"),                  icon:"🔐", show:isAdmin, onClick:()=>setShowAddUser(true)},
-    {id:"reportes",   label:t("Reportes","Reports"),                icon:"📈", show:isAdmin, onClick:()=>setShowPDF(true)},
+    {id:"monitor",   label:t("Monitor Oficina","Office Monitor"),  icon:"🖥", onClick:()=>{setActiveNav("monitor");}},
+    {id:"checklist", label:t("Primeros pasos","Getting started"), icon:"🚀", onClick:()=>setShowChecklist(true)},
+    {id:"alertas",   label:t("Alertas","Alerts"),                  icon:"🔔", badge: (stats.alertas.length+stats.vencidos.length+stats.eadElegibles.length)||null, onClick:()=>setShowAlertas(true)},
+    {id:"dashboard", label:t("Dashboard","Dashboard"),             icon:"📊", badge: isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
+    {id:"formularios",label:t("Formularios","Forms"),              icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
+    // Admin only items below
+    {id:"pagos",     label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
+    {id:"cobros",    label:t("Cobros","Collections"),              icon:"💰", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
+    {id:"nomina",    label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNómina(true)},
+    {id:"notaria",   label:t("Notaría","Notary"),                  icon:"📜", href:"/notaria.html", show:enabledModules.includes("notary")},
+    {id:"equipo",    label:t("Equipo","Team"),                     icon:"🤝", show:isAdmin, onClick:()=>{setShowTeam(true);loadOfficeUsers();}},
+    {id:"usuarios",  label:t("Usuarios","Users"),                  icon:"🔐", show:isAdmin, onClick:()=>setShowAddUser(true)},
+    {id:"reportes",  label:t("Reportes","Reports"),                icon:"📈", show:isAdmin, onClick:()=>setShowPDF(true)},
+    {id:"config",    label:t("Configuración","Settings"),          icon:"⚙️", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
   ];
 
   return(<div style={{fontFamily:"'Segoe UI',Inter,system-ui,sans-serif",minHeight:"100vh",background:"#F8FAFC",display:"flex"}}>
     <div style={{width:240,minHeight:"100vh",background:"#fff",display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:40,flexShrink:0,borderRight:"1px solid #E2E8F0",boxShadow:"2px 0 8px rgba(0,0,0,0.04)"}}>
       <div style={{padding:"20px 20px 16px",borderBottom:"1px solid #F1F5F9"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
           {officeLogo
             ?<img src={officeLogo} alt="Logo" style={{height:36,width:36,borderRadius:10,objectFit:"contain",background:"rgba(255,255,255,0.1)",padding:3}}/>
             :<div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#3B82F6,#1E40AF)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>⚖️</div>
@@ -1155,16 +1184,19 @@ const loadTeam=async()=>{
             <div style={{fontSize:10,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em"}}>SERVICES</div>
           </div>
         </div>
-        <div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(99,102,241,0.2)",border:"1px solid rgba(99,102,241,0.35)",borderRadius:6,padding:"3px 10px"}}>
-          <span style={{width:6,height:6,borderRadius:"50%",background:"#818CF8",display:"inline-block"}}/>
-          <span style={{fontSize:10,fontWeight:700,color:"#A5B4FC",letterSpacing:"0.05em"}}>PLAN BÁSICO</span>
-        </div>
       </div>
       <nav style={{flex:1,padding:"12px 0",overflowY:"auto"}}>
-        {navItems.map(n=>{
+        {navItems.filter(n=>n.show!==false).map(n=>{
           const active = activeNav===n.id;
+          const handleClick = ()=>{ setActiveNav(n.id); n.onClick&&n.onClick(); };
+          if(n.href) return(
+            <a key={n.id} href={n.href} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 20px",textDecoration:"none",color:active?"#2563EB":"#64748B",background:active?"#EFF6FF":"transparent",borderLeft:active?"3px solid #2563EB":"3px solid transparent",fontSize:13,fontWeight:active?600:400,transition:"all 0.15s"}}>
+              <span style={{fontSize:15,width:20,textAlign:"center"}}>{n.icon}</span>
+              <span style={{flex:1}}>{n.label}</span>
+            </a>
+          );
           return(
-            <button key={n.id} onClick={()=>{setActiveNav(n.id);n.onClick&&n.onClick();}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 20px",background:active?"#EFF6FF":"transparent",border:"none",borderLeft:active?"3px solid #2563EB":"3px solid transparent",color:active?"#2563EB":"#64748B",fontSize:13,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
+            <button key={n.id} onClick={handleClick} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 20px",background:active?"#EFF6FF":"transparent",border:"none",borderLeft:active?"3px solid #2563EB":"3px solid transparent",color:active?"#2563EB":"#64748B",fontSize:13,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",position:"relative",transition:"all 0.15s"}}>
               <span style={{fontSize:15,width:20,textAlign:"center"}}>{n.icon}</span>
               <span style={{flex:1}}>{n.label}</span>
               {n.badge>0&&<span style={{background:"#EF4444",color:"#fff",borderRadius:20,padding:"1px 6px",fontSize:10,fontWeight:700,minWidth:18,textAlign:"center"}}>{n.badge}</span>}
@@ -1183,9 +1215,12 @@ const loadTeam=async()=>{
           </div>
           <button onClick={handleLogout} title={t("Salir","Logout")} style={{background:"#F1F5F9",border:"none",borderRadius:6,padding:"5px 7px",cursor:"pointer",color:"#64748B",fontSize:11}}>↩</button>
         </div>
-        <div style={{display:"flex",gap:4,justifyContent:"flex-end"}}>
-          <button onClick={()=>{_lang="es";setLang("es")}} style={{background:lang==="es"?"#2563EB":"#F1F5F9",color:lang==="es"?"#fff":"#64748B",border:"none",borderRadius:"4px 0 0 4px",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="es"?700:400}}>ES</button>
-          <button onClick={()=>{_lang="en";setLang("en")}} style={{background:lang==="en"?"#2563EB":"#F1F5F9",color:lang==="en"?"#fff":"#64748B",border:"none",borderRadius:"0 4px 4px 0",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="en"?700:400}}>EN</button>
+        <div style={{display:"flex",gap:4,justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:10,color:"#94A3B8"}}>{officeData?.officeCode||""}</div>
+          <div style={{display:"flex",gap:3}}>
+            <button onClick={()=>{_lang="es";setLang("es")}} style={{background:lang==="es"?"#2563EB":"#F1F5F9",color:lang==="es"?"#fff":"#64748B",border:"none",borderRadius:"4px 0 0 4px",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="es"?700:400}}>ES</button>
+            <button onClick={()=>{_lang="en";setLang("en")}} style={{background:lang==="en"?"#2563EB":"#F1F5F9",color:lang==="en"?"#fff":"#64748B",border:"none",borderRadius:"0 4px 4px 0",padding:"3px 7px",fontSize:10,cursor:"pointer",fontWeight:lang==="en"?700:400}}>EN</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1194,7 +1229,8 @@ const loadTeam=async()=>{
         <div style={{display:"flex",gap:0,marginRight:8}}>
           {[{key:"todos",label:t("Todos","All"),icon:"🗂"},{key:"uscis",label:"USCIS",icon:"🏛"},{key:"eoir",label:"EOIR",icon:"⚖️"},{key:"foia",label:"FOIA",icon:"📂"}].map(tab=>(
             <button key={tab.key} onClick={()=>setFiltroSistema(tab.key)} style={{background:"transparent",border:"none",borderBottom:filtroSistema===tab.key?"2px solid #2563EB":"2px solid transparent",color:filtroSistema===tab.key?"#2563EB":"#94A3B8",fontWeight:filtroSistema===tab.key?600:400,fontSize:13,padding:"0 14px",height:64,cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5}}>
-              <span>{tab.icon}</span><span>{tab.label}</span>
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
               <span style={{background:filtroSistema===tab.key?"#EFF6FF":"#F1F5F9",color:filtroSistema===tab.key?"#2563EB":"#94A3B8",borderRadius:20,padding:"1px 7px",fontSize:11,fontWeight:600}}>{cnt("todos",tab.key==="todos"?"todos":tab.key)}</span>
             </button>
           ))}
@@ -1229,8 +1265,8 @@ const loadTeam=async()=>{
           <option value="hoy">🟠 {t("Hoy","Today")}</option>
           <option value="urgente">🟡 {t("Urgentes","Urgent")}</option>
           <option value="proximo">🔵 {t("Próximas","Upcoming")}</option>
-          <option value="ok">🟢 {t("Al día","On track")}</option>
-          <option value="pendiente">⚪ {t("Sin fecha","No date")}</option>
+          <option value="ok">🟢 {t("Al día","On Track")}</option>
+          <option value="pendiente">⚪ {t("Sin fecha","No Date")}</option>
         </select>
         <button onClick={openAdd} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
           + {t("Nuevo Cliente","New Client")}
@@ -1247,7 +1283,48 @@ const loadTeam=async()=>{
       </div>
       <div style={{padding:"24px 32px 48px"}}>
 
-    {loading?<div style={{textAlign:"center",padding:80,color:"#94A3B8",fontSize:14}}>⏳ {t("Cargando...","Loading...")}</div>:filtered.length===0?(
+      {!loading&&!busquedaActiva&&(stats.vencidos.length>0||stats.alertas1dia.length>0||stats.alertas3dias.length>0)&&(
+        <div style={{marginBottom:16,borderRadius:12,overflow:"hidden",border:"1px solid #FECACA",background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+          {stats.vencidos.length>0&&(
+            <div style={{background:"#FEF2F2",padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,borderBottom:stats.alertas1dia.length>0||stats.alertas3dias.length>0?"1px solid #FECACA":"none"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:32,height:32,borderRadius:8,background:"#FEE2E2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>⚠️</div>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#DC2626"}}>{stats.vencidos.length} {stats.vencidos.length>1?t("clientes con fecha vencida","clients with overdue dates"):t("cliente con fecha vencida","client with overdue date")}</div>
+                  <div style={{fontSize:12,color:"#EF4444",marginTop:1}}>{stats.vencidos.slice(0,3).map(c=>c.nombre.split(" ")[0]).join(", ")}{stats.vencidos.length>3?` +${stats.vencidos.length-3} ${t("más","more")}`:""}</div>
+                </div>
+              </div>
+              <button onClick={()=>setFiltroStatus("vencido")} style={{background:"#DC2626",color:"#fff",border:"none",borderRadius:7,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>{t("Revisar","Review")}</button>
+            </div>
+          )}
+          {stats.alertas1dia.length>0&&(
+            <div style={{background:"#FFF7ED",padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,borderBottom:stats.alertas3dias.length>0?"1px solid #FED7AA":"none"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:32,height:32,borderRadius:8,background:"#FFEDD5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🟠</div>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#C2410C"}}>{stats.alertas1dia.length} {t("con fecha mañana","with date tomorrow")}</div>
+                  <div style={{fontSize:12,color:"#EA580C",marginTop:1}}>{stats.alertas1dia.slice(0,3).map(c=>c.nombre.split(" ")[0]).join(", ")}{stats.alertas1dia.length>3?` +${stats.alertas1dia.length-3} ${t("más","more")}`:""}</div>
+                </div>
+              </div>
+              <button onClick={()=>setFiltroStatus("hoy")} style={{background:"#EA580C",color:"#fff",border:"none",borderRadius:7,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>{t("Ver","View")}</button>
+            </div>
+          )}
+          {stats.alertas3dias.length>0&&(
+            <div style={{background:"#FFFBEB",padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:32,height:32,borderRadius:8,background:"#FEF3C7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🟡</div>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#B45309"}}>{stats.alertas3dias.length} {t("con fecha en 3 días","with date in 3 days")}</div>
+                  <div style={{fontSize:12,color:"#D97706",marginTop:1}}>{stats.alertas3dias.slice(0,3).map(c=>c.nombre.split(" ")[0]).join(", ")}{stats.alertas3dias.length>3?` +${stats.alertas3dias.length-3} ${t("más","more")}`:""}</div>
+                </div>
+              </div>
+              <button onClick={()=>setFiltroStatus("urgente")} style={{background:"#D97706",color:"#fff",border:"none",borderRadius:7,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>{t("Ver","View")}</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {loading?<div style={{textAlign:"center",padding:80,color:"#94A3B8",fontSize:14}}>⏳ {t("Cargando...","Loading...")}</div>:filtered.length===0?(
         <div style={{textAlign:"center",padding:80,color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px solid #E2E8F0"}}>
           <div style={{fontSize:48,marginBottom:12}}>📭</div>
           <div style={{fontSize:15,fontWeight:600,marginBottom:4,color:"#475569"}}>{t("Sin clientes en esta categoría","No clients in this category")}</div>
@@ -1256,14 +1333,7 @@ const loadTeam=async()=>{
         </div>
       ):(
         <div style={{display:"grid",gap:8}}>
-          {filtered.length===0?(
-            <div style={{textAlign:"center",padding:80,color:"#94A3B8",background:"#fff",borderRadius:12,border:"1px solid #E2E8F0"}}>
-              <div style={{fontSize:48,marginBottom:12}}>📭</div>
-              <div style={{fontSize:15,fontWeight:600,marginBottom:4,color:"#475569"}}>{t("Sin clientes en esta categoría","No clients in this category")}</div>
-              <button onClick={openAdd} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:14,cursor:"pointer",fontWeight:600,marginTop:16}}>+ {t("Agregar primer cliente","Add first client")}</button>
-            </div>
-          ):
-          (busquedaActiva.trim()
+          {(busquedaActiva.trim()
             ? clientes.filter(c=>c.nombre.toLowerCase().includes(busquedaActiva.trim().toLowerCase())||(c.alienNum||"").toLowerCase().includes(busquedaActiva.trim().toLowerCase()))
             : filtered
           ).map(c=>{
@@ -1313,7 +1383,7 @@ const loadTeam=async()=>{
                       </span>}
                     </div>
                     {isAdmin&&totalP>0&&<div style={{marginTop:8,display:"flex",alignItems:"center",gap:8,maxWidth:320}}>
-                      <div style={{flex:1,background:"#F1F5F9",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`,transition:"width 0.3s"}}/></div>
+                      <div style={{flex:1,background:"#F8FAFC",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`,transition:"width 0.3s"}}/></div>
                       <span style={{fontSize:11,fontWeight:700,color:pc,whiteSpace:"nowrap"}}>{pct!==null?`${pct}%`:"—"}</span>
                       <span style={{fontSize:11,color:"#94A3B8",whiteSpace:"nowrap"}}>{fmtMoney(pagadoP)} / {fmtMoney(totalP)}</span>
                     </div>}
@@ -1330,10 +1400,50 @@ const loadTeam=async()=>{
                       {openMenuId===c.id&&(
                         <div onClick={e=>e.stopPropagation()} style={{position:"absolute",right:0,top:"110%",background:"#fff",borderRadius:10,boxShadow:"0 8px 32px rgba(0,0,0,0.15)",border:"1px solid #E2E8F0",zIndex:50,minWidth:200,overflow:"hidden"}}>
                           <div style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",borderBottom:"1px solid #F1F5F9"}}>{ t("Acciones","Actions") }</div>
-
-
-
-
+                          <button onClick={e=>{e.stopPropagation();openHistorial(c);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F8FAFC"} onMouseLeave={e=>e.target.style.background="none"}>
+                            <span>📋</span> Ver historial de cambios
+                          </button>
+                          {(c.casos||[]).some(ca=>(ca.tipoCaso||"").toLowerCase().includes("589")||(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&(
+                            <button onClick={e=>{e.stopPropagation();setI589Cliente(c);setI589Comentario("");setShowI589Review(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#7C3AED",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F5F3FF"} onMouseLeave={e=>e.target.style.background="none"}>
+                              <span>📄</span> Revisar Form Asilo
+                              {c.i589Draft?.status==="pendiente_revision"&&<span style={{marginLeft:"auto",background:"#FEF3C7",color:"#D97706",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:10}}>NUEVO</span>}
+                              {!c.i589Draft&&<span style={{marginLeft:"auto",fontSize:10,color:"#94A3B8",fontStyle:"italic"}}>sin llenar</span>}
+                            </button>
+                          )}
+                          {(c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("765"))&&(
+                            <button onClick={e=>{e.stopPropagation();setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#7C3AED",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F5F3FF"} onMouseLeave={e=>e.target.style.background="none"}>
+                              <span>📋</span> Revisar Form WP
+                              <span style={{marginLeft:"auto",fontSize:10,color:"#94A3B8",fontStyle:"italic"}}>pronto</span>
+                            </button>
+                          )}
+                          {(c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("485"))&&(
+                            <button onClick={e=>{e.stopPropagation();setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#7C3AED",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F5F3FF"} onMouseLeave={e=>e.target.style.background="none"}>
+                              <span>📋</span> Revisar Form Residencia
+                              <span style={{marginLeft:"auto",fontSize:10,color:"#94A3B8",fontStyle:"italic"}}>pronto</span>
+                            </button>
+                          )}
+                          {(c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("130"))&&(
+                            <button onClick={e=>{e.stopPropagation();setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#7C3AED",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F5F3FF"} onMouseLeave={e=>e.target.style.background="none"}>
+                              <span>📋</span> Revisar Form Petición
+                              <span style={{marginLeft:"auto",fontSize:10,color:"#94A3B8",fontStyle:"italic"}}>pronto</span>
+                            </button>
+                          )}
+                          <button onClick={e=>{e.stopPropagation();const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>{prompt("Copia este link:",link);});setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F8FAFC"} onMouseLeave={e=>e.target.style.background="none"}>
+                            <span>🔗</span> Copiar link del portal
+                          </button>
+                          <button onClick={e=>{
+                            e.stopPropagation();
+                            const tel=(c.telefono||"").replace(/[^0-9]/g,"");
+                            if(!tel){showToastFn("Sin telefono registrado","error");setOpenMenuId(null);return;}
+                            const nombre=c.nombre||"cliente";
+                            const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigracion";
+                            const oficina=officeData?.name||"nuestra oficina";
+                            const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualización de su proceso. Para mas información contactenos. — "+oficina;
+                            window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");
+                            setOpenMenuId(null);
+                          }} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F8FAFC"} onMouseLeave={e=>e.target.style.background="none"}>
+                            <span>💬</span> Enviar WhatsApp
+                          </button>
                           <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#16A34A",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F0FDF4"} onMouseLeave={e=>e.target.style.background="none"}>
                             <span>💳</span> Cobrar cliente
                           </button>
@@ -1354,8 +1464,13 @@ const loadTeam=async()=>{
                         <button key={i} onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:i}))} style={{background:"transparent",border:"none",borderBottom:casoTab===i?`2px solid ${sys.color}`:"2px solid transparent",color:casoTab===i?sys.color:"#64748B",fontWeight:casoTab===i?700:400,fontSize:12,padding:"10px 14px",cursor:"pointer",whiteSpace:"nowrap",marginBottom:"-1px"}}>
                           {sys.icon} {ca.tipoCaso||sys.label}
                         </button>
-                      );})}
-                      <button style={{background:"transparent",border:"none",borderBottom:casoTab==="docs"?"2px solid #7C3AED":"2px solid transparent",color:casoTab==="docs"?"#7C3AED":"#64748B",fontWeight:casoTab==="docs"?700:400,fontSize:12,padding:"10px 14px",cursor:"pointer",whiteSpace:"nowrap",marginBottom:"-1px"}} onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))}>\n                        📂 Documentos\n                      </button>\n                    </div>\n                    {casoTab==="docs"?(\n                      <DocPanel clienteId={c.id} clienteNombre={c.nombre} officeData={officeData} userData={userData} docsCliente={docsCliente} setDocsCliente={setDocsCliente} uploadingDoc={uploadingDoc} setUploadingDoc={setUploadingDoc} uploadProgress={uploadProgress} setUploadProgress={setUploadProgress} showToastFn={showToastFn}/>\n                    ):(c.casos||[])[casoTab]&&(()=>{
+                      );})}\
+                      <button onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))} style={{background:"transparent",border:"none",borderBottom:casoTab==="docs"?"2px solid #7C3AED":"2px solid transparent",color:casoTab==="docs"?"#7C3AED":"#64748B",fontWeight:casoTab==="docs"?700:400,fontSize:12,padding:"10px 14px",cursor:"pointer",whiteSpace:"nowrap",marginBottom:"-1px"}}>
+                        📂 Documentos
+                      </button>                    </div>
+                    {casoTab==="docs"?(
+                      <DocPanel clienteId={c.id} clienteNombre={c.nombre} officeData={officeData} userData={userData} docsCliente={docsCliente} setDocsCliente={setDocsCliente} uploadingDoc={uploadingDoc} setUploadingDoc={setUploadingDoc} uploadProgress={uploadProgress} setUploadProgress={setUploadProgress} showToastFn={showToastFn}/>
+                    ):(c.casos||[])[casoTab]&&(()=>{
                       const ca=(c.casos||[])[casoTab];const sys=SISTEMAS[ca.sistema]||SISTEMAS.uscis;
                       const diasFecha=getDias(ca.fechaCorte);const scfgCaso=STATUS_CONFIG[getStatus(ca.fechaCorte)];
                       return(
@@ -1505,7 +1620,7 @@ const loadTeam=async()=>{
         <Field label={t("Email *","Email *")} value={newUserEmail} onChange={setNewUserEmail} placeholder="usuario@email.com" type="email"/>
         <Field label={t("Contraseña temporal *","Temporary password *")} value={newUserPass} onChange={setNewUserPass} placeholder={t("Mínimo 6 caracteres","Minimum 6 characters")} type="password"/>
         <div style={{marginBottom:16}}>
-          <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.04em"}}>{t("Rol","Role")}</label>
+          <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.04em"}}>{ t("Rol","Role") }</label>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             {[
               ["office_admin",t("👑 Admin","👑 Admin"),t("Acceso completo — nómina, cobros, usuarios","Full access — payroll, collections, users"),"#1E3A5F","#EFF6FF","#BFDBFE"],
@@ -1520,7 +1635,7 @@ const loadTeam=async()=>{
         </div>
         {addUserMsg&&<div style={{padding:"10px 14px",borderRadius:8,background:addUserMsg.includes("✅")?"#F0FDF4":"#FEF2F2",border:`1px solid ${addUserMsg.includes("✅")?"#BBF7D0":"#FECACA"}`,fontSize:13,color:addUserMsg.includes("✅")?"#15803D":"#DC2626",marginBottom:14}}>{addUserMsg}</div>}
         <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-          <button onClick={()=>{setShowAddUser(false);setAddUserMsg("");setNewUserName("");setNewUserEmail("");setNewUserPass("");setNewUserRole("employee");}} style={{padding:"10px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>{ t("Cancelar","Cancel") }</button>
+          <button onClick={()=>{setShowAddUser(false);setAddUserMsg("");setNewUserName("");setNewUserEmail("");setNewUserPass("");setNewUserRole("employee");}} style={{padding:"10px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
           <button onClick={handleAddUser} disabled={addUserLoading||!newUserEmail||!newUserPass||!newUserName} style={{padding:"10px 20px",borderRadius:8,border:"none",background:(addUserLoading||!newUserEmail||!newUserPass||!newUserName)?"#E5E7EB":"#1E3A5F",color:(addUserLoading||!newUserEmail||!newUserPass||!newUserName)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(addUserLoading||!newUserEmail||!newUserPass||!newUserName)?"not-allowed":"pointer"}}>
             { addUserLoading ? t("Creando...","Creating...") : t("✅ Crear usuario","✅ Create user") }
           </button>
@@ -1565,10 +1680,10 @@ const loadTeam=async()=>{
             <div style={{fontSize:13,fontWeight:700,color:"#0F172A"}}>{ t("Casos del cliente","Client cases") }</div>
             <button onClick={addCaso} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>{ t("+ Agregar caso","+ Add case") }</button>
           </div>
-          {formCliente.casos.length===0&&<div style={{textAlign:"center",padding:"20px",color:"#94A3B8",fontSize:13,background:"#F8FAFC",borderRadius:10,border:"1px dashed #E2E8F0",marginBottom:14}}>Sin casos. Haz clic en "{ t("+ Agregar caso","+ Add case") }".</div>}
+          {formCliente.casos.length===0&&<div style={{textAlign:"center",padding:"20px",color:"#94A3B8",fontSize:13,background:"#F8FAFC",borderRadius:10,border:"1px dashed #E2E8F0",marginBottom:14}}>Sin casos. Haz clic en "+ Agregar caso".</div>}
           {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo} isAdmin={isAdmin}/>))}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
-            <button onClick={()=>setShowModal(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>{ t("Cancelar","Cancel") }</button>
+            <button onClick={()=>setShowModal(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
             <button onClick={handleSubmit} disabled={!formCliente.nombre||saving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(!formCliente.nombre||saving)?"#E5E7EB":"#1E40AF",color:(!formCliente.nombre||saving)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(!formCliente.nombre||saving)?"not-allowed":"pointer"}}>{ saving ? t("Guardando...","Saving...") : editId ? t("Guardar cambios","Save changes") : t("Agregar cliente","Add client") }</button>
           </div>
         </div>
@@ -1582,7 +1697,7 @@ const loadTeam=async()=>{
             <h2 style={{margin:0,fontSize:18,fontWeight:700}}>{ t("Formularios Recibidos","Received Forms") }</h2>
             <button onClick={()=>setShowBorradores(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
           </div>
-          {borradoresLoading?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}>{ t("Cargando...","Loading...") }</div>:
+          {borradoresLoading?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}>Cargando...</div>:
           borradores.length===0?<div style={{textAlign:"center",padding:40,color:"#94A3B8"}}><div style={{fontSize:40,marginBottom:10}}>📭</div><div>{ t("No hay formularios pendientes","No pending forms") }</div></div>:(
             <div style={{display:"grid",gap:12}}>
               {borradores.map(b=>(
@@ -1609,11 +1724,11 @@ const loadTeam=async()=>{
                       ))}
                     </div>
                     {b.tiposAyuda&&b.tiposAyuda.length>0&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
-                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10}}>{ t("Ayuda requerida: ","Help requested: ") }</span>
+                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10}}>Ayuda requerida: </span>
                       <span style={{color:"#1E3A5F",fontWeight:600}}>{b.tiposAyuda.join(" · ")}</span>
                     </div>}
                     {b.situacion&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
-                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10}}>{ t("Situación: ","Situation: ") }</span>
+                      <span style={{color:"#94A3B8",fontWeight:600,textTransform:"uppercase",fontSize:10}}>Situacion: </span>
                       <span style={{color:"#374151",fontStyle:"italic"}}>"{b.situacion}"</span>
                     </div>}
                   </div>}
@@ -1672,7 +1787,7 @@ const loadTeam=async()=>{
           <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:10,padding:"14px",marginTop:16}}>
             <div style={{fontSize:12,fontWeight:700,color:"#1D4ED8",marginBottom:6}}>Link del formulario</div>
             <div style={{background:"#fff",border:"1px solid #BFDBFE",borderRadius:7,padding:"8px 12px",fontFamily:"monospace",fontSize:12,color:"#1D4ED8",wordBreak:"break-all"}}>{window.location.origin+"/formulario.html?o="+(officeData?.id||userData?.officeId||"")}</div>
-            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/formulario.html?o="+(officeData?.id||userData?.officeId||""));showToastFn("Link copiado");}} style={{marginTop:8,background:"#1E40AF",color:"#fff",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>{t("Copiar link","Copy link")}</button>
+            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/formulario.html?o="+(officeData?.id||userData?.officeId||""));showToastFn("Link copiado");}} style={{marginTop:8,background:"#1E40AF",color:"#fff",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>Copiar link</button>
           </div>
         </div>
       </div>
@@ -1706,7 +1821,7 @@ const loadTeam=async()=>{
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
             <div style={{background:"#FEF2F2",borderRadius:12,padding:"16px",border:"1px solid #FECACA"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#DC2626"}}>{t("🔴 Fechas vencidas","🔴 Overdue dates")}</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#DC2626"}}>🔴 Fechas vencidas</div>
                 <div style={{fontSize:24,fontWeight:800,color:"#DC2626"}}>{stats.vencidos.length}</div>
               </div>
               {stats.vencidos.slice(0,3).map((c,i)=>(
@@ -1920,8 +2035,8 @@ const loadTeam=async()=>{
               {pdfClientes.length} {t("cliente","client")}{pdfClientes.length!==1?"s":""} {t("en el reporte","in the report")}
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-              <button onClick={()=>setShowPDF(false)} style={{padding:"10px 22px",borderRadius:9,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>{ t("Cancelar","Cancel") }</button>
-              <button onClick={()=>{generatePDF();setShowPDF(false);}} disabled={pdfClientes.length===0} style={{padding:"10px 22px",borderRadius:9,border:"none",background:pdfClientes.length===0?"#E5E7EB":"#1E40AF",color:pdfClientes.length===0?"#9CA3AF":"#fff",fontSize:14,fontWeight:700,cursor:pdfClientes.length===0?"not-allowed":"pointer"}}>{ t("Generar PDF","Generate PDF") }</button>
+              <button onClick={()=>setShowPDF(false)} style={{padding:"10px 22px",borderRadius:9,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={()=>{generatePDF();setShowPDF(false);}} disabled={pdfClientes.length===0} style={{padding:"10px 22px",borderRadius:9,border:"none",background:pdfClientes.length===0?"#E5E7EB":"#1E40AF",color:pdfClientes.length===0?"#9CA3AF":"#fff",fontSize:14,fontWeight:700,cursor:pdfClientes.length===0?"not-allowed":"pointer"}}>Generar PDF</button>
             </div>
           </div>
         </div>
@@ -1994,6 +2109,7 @@ const loadTeam=async()=>{
           </div>
           <div style={{padding:"14px 22px",borderTop:"1px solid #F1F5F9",display:"flex",gap:10,flexWrap:"wrap"}}>
             <button onClick={()=>setShowI589Review(false)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer",fontSize:13,color:"#64748B"}}>{ t("Cerrar","Close") }</button>
+            {i589Cliente.i589Draft?.status==="aprobado"&&<button onClick={()=>window.descargarI589PDF(i589Cliente)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #BBF7D0",background:"#F0FDF4",color:"#16A34A",cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>📥 { t("Descargar PDF","Download PDF") } I-589</button>}
             <div style={{flex:1}}/>
             <button disabled={i589Saving} onClick={async()=>{
               setI589Saving(true);
@@ -2330,6 +2446,8 @@ const loadTeam=async()=>{
         {showHistorial&&historialCliente&&(
       <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:600,boxShadow:"0 24px 64px rgba(0,0,0,0.25)",maxHeight:"88vh",display:"flex",flexDirection:"column"}}>
+          
+          {/* Header */}
           <div style={{padding:"20px 24px 16px",borderBottom:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <div style={{width:40,height:40,borderRadius:10,background:"#F0F9FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>📋</div>
@@ -2340,6 +2458,8 @@ const loadTeam=async()=>{
             </div>
             <button onClick={()=>setShowHistorial(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600,color:"#374151"}}>{t("Cerrar","Close")}</button>
           </div>
+
+          {/* Content */}
           <div style={{overflowY:"auto",padding:"16px 24px 24px",flex:1}}>
             {historialData.length===0?(
               <div style={{textAlign:"center",padding:"48px 0",color:"#94A3B8"}}>
@@ -2349,6 +2469,7 @@ const loadTeam=async()=>{
               </div>
             ):(
               <div style={{position:"relative"}}>
+                {/* Timeline line */}
                 <div style={{position:"absolute",left:19,top:24,bottom:0,width:2,background:"#E2E8F0"}}/>
                 <div style={{display:"flex",flexDirection:"column",gap:0}}>
                   {historialData.map((h,i)=>{
@@ -2360,13 +2481,19 @@ const loadTeam=async()=>{
                     const cambios=Array.isArray(h.cambios)?h.cambios:[{icono:"📝",texto:h.accion}];
                     return(
                       <div key={h.id} style={{display:"flex",gap:14,alignItems:"flex-start",paddingBottom:20,position:"relative"}}>
+                        {/* Avatar */}
                         <div style={{width:38,height:38,borderRadius:"50%",background:esNuevo?"#2563EB":"#E2E8F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:esNuevo?"#fff":"#64748B",flexShrink:0,zIndex:1,border:"2px solid #fff",boxShadow:"0 1px 4px rgba(0,0,0,0.1)"}}>
                           {initials}
                         </div>
+                        {/* Content */}
                         <div style={{flex:1,background:esNuevo?"#F0F9FF":"#F8FAFC",borderRadius:10,border:`1px solid ${esNuevo?"#BAE6FD":"#E2E8F0"}`,padding:"10px 14px",minWidth:0}}>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,flexWrap:"wrap",gap:4}}>
-                            <span style={{fontSize:12,fontWeight:700,color:esNuevo?"#0369A1":"#374151"}}>{h.usuario||h.usuarioEmail}</span>
-                            <span style={{fontSize:11,color:"#94A3B8"}}>{fechaStr} · {horaStr}</span>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:cambios.length>1?8:4,flexWrap:"wrap",gap:6}}>
+                            <span style={{fontSize:12,fontWeight:700,color:esNuevo?"#0369A1":"#374151"}}>
+                              {h.usuario||h.usuarioEmail}
+                            </span>
+                            <span style={{fontSize:11,color:"#94A3B8",whiteSpace:"nowrap"}}>
+                              {fechaStr} · {horaStr}
+                            </span>
                           </div>
                           <div style={{display:"flex",flexDirection:"column",gap:4}}>
                             {cambios.map((c,ci)=>(
@@ -2388,7 +2515,7 @@ const loadTeam=async()=>{
       </div>
     )}
 
-        {confirmDelete&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+    {confirmDelete&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
       <div style={{background:"#fff",borderRadius:14,width:340,padding:28,textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
         <div style={{fontSize:40}}>🗑️</div><h3 style={{margin:"10px 0 6px",color:"#0F172A"}}>¿Eliminar este cliente?</h3>
         <p style={{color:"#EF4444",fontSize:12,fontWeight:600,margin:"0 0 22px"}}>⚠️ Esta acción no se puede deshacer.</p>
@@ -2748,7 +2875,7 @@ const loadTeam=async()=>{
           </div>
           
           <div style={{background:"#F8FAFC",borderRadius:10,padding:"16px",marginBottom:14,border:"1px solid #E2E8F0"}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>🖼️ {t("Logo de la oficina","Office logo")}</div>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>🖼️ Logo de la oficina</div>
             <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
               {officeLogo?<img src={officeLogo} alt="Logo" style={{width:60,height:60,borderRadius:10,objectFit:"contain",border:"1px solid #E2E8F0",background:"#fff",padding:4}}/>:<div style={{width:60,height:60,borderRadius:10,border:"1px dashed #CBD5E1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🏢</div>}
               <div style={{flex:1}}>
@@ -2787,7 +2914,7 @@ const loadTeam=async()=>{
           <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:10,padding:"12px 14px",marginBottom:16}}>
             <div style={{fontSize:12,fontWeight:700,color:"#15803D",marginBottom:6}}>🔗 Link de acceso con logo</div>
             <div style={{fontFamily:"monospace",fontSize:12,color:"#1E3A5F",wordBreak:"break-all",marginBottom:8}}>{window.location.origin+"/app.html?o="+(officeData?.id||"")}</div>
-            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/app.html?o="+(officeData?.id||"")).then(()=>showToastFn("Link copiado ✓"));}} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>📋 {t("Copiar link","Copy link")}</button>
+            <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/app.html?o="+(officeData?.id||"")).then(()=>showToastFn("Link copiado ✓"));}} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>📋 Copiar link</button>
             <div style={{fontSize:11,color:"#64748B",marginTop:6}}>Comparte este link con tu equipo — verán tu logo al entrar</div>
           </div>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
@@ -2803,20 +2930,20 @@ const loadTeam=async()=>{
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>{t("💳 Cobrar","💳 Charge")} cliente</h2>
+            <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>💳 Cobrar cliente</h2>
             <button onClick={()=>setShowCobrar(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer"}}>✕</button>
           </div>
           <div style={{fontSize:13,color:"#64748B",marginBottom:18}}>👤 {cobrarCliente.nombre}</div>
 
           
           <div style={{marginBottom:12}}>
-            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>{t("Monto a cobrar","Amount to charge")} *</label>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Monto a cobrar *</label>
             <input type="number" value={cobrarMonto} onChange={e=>setCobrarMonto(e.target.value)} placeholder="0.00" style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:18,fontWeight:700,outline:"none",textAlign:"center"}}/>
           </div>
 
           
           <div style={{marginBottom:14}}>
-            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>{t("Concepto","Description")} *</label>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Concepto *</label>
             <input value={cobrarConcepto} onChange={e=>setCobrarConcepto(e.target.value)} placeholder="Ej. Asilo I-589 — primera cuota" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
           </div>
 
@@ -2824,7 +2951,7 @@ const loadTeam=async()=>{
           <div style={{marginBottom:18}}>
             <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:8,textTransform:"uppercase"}}>Metodo de pago</label>
             <div style={{display:"flex",gap:8}}>
-              {[["zelle","💚 Zelle"],["stripe","💳 Stripe/Tarjeta"]].map(([val,label])=>(
+              {[["zelle","💚 Zelle"],["stripe","💳 Tarjeta"]].map(([val,label])=>(
                 <button key={val} onClick={()=>setCobrarMetodo(val)} style={{flex:1,padding:"10px",borderRadius:8,border:cobrarMetodo===val?"2px solid #1E3A5F":"1px solid #E2E8F0",background:cobrarMetodo===val?"#EFF6FF":"#F8FAFC",color:cobrarMetodo===val?"#1E3A5F":"#64748B",fontWeight:cobrarMetodo===val?700:400,fontSize:13,cursor:"pointer"}}>{label}</button>
               ))}
             </div>
@@ -2835,10 +2962,10 @@ const loadTeam=async()=>{
             const zelleInfo=cobrarMetodo==="zelle"?`Zelle: ${pagosConfig.zelleNombre||""}${pagosConfig.zelleEmail?" — "+pagosConfig.zelleEmail:""}${pagosConfig.zelleTel?" / "+pagosConfig.zelleTel:""}`:pagosConfig.stripeLink||"(configura tu link de Stripe)";
             const msg=`Hola ${(cobrarCliente.nombre||"").split(" ")[0]}, le informamos que tiene un saldo pendiente:
 
-*{t("Concepto","Description")}:* ${cobrarConcepto}
+*Concepto:* ${cobrarConcepto}
 *Monto:* $${parseFloat(cobrarMonto||0).toFixed(2)}
 
-*Pagar via ${cobrarMetodo==="zelle"?"Zelle":"Stripe/Tarjeta"}:*
+*Pagar via ${cobrarMetodo==="zelle"?"Zelle":"Tarjeta"}:*
 ${zelleInfo}
 
 Gracias — ${officeData?.name||"ImmigPath"}`;
@@ -2860,6 +2987,7 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
               const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum};
               await registrarPago(cobrarCliente.id,pago);
               await generarReciboPDF(pago);
+              // Log payment in historial
               try{
                 const{db:db2,collection:col2,addDoc:add2}=window._firebase;
                 const officeId=officeData?.id||userData?.officeId||"";
@@ -3015,6 +3143,228 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+
+// ── PDF I-589 ────────────────────────────────────────────────────────────────
+window.descargarI589PDF = function(cliente) {
+  const d = cliente.i589Draft;
+  if(!d) return;
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit:'mm', format:'letter' });
+  const W=215.9, M=14, tW=W-M*2; let y=0;
+
+  const val = (v) => (v && v !== '—' && v.trim()) ? v.trim() : '';
+  const line = (label, value, x, yPos, lw=85, vw=85) => {
+    pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+    pdf.text(label, x, yPos);
+    pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42);
+    const v = val(value) || '___________________________';
+    const lines = pdf.splitTextToSize(v, vw);
+    pdf.text(lines, x, yPos+4);
+    return yPos + 4 + lines.length*4;
+  };
+
+  const box = (x,y,w,h) => { pdf.setDrawColor(180,180,180); pdf.setLineWidth(0.3); pdf.rect(x,y,w,h,'S'); };
+  const sectionHeader = (text, yPos) => {
+    pdf.setFillColor(15,23,42); pdf.rect(0,yPos,W,8,'F');
+    pdf.setTextColor(255,255,255); pdf.setFontSize(9); pdf.setFont('helvetica','bold');
+    pdf.text(text, W/2, yPos+5.5, {align:'center'});
+    return yPos+10;
+  };
+
+  // ── HEADER ────────────────────────────────────────────────────────────────
+  pdf.setFillColor(15,23,42); pdf.rect(0,0,W,18,'F');
+  pdf.setTextColor(255,255,255); pdf.setFontSize(13); pdf.setFont('helvetica','bold');
+  pdf.text('Application for Asylum and for Withholding of Removal', W/2, 8, {align:'center'});
+  pdf.setFontSize(9); pdf.setFont('helvetica','normal'); pdf.setTextColor(200,200,200);
+  pdf.text('Department of Homeland Security — U.S. Citizenship and Immigration Services', W/2, 13, {align:'center'});
+  pdf.setFillColor(30,58,95); pdf.rect(0,18,W,7,'F');
+  pdf.setTextColor(255,255,255); pdf.setFontSize(8); pdf.setFont('helvetica','bold');
+  pdf.text('USCIS Form I-589  |  OMB No. 1615-0067', M, 23);
+  pdf.text('PREPARED BY: ImmigPath Services — immigpath.com', W-M, 23, {align:'right'});
+  y=30;
+
+  // Nota
+  pdf.setFillColor(254,243,199); pdf.rect(M,y,tW,8,'F');
+  pdf.setTextColor(146,64,14); pdf.setFontSize(7.5); pdf.setFont('helvetica','bold');
+  pdf.text('⚠ DRAFT — FOR OFFICE REVIEW ONLY. Not for official submission without attorney review and signature.',M+3,y+5);
+  y+=12;
+
+  // ── PARTE A.I ─────────────────────────────────────────────────────────────
+  y = sectionHeader('PART A.I. — INFORMATION ABOUT YOU', y);
+
+  // Row 1: A#, SSN
+  box(M,y,tW/3,12); box(M+tW/3,y,tW/3,12); box(M+tW*2/3,y,tW/3,12);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('1. Alien Registration No. (A#)', M+1, y+3);
+  pdf.text('2. U.S. Social Security No.', M+tW/3+1, y+3);
+  pdf.text('3. USCIS Online Account No.', M+tW*2/3+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(9);
+  pdf.text(val(d.alien)||'', M+2, y+9);
+  pdf.text(val(d.ssn)||'', M+tW/3+2, y+9);
+  y+=14;
+
+  // Row 2: Last name, First name, Middle
+  box(M,y,tW/3,12); box(M+tW/3,y,tW/3,12); box(M+tW*2/3,y,tW/3,12);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('4. Complete Last Name', M+1, y+3);
+  pdf.text('5. First Name', M+tW/3+1, y+3);
+  pdf.text('6. Middle Name', M+tW*2/3+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(9);
+  pdf.text(val(d.apellido)||'', M+2, y+9);
+  pdf.text(val(d.nombre)||'', M+tW/3+2, y+9);
+  pdf.text(val(d.middle)||'', M+tW*2/3+2, y+9);
+  y+=14;
+
+  // Row 3: Other names
+  box(M,y,tW,10);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('7. What other names have you used (include maiden name and aliases)?', M+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(9);
+  pdf.text(val(d.alias)||'', M+2, y+8);
+  y+=12;
+
+  // Row 4: Address
+  box(M,y,tW,10);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('8. Residence in the U.S. (Street, City, State, ZIP)', M+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(9);
+  const addr = [val(d.direccion), val(d.ciudad), val(d.estado), val(d.zip)].filter(Boolean).join(', ');
+  pdf.text(addr||'', M+2, y+8);
+  y+=12;
+
+  // Row 5: Sex, Marital status, DOB, City/Country of birth
+  box(M,y,tW/4,10); box(M+tW/4,y,tW/4,10); box(M+tW/2,y,tW/4,10); box(M+tW*3/4,y,tW/4,10);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('10. Sex', M+1, y+3);
+  pdf.text('11. Marital Status', M+tW/4+1, y+3);
+  pdf.text('12. Date of Birth', M+tW/2+1, y+3);
+  pdf.text('13. City and Country of Birth', M+tW*3/4+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(9);
+  pdf.text(d.sexo==='M'?'Male':d.sexo==='F'?'Female':'', M+2, y+8);
+  pdf.text(val(d['estado-civil'])||'', M+tW/4+2, y+8);
+  pdf.text(val(d.dob)||'', M+tW/2+2, y+8);
+  pdf.text(val(d['ciudad-nac'])||'', M+tW*3/4+2, y+8);
+  y+=12;
+
+  // Row 6: Nationality, Nationality at birth, Race, Religion
+  box(M,y,tW/4,10); box(M+tW/4,y,tW/4,10); box(M+tW/2,y,tW/4,10); box(M+tW*3/4,y,tW/4,10);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('14. Present Nationality', M+1, y+3);
+  pdf.text('15. Nationality at Birth', M+tW/4+1, y+3);
+  pdf.text('16. Race/Ethnic Group', M+tW/2+1, y+3);
+  pdf.text('17. Religion', M+tW*3/4+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(9);
+  pdf.text(val(d.nacionalidad)||'', M+2, y+8);
+  pdf.text(val(d['nacionalidad-nac'])||'', M+tW/4+2, y+8);
+  pdf.text(val(d.raza)||'', M+tW/2+2, y+8);
+  pdf.text(val(d.religion)||'', M+tW*3/4+2, y+8);
+  y+=12;
+
+  // Row 7: Immigration Court, Date left country, I-94
+  box(M,y,tW/2,10); box(M+tW/2,y,tW/4,10); box(M+tW*3/4,y,tW/4,10);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('18. Immigration Court Proceedings', M+1, y+3);
+  pdf.text('19a. Date Last Left Country', M+tW/2+1, y+3);
+  pdf.text('19b. I-94 Number', M+tW*3/4+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(9);
+  pdf.text(val(d['court-status'])||'', M+2, y+8);
+  pdf.text(val(d['fecha-salida'])||'', M+tW/2+2, y+8);
+  pdf.text(val(d.i94)||'', M+tW*3/4+2, y+8);
+  y+=12;
+
+  // Row 8: Entries to US
+  box(M,y,tW,10);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('19c. List each entry into the U.S. (Date / Place / Status)', M+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(8);
+  const e1 = [val(d['e1-fecha']), val(d['e1-lugar']), val(d['e1-estatus'])].filter(Boolean).join(' | ');
+  const e2 = [val(d['e2-fecha']), val(d['e2-lugar']), val(d['e2-estatus'])].filter(Boolean).join(' | ');
+  pdf.text(e1||'', M+2, y+7);
+  if(e2) pdf.text(e2, M+2, y+10);
+  y+=14;
+
+  // Row 9: Passport
+  box(M,y,tW/3,10); box(M+tW/3,y,tW/3,10); box(M+tW*2/3,y,tW/3,10);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('20. Country Issued Passport', M+1, y+3);
+  pdf.text('21. Passport Number', M+tW/3+1, y+3);
+  pdf.text('22. Expiration Date', M+tW*2/3+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(9);
+  pdf.text(val(d['pais-pasaporte'])||'', M+2, y+8);
+  pdf.text(val(d.pasaporte)||'', M+tW/3+2, y+8);
+  pdf.text(val(d['pasaporte-vence'])||'', M+tW*2/3+2, y+8);
+  y+=12;
+
+  // Row 10: Language, English, Other languages
+  box(M,y,tW/3,10); box(M+tW/3,y,tW/6,10); box(M+tW/2,y,tW/2,10);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('23. Native Language', M+1, y+3);
+  pdf.text('24. English?', M+tW/3+1, y+3);
+  pdf.text('25. Other Languages', M+tW/2+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(9);
+  pdf.text(val(d.idioma)||'', M+2, y+8);
+  pdf.text(d.ingles==='si'?'Yes':d.ingles==='no'?'No':'', M+tW/3+2, y+8);
+  pdf.text(val(d['otros-idiomas'])||'', M+tW/2+2, y+8);
+  y+=14;
+
+  // ── PARTE B — NARRATIVA ───────────────────────────────────────────────────
+  pdf.addPage(); y=10;
+  y = sectionHeader('PART B — INFORMATION ABOUT YOUR APPLICATION', y);
+
+  // Bases del asilo
+  box(M,y,tW,12);
+  pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+  pdf.text('Basis for asylum claim (check all that apply):', M+1, y+3);
+  pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(8.5);
+  const bases = [
+    d['base-raza'] && 'Race',
+    d['base-religion'] && 'Religion',
+    d['base-nacionalidad'] && 'Nationality',
+    d['base-opinion'] && 'Political Opinion',
+    d['base-grupo'] && 'Particular Social Group',
+    d['base-tortura'] && 'Convention Against Torture',
+  ].filter(Boolean);
+  pdf.text(bases.length ? bases.join('  ✓  ') : 'Not specified', M+2, y+9);
+  y+=14;
+
+  // Preguntas narrativas
+  const qs = [
+    ['B-A. What happened to you / What do you fear? (Question 1)', d.q1],
+    ['B-B. What harm do you fear if you return? (Question 2)', d.q2],
+    ['Who threatened or persecuted you? (Question 3)', d.q3],
+    ['When did it occur? Specific incidents (Question 4)', d.q4],
+    ['Why were you targeted? (Question 5)', d.q5],
+    ['Are family members in danger? (Question 6)', d.q6],
+  ];
+
+  qs.forEach(([label, resp]) => {
+    if(!val(resp)) return;
+    const lines = pdf.splitTextToSize(val(resp), tW-4);
+    const h = Math.max(14, lines.length*4.5 + 8);
+    if(y + h > 270) { pdf.addPage(); y=10; }
+    box(M,y,tW,h);
+    pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(100,116,139);
+    pdf.text(label, M+1, y+3);
+    pdf.setFont('helvetica','normal'); pdf.setTextColor(15,23,42); pdf.setFontSize(8.5);
+    pdf.text(lines, M+2, y+8);
+    y += h+2;
+  });
+
+  // ── FOOTER en todas las páginas ───────────────────────────────────────────
+  const totalPages = pdf.internal.getNumberOfPages();
+  for(let i=1; i<=totalPages; i++) {
+    pdf.setPage(i);
+    pdf.setFillColor(15,23,42); pdf.rect(0,272,W,15,'F');
+    pdf.setTextColor(200,200,200); pdf.setFontSize(7.5); pdf.setFont('helvetica','normal');
+    pdf.text('Form I-589 — DRAFT PREPARED BY IMMIG PATH SERVICES | immigpath.com | Page '+i+' of '+totalPages, W/2, 278, {align:'center'});
+    pdf.setTextColor(150,150,150);
+    pdf.text('Client: '+(d.nombre||'')+' '+(d.apellido||'')+'  |  A#: '+(d.alien||'N/A')+'  |  Prepared: '+new Date().toLocaleDateString('en-US'), W/2, 283, {align:'center'});
+  }
+
+  const fname = (val(d.apellido)||'client').replace(/[^a-zA-Z0-9]/g,'-');
+  pdf.save('I-589-DRAFT-'+fname+'.pdf');
+  if(typeof showToastFn === 'function') showToastFn('📥 I-589 PDF descargado', 'success');
+};
 </script>
 </body>
 </html>
