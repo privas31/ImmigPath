@@ -1391,26 +1391,82 @@ const loadTeam=async()=>{
                             
                             {(ca.sistema==="uscis"&&(ca.tipoCaso||"").includes("I-589")||ca.sistema==="eoir"&&(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&ca.fechaAsilo&&(()=>{
                               const inicio=new Date(ca.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);
-                              const diasReloj=Math.floor((hoy-inicio)/86400000);const pctReloj=Math.min(100,Math.round((diasReloj/180)*100));
-                              const colorReloj=diasReloj>=180?"#16A34A":diasReloj>=120?"#D97706":"#2563EB";
+                              // Clock pause logic
+                              const relojDetenido = ca.relojDetenido === true;
+                              const diasPausados = ca.diasPausados || 0;
+                              const fechaPausa = ca.fechaPausa || null;
+
+                              // If paused: use frozen days. If active: days since start minus paused days
+                              const diasReloj = relojDetenido
+                                ? diasPausados
+                                : Math.max(0, Math.floor((hoy-inicio)/86400000) - (ca.diasDescontados||0));
+
+                              const pctReloj=Math.min(100,Math.round((diasReloj/180)*100));
+                              const colorReloj=relojDetenido?"#DC2626":diasReloj>=180?"#16A34A":diasReloj>=120?"#D97706":"#2563EB";
+
+                              const toggleReloj = async () => {
+                                try {
+                                  const {db, doc, updateDoc} = window._firebase;
+                                  const clienteRef = doc(db, "clientes", c.id);
+                                  const casosActualizados = (c.casos||[]).map(caso => {
+                                    if(caso.id !== ca.id) return caso;
+                                    if(relojDetenido){
+                                      const hoyMs = new Date(); hoyMs.setHours(0,0,0,0);
+                                      const pausaMs = fechaPausa ? new Date(fechaPausa+"T00:00:00") : hoyMs;
+                                      const diasDetenido = Math.floor((hoyMs - pausaMs)/86400000);
+                                      return {...caso, relojDetenido:false, diasPausados:0, fechaPausa:null, diasDescontados:(caso.diasDescontados||0)+diasDetenido};
+                                    } else {
+                                      const today = new Date(); today.setHours(0,0,0,0);
+                                      return {...caso, relojDetenido:true, diasPausados:diasReloj, fechaPausa:today.toISOString().split("T")[0]};
+                                    }
+                                  });
+                                  await updateDoc(clienteRef, {casos: casosActualizados});
+                                  if(typeof loadCases === "function") loadCases();
+                                } catch(err) { console.error("toggleReloj error:", err); }
+                              }
+
                               return(
-                                <div style={{gridColumn:"1/-1",background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:10,padding:"12px 14px"}}>
-                                  <div style={{fontSize:12,fontWeight:700,color:"#A5B4FC",marginBottom:8}}>⏱️ Reloj de Asilo</div>
+                                <div style={{gridColumn:"1/-1",background:relojDetenido?"#2D1515":"#1E1B4B",border:`1px solid ${relojDetenido?"#DC2626":"#4338CA"}`,borderRadius:10,padding:"12px 14px"}}>
+                                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                                    <div style={{fontSize:12,fontWeight:700,color:relojDetenido?"#FCA5A5":"#A5B4FC"}}>
+                                      {relojDetenido?"🔴 Reloj de Asilo — DETENIDO":"🟢 Reloj de Asilo — ACTIVO"}
+                                    </div>
+                                    <button
+                                      onClick={toggleReloj}
+                                      style={{
+                                        padding:"4px 12px",
+                                        borderRadius:6,
+                                        border:"none",
+                                        fontSize:11,
+                                        fontWeight:700,
+                                        cursor:"pointer",
+                                        background:relojDetenido?"#16A34A":"#DC2626",
+                                        color:"#fff"
+                                      }}
+                                    >
+                                      {relojDetenido?"▶ Activar":"⏸ Detener"}
+                                    </button>
+                                  </div>
                                   <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:8}}>
                                     <div style={{textAlign:"center"}}>
                                       <div style={{fontSize:32,fontWeight:800,color:colorReloj,lineHeight:1}}>{diasReloj}</div>
-                                      <div style={{fontSize:11,color:"#A5B4FC"}}>dias transcurridos</div>
+                                      <div style={{fontSize:11,color:relojDetenido?"#FCA5A5":"#A5B4FC"}}>dias transcurridos</div>
                                     </div>
                                     <div style={{flex:1}}>
                                       <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                                        <span style={{fontSize:11,color:"#A5B4FC"}}>Presentado: {fmt(ca.fechaAsilo)}</span>
-                                        <span style={{fontSize:11,color:"#A5B4FC"}}>Meta: 180 dias</span>
+                                        <span style={{fontSize:11,color:relojDetenido?"#FCA5A5":"#A5B4FC"}}>Presentado: {fmt(ca.fechaAsilo)}</span>
+                                        <span style={{fontSize:11,color:relojDetenido?"#FCA5A5":"#A5B4FC"}}>Meta: 180 dias</span>
                                       </div>
                                       <div style={{background:"#312E81",borderRadius:20,height:10,overflow:"hidden"}}>
                                         <div style={{height:"100%",borderRadius:20,background:colorReloj,width:`${pctReloj}%`}}/>
                                       </div>
                                       <div style={{fontSize:11,color:colorReloj,fontWeight:700,marginTop:4}}>
-                                        {diasReloj>=180?(lang==="es"?`✅ Elegible para EAD — ${diasReloj} días`:`✅ Eligible for EAD — ${diasReloj} days`):`⏳ Faltan ${180-diasReloj} dias para aplicar al EAD`}
+                                        {relojDetenido
+                                          ? `⏸ Reloj detenido desde ${fechaPausa||"hoy"} — ${diasReloj} días congelados`
+                                          : diasReloj>=180
+                                            ? (lang==="es"?`✅ Elegible para EAD — ${diasReloj} días`:`✅ Eligible for EAD — ${diasReloj} days`)
+                                            : `⏳ Faltan ${180-diasReloj} dias para aplicar al EAD`
+                                        }
                                       </div>
                                     </div>
                                   </div>
