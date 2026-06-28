@@ -437,7 +437,7 @@ function App(){
   const[docsCliente,setDocsCliente]=useState({});const[activeDocTab,setActiveDocTab]=useState({});const[uploadingDoc,setUploadingDoc]=useState({});const[uploadProgress,setUploadProgress]=useState({});
   const[showPDF,setShowPDF]=useState(false);
   const[showHistorial,setShowHistorial]=useState(false);
-  const[showAlertas,setShowAlertas]=useState(false);
+  const[showAlertas,setShowAlertas]=useState(false);const[alertFilter,setAlertFilter]=useState("todas");
   const[showChecklist,setShowChecklist]=useState(false);
   const[openMenuId,setOpenMenuId]=useState(null);
   const[lang,setLang]=useState("es");
@@ -1000,7 +1000,9 @@ const loadTeam=async()=>{
     const sinPago=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p===0;});
     const sinFecha=clientes.filter(c=>!getPróximaFecha(c)&&(c.casos||[]).length>0);
     const sinDocumentos=clientes.filter(c=>(c.casos||[]).some(ca=>!ca.receiptNum&&!ca.foiaTracking&&ca.sistema==="uscis"));
-    return{alertas,alertas1dia,alertas3dias,alertas7dias,vencidos,totalCobrar,totalCobrado,pendiente,eadElegibles,eadPróximos,pagadoCompleto,conSaldo,sinPago,sinFecha,sinDocumentos};
+    const relojActivo=clientes.filter(c=>(c.casos||[]).some(ca=>ca.fechaAsilo&&!ca.relojDetenido));
+    const relojDetenidoList=clientes.filter(c=>(c.casos||[]).some(ca=>ca.relojDetenido===true));
+    return{alertas,alertas1dia,alertas3dias,alertas7dias,vencidos,totalCobrar,totalCobrado,pendiente,eadElegibles,eadPróximos,pagadoCompleto,conSaldo,sinPago,sinFecha,sinDocumentos,relojActivo,relojDetenidoList};
   },[clientes]);
 
   const generatePDF=()=>{
@@ -2332,169 +2334,144 @@ const loadTeam=async()=>{
 
         {showAlertas&&(
       <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:100,padding:"24px 16px",overflowY:"auto"}}>
-        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:680,boxShadow:"0 24px 64px rgba(0,0,0,0.2)"}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:700,boxShadow:"0 24px 64px rgba(0,0,0,0.2)"}}>
+
           {/* Header */}
-          <div style={{padding:"20px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:40,height:40,borderRadius:10,background:"#FEF2F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🔔</div>
+          <div style={{padding:"16px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:20}}>🔔</span>
               <div>
-                <div style={{fontSize:16,fontWeight:800,color:"#0F172A"}}>{t("Centro de Alertas","Alert Center")}</div>
+                <div style={{fontSize:15,fontWeight:800,color:"#0F172A"}}>{t("Centro de Alertas","Alert Center")}</div>
                 <div style={{fontSize:12,color:"#64748B"}}>{t("Casos que necesitan atención","Cases that need attention")}</div>
               </div>
             </div>
-            <button onClick={()=>setShowAlertas(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{t("Cerrar","Close")}</button>
+            <button onClick={()=>{setShowAlertas(false);setAlertFilter("todas");}} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{t("Cerrar","Close")}</button>
           </div>
 
-          <div style={{padding:"20px 24px",display:"flex",flexDirection:"column",gap:16}}>
-
-            {/* FECHAS VENCIDAS */}
-            {stats.vencidos.length>0&&(
-              <div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:12,overflow:"hidden"}}>
-                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #FECACA"}}>
-                  <span style={{fontSize:18}}>🔴</span>
-                  <span style={{fontSize:14,fontWeight:700,color:"#DC2626"}}>{t("Fechas Vencidas","Overdue Dates")} — {stats.vencidos.length} {t("cliente(s)","client(s)")}</span>
+          {/* Filter buttons — 4 top + 4 bottom */}
+          <div style={{padding:"14px 20px",borderBottom:"1px solid #F1F5F9"}}>
+            {(()=>{
+              const filters=[
+                {id:"todas",    label:t("Todas","All"),             icon:"🔔", cnt:stats.vencidos.length+stats.alertas.length+stats.eadElegibles.length+stats.relojActivo.length+stats.relojDetenidoList.length+stats.sinFecha.length, bg:"#FEF2F2", border:"#EF4444", color:"#DC2626"},
+                {id:"vencidas", label:t("Vencidas","Overdue"),      icon:"📅", cnt:stats.vencidos.length,          bg:"#FEF2F2", border:"#EF4444", color:"#DC2626"},
+                {id:"7dias",    label:t("Próximos 7 días","Next 7 days"), icon:"⏰", cnt:stats.alertas.length,     bg:"#FFFBEB", border:"#F59E0B", color:"#D97706"},
+                {id:"ead",      label:t("Elegibles EAD","EAD Eligible"), icon:"✅", cnt:stats.eadElegibles.length, bg:"#F0FDF4", border:"#22C55E", color:"#16A34A"},
+                {id:"proxead",  label:t("Próximos a EAD","Near EAD"),    icon:"⌛", cnt:stats.eadPróximos.length,  bg:"#EFF6FF", border:"#3B82F6", color:"#1D4ED8"},
+                {id:"reloj",    label:t("Reloj activo","Active clock"),   icon:"🟢", cnt:stats.relojActivo.length,  bg:"#EFF6FF", border:"#3B82F6", color:"#1D4ED8"},
+                {id:"detenido", label:t("Reloj detenido","Clock paused"), icon:"🔴", cnt:stats.relojDetenidoList.length, bg:"#FEF2F2", border:"#EF4444", color:"#991B1B"},
+                {id:"sinfecha", label:t("Sin próxima fecha","No date"),   icon:"📭", cnt:stats.sinFecha.length,    bg:"#F8FAFC", border:"#94A3B8", color:"#475569"},
+              ];
+              const row1=filters.slice(0,4);
+              const row2=filters.slice(4,8);
+              return(<>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:8}}>
+                  {row1.map(f=>(
+                    <div key={f.id} onClick={()=>setAlertFilter(f.id)} style={{cursor:"pointer",borderRadius:10,padding:"10px 6px",border:alertFilter===f.id?`1.5px solid ${f.border}`:"1px solid #E2E8F0",background:alertFilter===f.id?f.bg:"#F8FAFC",textAlign:"center",transition:"all 0.15s"}}>
+                      <div style={{fontSize:16}}>{f.icon}</div>
+                      <div style={{fontSize:18,fontWeight:700,color:alertFilter===f.id?f.color:"#0F172A",marginTop:2}}>{f.cnt}</div>
+                      <div style={{fontSize:10,color:alertFilter===f.id?f.color:"#64748B",marginTop:1,lineHeight:1.2}}>{f.label}</div>
+                    </div>
+                  ))}
                 </div>
-                {stats.vencidos.map((c,i)=>{const pf=getPróximaFecha(c);const dias=Math.abs(getDias(pf)||0);return(
-                  <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.vencidos.length-1?"1px solid #FEE2E2":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#FFF5F5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
-                      <div style={{fontSize:12,color:"#EF4444"}}>{(c.casos||[]).map(ca=>ca.tipoCaso).filter(Boolean).join(", ")||"—"}</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+                  {row2.map(f=>(
+                    <div key={f.id} onClick={()=>setAlertFilter(f.id)} style={{cursor:"pointer",borderRadius:10,padding:"10px 6px",border:alertFilter===f.id?`1.5px solid ${f.border}`:"1px solid #E2E8F0",background:alertFilter===f.id?f.bg:"#F8FAFC",textAlign:"center",transition:"all 0.15s"}}>
+                      <div style={{fontSize:16}}>{f.icon}</div>
+                      <div style={{fontSize:18,fontWeight:700,color:alertFilter===f.id?f.color:"#0F172A",marginTop:2}}>{f.cnt}</div>
+                      <div style={{fontSize:10,color:alertFilter===f.id?f.color:"#64748B",marginTop:1,lineHeight:1.2}}>{f.label}</div>
                     </div>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#DC2626"}}>{pf?fmt(pf):"—"}</div>
-                      <div style={{fontSize:11,color:"#EF4444"}}>Hace {dias} {dias===1?"día":"días"}</div>
-                    </div>
-                  </div>
-                );})}
-              </div>
-            )}
-
-            {/* PROXIMAS 7 DIAS */}
-            {stats.alertas.length>0&&(
-              <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:12,overflow:"hidden"}}>
-                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #FDE68A"}}>
-                  <span style={{fontSize:18}}>🟡</span>
-                  <span style={{fontSize:14,fontWeight:700,color:"#D97706"}}>{t("Próximas en 7 días","Upcoming in 7 days")} — {stats.alertas.length} {t("cliente(s)","client(s)")}</span>
+                  ))}
                 </div>
-                {stats.alertas.map((c,i)=>{const pf=getPróximaFecha(c);const dias=getDias(pf)||0;return(
-                  <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.alertas.length-1?"1px solid #FEF3C7":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#FFFDF0"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
-                      <div style={{fontSize:12,color:"#92400E"}}>{(c.casos||[]).map(ca=>ca.tipoCaso).filter(Boolean).join(", ")||"—"}</div>
-                    </div>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#D97706"}}>{pf?fmt(pf):"—"}</div>
-                      <div style={{fontSize:11,color:"#D97706"}}>{dias===0?"HOY":dias===1?"Mañana":`En ${dias} días`}</div>
-                    </div>
-                  </div>
-                );})}
-              </div>
-            )}
-
-            {/* EAD ELEGIBLES */}
-            {stats.eadElegibles.length>0&&(
-              <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:12,overflow:"hidden"}}>
-                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #BBF7D0"}}>
-                  <span style={{fontSize:18}}>✅</span>
-                  <span style={{fontSize:14,fontWeight:700,color:"#15803D"}}>{t("Elegibles para EAD","EAD Eligible")} — {stats.eadElegibles.length} {t("cliente(s)","client(s)")}</span>
-                </div>
-                {stats.eadElegibles.map((c,i)=>{
-                  const ca=(c.casos||[]).find(ca=>ca.fechaAsilo);
-                  const dias=ca?Math.floor((new Date()-new Date(ca.fechaAsilo+"T00:00:00"))/86400000):0;
-                  return(
-                    <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.eadElegibles.length-1?"1px solid #DCFCE7":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#F0FFF4"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                      <div>
-                        <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
-                        <div style={{fontSize:12,color:"#16A34A"}}>{ca?.tipoCaso||"—"}</div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:13,fontWeight:700,color:"#16A34A"}}>✅ Puede aplicar</div>
-                        <div style={{fontSize:11,color:"#15803D"}}>{dias} días de asilo</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* EAD PROXIMOS 20 DIAS */}
-            {stats.eadPróximos.length>0&&(
-              <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:12,overflow:"hidden"}}>
-                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #BFDBFE"}}>
-                  <span style={{fontSize:18}}>⏳</span>
-                  <span style={{fontSize:14,fontWeight:700,color:"#1D4ED8"}}>{t("Próximos a EAD (20 días)","Near EAD (20 days)")} — {stats.eadPróximos.length} {t("cliente(s)","client(s)")}</span>
-                </div>
-                {stats.eadPróximos.map((c,i)=>{
-                  const ca=(c.casos||[]).find(ca=>ca.fechaAsilo);
-                  const dias=ca?Math.floor((new Date()-new Date(ca.fechaAsilo+"T00:00:00"))/86400000):0;
-                  return(
-                    <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<stats.eadPróximos.length-1?"1px solid #DBEAFE":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#EFF6FF"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                      <div>
-                        <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
-                        <div style={{fontSize:12,color:"#2563EB"}}>{ca?.tipoCaso||"—"}</div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:13,fontWeight:700,color:"#2563EB"}}>Faltan {180-dias} días</div>
-                        <div style={{fontSize:11,color:"#3B82F6"}}>{dias} de 180 días</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* BALANCE PENDIENTE */}
-            {stats.conSaldo.length>0&&(
-              <div style={{background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:12,overflow:"hidden"}}>
-                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #FED7AA"}}>
-                  <span style={{fontSize:18}}>💰</span>
-                  <span style={{fontSize:14,fontWeight:700,color:"#C2410C"}}>{t("Balance pendiente","Outstanding balance")} — {stats.conSaldo.length} {t("cliente(s)","client(s)")}</span>
-                </div>
-                {stats.conSaldo.slice(0,5).map((c,i)=>{
-                  const total=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-                  const pagado=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
-                  const saldo=total-pagado;
-                  return(
-                    <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<Math.min(stats.conSaldo.length,5)-1?"1px solid #FEF3C7":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#FFFDF5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                      <div>
-                        <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
-                        <div style={{fontSize:12,color:"#92400E"}}>{fmtMoney(pagado)} / {fmtMoney(total)}</div>
-                      </div>
-                      <div style={{fontSize:14,fontWeight:700,color:"#C2410C"}}>Debe {fmtMoney(saldo)}</div>
-                    </div>
-                  );
-                })}
-                {stats.conSaldo.length>5&&<div style={{padding:"8px 16px",fontSize:12,color:"#92400E",textAlign:"center"}}>+{stats.conSaldo.length-5} más con saldo pendiente</div>}
-              </div>
-            )}
-
-            {/* SIN FECHA */}
-            {stats.sinFecha.length>0&&(
-              <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,overflow:"hidden"}}>
-                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #E2E8F0"}}>
-                  <span style={{fontSize:18}}>📅</span>
-                  <span style={{fontSize:14,fontWeight:700,color:"#475569"}}>{t("Sin próxima fecha","No next date")} — {stats.sinFecha.length} {t("cliente(s)","client(s)")}</span>
-                </div>
-                {stats.sinFecha.slice(0,4).map((c,i)=>(
-                  <div key={c.id} onClick={()=>{setExpandedId(c.id);setShowAlertas(false);}} style={{padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:i<Math.min(stats.sinFecha.length,4)-1?"1px solid #F1F5F9":"none",cursor:"pointer",background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="#F8FAFC"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
-                    <div style={{fontSize:12,color:"#94A3B8"}}>{(c.casos||[]).map(ca=>ca.tipoCaso).filter(Boolean).join(", ")||"—"}</div>
-                  </div>
-                ))}
-                {stats.sinFecha.length>4&&<div style={{padding:"8px 16px",fontSize:12,color:"#64748B",textAlign:"center"}}>+{stats.sinFecha.length-4} más sin fecha</div>}
-              </div>
-            )}
-
-            {/* TODO BIEN */}
-            {stats.vencidos.length===0&&stats.alertas.length===0&&stats.eadElegibles.length===0&&stats.conSaldo.length===0&&stats.sinFecha.length===0&&(
-              <div style={{textAlign:"center",padding:"48px 0"}}>
-                <div style={{fontSize:56,marginBottom:12}}>🎉</div>
-                <div style={{fontSize:16,fontWeight:700,color:"#0F172A",marginBottom:6}}>{t("¡Todo al día!","All up to date!")}</div>
-                <div style={{fontSize:13,color:"#64748B"}}>{t("No hay alertas pendientes en este momento","No pending alerts at this time")}</div>
-              </div>
-            )}
-
+              </>);
+            })()}
           </div>
+
+          {/* Alert list */}
+          <div style={{padding:"8px 0",maxHeight:420,overflowY:"auto"}}>
+            {(()=>{
+              const hoy=new Date();hoy.setHours(0,0,0,0);
+              const en7=new Date(hoy);en7.setDate(en7.getDate()+7);
+
+              // Build list based on filter
+              let items=[];
+              if(alertFilter==="todas"||alertFilter==="vencidas"){
+                stats.vencidos.forEach(c=>{
+                  const pf=getPróximaFecha(c);
+                  items.push({c,label:(c.casos||[]).map(ca=>ca.tipoCaso).filter(Boolean).join(", "),fecha:pf?fmt(pf):null,dias:pf?`Hace ${Math.abs(getDias(pf))} días`:null,dot:"#EF4444",tipo:"vencidas"});
+                });
+              }
+              if(alertFilter==="todas"||alertFilter==="7dias"){
+                stats.alertas.forEach(c=>{
+                  const pf=getPróximaFecha(c);
+                  const d=getDias(pf);
+                  items.push({c,label:(c.casos||[]).map(ca=>ca.tipoCaso).filter(Boolean).join(", "),fecha:pf?fmt(pf):null,dias:d===0?"Hoy":`En ${d} día${d===1?"":"s"}`,dot:"#F59E0B",tipo:"7dias"});
+                });
+              }
+              if(alertFilter==="todas"||alertFilter==="ead"){
+                stats.eadElegibles.forEach(c=>{
+                  const ca=(c.casos||[]).find(ca=>ca.fechaAsilo&&Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000)>=180);
+                  const dias=ca?Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000):0;
+                  items.push({c,label:`Elegible para EAD — ${dias} días en reloj`,fecha:null,dias:`Desde ${ca?fmt(ca.fechaAsilo):""}`,dot:"#22C55E",tipo:"ead"});
+                });
+              }
+              if(alertFilter==="todas"||alertFilter==="proxead"){
+                stats.eadPróximos.forEach(c=>{
+                  const ca=(c.casos||[]).find(ca=>ca.fechaAsilo&&!ca.relojDetenido);
+                  const dias=ca?Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000):0;
+                  items.push({c,label:`Próximo a EAD — ${dias} días, faltan ${180-dias}`,fecha:null,dias:`${180-dias} días para EAD`,dot:"#3B82F6",tipo:"proxead"});
+                });
+              }
+              if(alertFilter==="todas"||alertFilter==="reloj"){
+                stats.relojActivo.forEach(c=>{
+                  const ca=(c.casos||[]).find(ca=>ca.fechaAsilo&&!ca.relojDetenido);
+                  const dias=ca?Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000-(ca.diasDescontados||0)):0;
+                  items.push({c,label:`Reloj activo — ${dias} días transcurridos`,fecha:null,dias:dias>=180?"Elegible EAD":`Faltan ${180-dias} para EAD`,dot:"#2563EB",tipo:"reloj"});
+                });
+              }
+              if(alertFilter==="todas"||alertFilter==="detenido"){
+                stats.relojDetenidoList.forEach(c=>{
+                  const ca=(c.casos||[]).find(ca=>ca.relojDetenido===true);
+                  items.push({c,label:`Reloj detenido desde ${ca?.fechaPausa||"—"} — ${ca?.diasPausados||0} días congelados`,fecha:null,dias:`${ca?.diasPausados||0} días congelados`,dot:"#DC2626",tipo:"detenido"});
+                });
+              }
+              if(alertFilter==="todas"||alertFilter==="sinfecha"){
+                stats.sinFecha.forEach(c=>{
+                  items.push({c,label:(c.casos||[]).map(ca=>ca.sistema?.toUpperCase()).filter(Boolean).join(", ")+" — Sin próxima fecha",fecha:null,dias:"Pendiente",dot:"#94A3B8",tipo:"sinfecha"});
+                });
+              }
+
+              if(items.length===0) return(
+                <div style={{textAlign:"center",padding:"48px 0"}}>
+                  <div style={{fontSize:48,marginBottom:12}}>🎉</div>
+                  <div style={{fontSize:15,fontWeight:700,color:"#0F172A",marginBottom:6}}>{t("¡Todo al día!","All up to date!")}</div>
+                  <div style={{fontSize:13,color:"#64748B"}}>{t("No hay alertas en esta categoría","No alerts in this category")}</div>
+                </div>
+              );
+
+              return items.map((item,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 20px",borderBottom:"1px solid #F8FAFC",cursor:"pointer"}} onClick={()=>{setShowAlertas(false);setAlertFilter("todas");}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
+                    <div style={{width:8,height:8,borderRadius:"50%",background:item.dot,flexShrink:0}}/>
+                    <div style={{minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.c.nombre}</div>
+                      <div style={{fontSize:11,color:item.dot,marginTop:1}}>{item.label}</div>
+                    </div>
+                  </div>
+                  <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
+                    {item.fecha&&<div style={{fontSize:12,fontWeight:600,color:item.dot}}>{item.fecha}</div>}
+                    <div style={{fontSize:11,color:"#94A3B8"}}>{item.dias}</div>
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+
+          {/* Footer */}
+          <div style={{padding:"10px 20px",background:"#F8FAFC",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center",borderRadius:"0 0 16px 16px"}}>
+            <span style={{fontSize:12,color:"#64748B"}}>{t("Haz clic en un cliente para ver su ficha","Click a client to view their file")}</span>
+            <button onClick={()=>{setShowAlertas(false);setAlertFilter("todas");}} style={{background:"#0F172A",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>{t("Cerrar","Close")}</button>
+          </div>
+
         </div>
       </div>
     )}
