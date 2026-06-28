@@ -320,11 +320,13 @@ function DocPanel({clienteId, clienteNombre, officeData, userData, docsCliente, 
     <div style={{padding:"16px 20px"}}>
 
       {/* Alertas de vencimiento */}
-      {vencidos.length>0&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#991B1B"}}>
-        🔴 <strong>{vencidos.length} documento(s) vencido(s):</strong> {vencidos.map(d=>d.tipo).join(", ")}
+      {vencidos.length>0&&showBanners&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#991B1B",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <span>🔴 <strong>{vencidos.length} documento(s) vencido(s):</strong> {vencidos.map(d=>d.tipo).join(", ")}</span>
+        <button onClick={()=>setShowBanners(false)} style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#991B1B",padding:"0 4px",lineHeight:1}}>✕</button>
       </div>}
-      {porVencer.length>0&&<div style={{background:"#FEF9C3",border:"1px solid #FDE047",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#854D0E"}}>
-        ⚠️ <strong>{porVencer.length} documento(s) por vencer (30 días):</strong> {porVencer.map(d=>d.tipo).join(", ")}
+      {porVencer.length>0&&showBanners&&<div style={{background:"#FEF9C3",border:"1px solid #FDE047",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#854D0E",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <span>⚠️ <strong>{porVencer.length} documento(s) por vencer (30 días):</strong> {porVencer.map(d=>d.tipo).join(", ")}</span>
+        <button onClick={()=>setShowBanners(false)} style={{background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#854D0E",padding:"0 4px",lineHeight:1}}>✕</button>
       </div>}
 
       {/* Subir documento */}
@@ -436,7 +438,7 @@ function App(){
   const[docsCliente,setDocsCliente]=useState({});const[activeDocTab,setActiveDocTab]=useState({});const[uploadingDoc,setUploadingDoc]=useState({});const[uploadProgress,setUploadProgress]=useState({});
   const[showPDF,setShowPDF]=useState(false);
   const[showHistorial,setShowHistorial]=useState(false);
-  const[showAlertas,setShowAlertas]=useState(false);const[alertFilter,setAlertFilter]=useState("todas");
+  const[showAlertas,setShowAlertas]=useState(false);const[showBanners,setShowBanners]=useState(true);const[alertFilter,setAlertFilter]=useState("todas");
   const[showChecklist,setShowChecklist]=useState(false);
   const[openMenuId,setOpenMenuId]=useState(null);
   const[lang,setLang]=useState("es");
