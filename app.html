@@ -437,7 +437,7 @@ function App(){
   const[docsCliente,setDocsCliente]=useState({});const[activeDocTab,setActiveDocTab]=useState({});const[uploadingDoc,setUploadingDoc]=useState({});const[uploadProgress,setUploadProgress]=useState({});
   const[showPDF,setShowPDF]=useState(false);
   const[showHistorial,setShowHistorial]=useState(false);
-  const[showAlertas,setShowAlertas]=useState(false);const[alertFilter,setAlertFilter]=useState("todas");
+  const[showAlertas,setShowAlertas]=useState(false);const[showBanners,setShowBanners]=useState(true);const[alertFilter,setAlertFilter]=useState("todas");
   const[showChecklist,setShowChecklist]=useState(false);
   const[openMenuId,setOpenMenuId]=useState(null);
   const[lang,setLang]=useState("es");
@@ -1285,7 +1285,7 @@ const loadTeam=async()=>{
       </div>
       <div style={{padding:"24px 32px 48px"}}>
 
-      {!loading&&!busquedaActiva&&(stats.vencidos.length>0||stats.alertas1dia.length>0||stats.alertas3dias.length>0)&&(
+      {!loading&&!busquedaActiva&&showBanners&&(stats.vencidos.length>0||stats.alertas1dia.length>0||stats.alertas3dias.length>0)&&(
         <div style={{marginBottom:16,borderRadius:12,overflow:"hidden",border:"1px solid #FECACA",background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
           {stats.vencidos.length>0&&(
             <div style={{background:"#FEF2F2",padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,borderBottom:stats.alertas1dia.length>0||stats.alertas3dias.length>0?"1px solid #FECACA":"none"}}>
@@ -1296,7 +1296,7 @@ const loadTeam=async()=>{
                   <div style={{fontSize:12,color:"#EF4444",marginTop:1}}>{stats.vencidos.slice(0,3).map(c=>c.nombre.split(" ")[0]).join(", ")}{stats.vencidos.length>3?` +${stats.vencidos.length-3} ${t("más","more")}`:""}</div>
                 </div>
               </div>
-              <button onClick={()=>setFiltroStatus("vencido")} style={{background:"#DC2626",color:"#fff",border:"none",borderRadius:7,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>{t("Revisar","Review")}</button>
+              <button onClick={()=>{setFiltroStatus("vencido");setShowBanners(false);}} style={{background:"#DC2626",color:"#fff",border:"none",borderRadius:7,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>{t("Revisar","Review")}</button>
             </div>
           )}
           {stats.alertas1dia.length>0&&(
@@ -1308,7 +1308,7 @@ const loadTeam=async()=>{
                   <div style={{fontSize:12,color:"#EA580C",marginTop:1}}>{stats.alertas1dia.slice(0,3).map(c=>c.nombre.split(" ")[0]).join(", ")}{stats.alertas1dia.length>3?` +${stats.alertas1dia.length-3} ${t("más","more")}`:""}</div>
                 </div>
               </div>
-              <button onClick={()=>setFiltroStatus("hoy")} style={{background:"#EA580C",color:"#fff",border:"none",borderRadius:7,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>{t("Ver","View")}</button>
+              <button onClick={()=>{setFiltroStatus("hoy");setShowBanners(false);}} style={{background:"#EA580C",color:"#fff",border:"none",borderRadius:7,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>{t("Ver","View")}</button>
             </div>
           )}
           {stats.alertas3dias.length>0&&(
