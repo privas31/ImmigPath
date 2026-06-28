@@ -1521,7 +1521,7 @@ const loadTeam=async()=>{
                             
                             {ca.fechaCorte&&ca.sistema!=="foia"&&<div style={{gridColumn:"1/-1",background:scfgCaso.bg,border:"2px solid "+scfgCaso.border,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                               <div>
-                                <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600,marginBottom:4}}>{ca.sistema==="eoir"?"Fecha de corte":(ca.tipoCaso||"").includes("I-589")?(ca.tipoCita==="huellas"?"Biométricos":"Fecha de entrevista"):"Fecha de cita"}</div>
+                                <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600,marginBottom:4}}>{ca.sistema==="eoir"?"Fecha de corte":(ca.tipoCaso||"").includes("I-589")?(ca.tipoCita==="huellas"?"🫆 Biométricos":"Fecha de entrevista"):"Fecha de cita"}</div>
                                 <div style={{fontSize:28,fontWeight:800,color:scfgCaso.color,lineHeight:1}}>{fmt(ca.fechaCorte)}</div>
                               </div>
                               <div style={{textAlign:"center"}}>
@@ -1532,7 +1532,7 @@ const loadTeam=async()=>{
                               </div>
                             </div>}
                             
-                            {ca.fechaHuellas&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Biométricos</div><div style={{fontSize:13,fontWeight:600}}>{fmt(ca.fechaHuellas)}</div></div>}
+                            {ca.fechaHuellas&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>🫆 Biométricos</div><div style={{fontSize:13,fontWeight:600}}>{fmt(ca.fechaHuellas)}</div></div>}
 
                             
                             {ca.sistema==="foia"&&ca.foiaTracking&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Tracking #</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600,color:"#0891B2"}}>{ca.foiaTracking}</div></div>}
@@ -3048,7 +3048,7 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
           <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Tipo de cita</label>
           <select value={caso.tipoCita||""} onChange={e=>onChange({...caso,tipoCita:e.target.value,fechaCorte:"",fechaHuellas:""})} style={{width:"100%",padding:"7px 9px",borderRadius:6,border:"1px solid #BFDBFE",fontSize:13,background:"#fff",cursor:"pointer"}}>
             <option value="">Seleccionar...</option>
-            <option value="huellas">Biométricos</option>
+            <option value="huellas">🫆 Biométricos</option>
             <option value="entrevista">🎤 Entrevista</option>
             <option value="ambas">📅 Ambas</option>
           </select>
