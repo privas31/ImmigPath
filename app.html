@@ -452,7 +452,7 @@ function App(){
   const[user,setUser]=useState(null);const[userData,setUserData]=useState(null);const[officeData,setOfficeData]=useState(null);const[officeLogo,setOfficeLogo]=useState(null);
   const[enabledModules,setEnabledModules]=useState(["immigration"]);
   const[authLoading,setAuthLoading]=useState(true);
-  const[clientes,setClientes]=useState([]);const[loading,setLoading]=useState(false);
+  const[clientes,setClientes]=useState([]);const[loading,setLoading]=useState(false);const[solicitudesServicio,setSolicitudesServicio]=useState([]);
   const[showModal,setShowModal]=useState(false);const[editId,setEditId]=useState(null);const[formCliente,setFormCliente]=useState(emptyCliente);
   const[filtroStatus,setFiltroStatus]=useState("todos");const[filtroSistema,setFiltroSistema]=useState("todos");
   const[búsqueda,setBúsqueda]=useState("");const[busquedaActiva,setBusquedaActiva]=useState("");const[saving,setSaving]=useState(false);
@@ -532,7 +532,7 @@ function App(){
     });
   },[]);
 
-  useEffect(()=>{if(!user||!officeData)return;loadCases();loadTeam();loadBorradores();loadPagosConfig();},[user,officeData]);
+  useEffect(()=>{if(!user||!officeData)return;loadCases();loadTeam();loadBorradores();loadPagosConfig();loadSolicitudesServicio();},[user,officeData]);
 
   // Auto-show checklist for new offices (first time only)
   React.useEffect(()=>{
@@ -572,6 +572,16 @@ function App(){
       }catch(e2){console.error(e2);}
     }
     setLoading(false);
+  };
+
+  const loadSolicitudesServicio=async()=>{
+    try{
+      const{db,collection,getDocs,query,where}=window._firebase;
+      const officeId=officeData?.id||userData?.officeId;
+      const q=officeId?query(collection(db,"solicitudesServicio"),where("officeId","==",officeId),where("estado","==","pendiente_revision")):collection(db,"solicitudesServicio");
+      const snap=await getDocs(q);
+      setSolicitudesServicio(snap.docs.map(d=>({id:d.id,...d.data()})));
+    }catch(e){console.error("loadSolicitudesServicio error:",e);}
   };
 
   const cargarPagosCliente=async(clienteId)=>{
@@ -1356,7 +1366,7 @@ const loadTeam=async()=>{
   const navItems = [
     {id:"monitor",   label:t("Monitor Oficina","Office Monitor"),  icon:"🖥", onClick:()=>{setActiveNav("monitor");}},
     {id:"checklist", label:t("Primeros pasos","Getting started"), icon:"🚀", onClick:()=>setShowChecklist(true)},
-    {id:"alertas",   label:t("Alertas","Alerts"),                  icon:"🔔", badge: (stats.alertas.length+stats.vencidos.length+stats.eadElegibles.length)||null, onClick:()=>setShowAlertas(true)},
+    {id:"alertas",   label:t("Alertas","Alerts"),                  icon:"🔔", badge: (stats.alertas.length+stats.vencidos.length+stats.eadElegibles.length+solicitudesServicio.length)||null, onClick:()=>setShowAlertas(true)},
     {id:"dashboard", label:t("Dashboard","Dashboard"),             icon:"📊", badge: isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
     {id:"formularios",label:t("Formularios","Forms"),              icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
     // Admin only items below
@@ -2582,6 +2592,29 @@ const loadTeam=async()=>{
               </>);
             })()}
           </div>
+
+          {solicitudesServicio.length>0&&(
+            <div style={{padding:"12px 20px",background:"#FFFBEB",borderBottom:"1px solid #FDE68A"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#92400E",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.03em"}}>📨 Solicitudes del cliente — {solicitudesServicio.length} pendiente{solicitudesServicio.length!==1?"s":""}</div>
+              {solicitudesServicio.map(s=>{
+                const labelMap={uscis_dir:"Cambio de dirección USCIS",eoir_dir:"Cambio de dirección EOIR",transferencia:"Transferencia de corte"};
+                const iconMap={uscis_dir:"🏛️",eoir_dir:"⚖️",transferencia:"🔁"};
+                return(
+                  <div key={s.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",borderRadius:8,padding:"9px 12px",marginBottom:6,border:"1px solid #FDE68A"}}>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:700,color:"#0F172A"}}>{iconMap[s.tipo]} {s.clienteNombre}</div>
+                      <div style={{fontSize:11,color:"#92400E"}}>{labelMap[s.tipo]} — Nueva dirección: {s.direccionNueva}</div>
+                    </div>
+                    <button onClick={()=>{
+                      setShowAlertas(false);
+                      const cliente=clientes.find(c=>c.id===s.clienteId);
+                      if(cliente) openEdit(cliente);
+                    }} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:6,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>Revisar</button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Alert list */}
           <div style={{padding:"8px 0",maxHeight:420,overflowY:"auto"}}>
