@@ -2804,7 +2804,13 @@ const loadTeam=async()=>{
         return fecha >= inicio && fecha <= fin;
       });
 
-      const empleadas = [...new Set(clientes.map(c=>c.encargada).filter(Boolean))];
+      // Recolectar todas las empleadas: encargadas de clientes + encargadas de procesos individuales (trámites)
+      const empleadasClientes = clientes.map(c=>c.encargada).filter(Boolean);
+      const empleadasProcesos = [];
+      clientesPeriodo.forEach(c=>(c.casos||[]).forEach(ca=>(ca.procesos||[]).forEach(p=>{
+        if(p.encargadaProceso) empleadasProcesos.push(p.encargadaProceso);
+      })));
+      const empleadas = [...new Set([...empleadasClientes, ...empleadasProcesos])];
 
       const TARIFAS_DEFAULT = {
         "Asilo (I-589)": 100,
@@ -2818,20 +2824,27 @@ const loadTeam=async()=>{
         "Advance Parole (I-131)": 60,
         "Renovar Green Card (I-90)": 80,
         "Otro": 50,
+        "Cambio de Dirección USCIS": 40,
+        "Cambio de Dirección EOIR": 40,
+        "Transferencia de Corte": 75,
       };
 
       // Calcular nómina por empleada — SOLO casos del período
+      // Cada proceso cuenta para su "encargadaProceso" si la tiene (trámite específico),
+      // o para la "encargada" general del cliente si no la tiene.
       const nominaData = empleadas.map(emp=>{
-        const clientesEmp = clientesPeriodo.filter(c=>c.encargada===emp);
+        let clientesSet = new Set();
         const procesos = {};
-        clientesEmp.forEach(c=>{
+        clientesPeriodo.forEach(c=>{
           (c.casos||[]).forEach(ca=>{
             (ca.procesos||[]).forEach(p=>{
-              if(p.nombre){
-                if(!procesos[p.nombre]) procesos[p.nombre]={cantidad:0,pagado:0};
-                procesos[p.nombre].cantidad++;
-                procesos[p.nombre].pagado += parseMoney(p.pagado);
-              }
+              if(!p.nombre) return;
+              const responsable = p.encargadaProceso || c.encargada;
+              if(responsable !== emp) return;
+              clientesSet.add(c.id);
+              if(!procesos[p.nombre]) procesos[p.nombre]={cantidad:0,pagado:0};
+              procesos[p.nombre].cantidad++;
+              procesos[p.nombre].pagado += parseMoney(p.pagado);
             });
           });
         });
@@ -2839,7 +2852,7 @@ const loadTeam=async()=>{
           const tarifa = tarifasNómina[nombre]!==undefined?tarifasNómina[nombre]:(TARIFAS_DEFAULT[nombre]||50);
           return sum + (tarifa * data.cantidad);
         }, 0);
-        return {emp, clientes:clientesEmp.length, procesos, totalNómina};
+        return {emp, clientes:clientesSet.size, procesos, totalNómina};
       });
 
       const totalGeneral = nominaData.reduce((s,d)=>s+d.totalNómina, 0);
@@ -3188,21 +3201,44 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
                 if(servicioForm.montoCobrar&&parseFloat(servicioForm.montoCobrar)>0){
                   const refNum="REC-"+Date.now().toString(36).toUpperCase();
                   const conceptoMap={uscis_dir:"Cambio de Dirección USCIS",eoir_dir:"Cambio de Dirección EOIR",transferencia:"Transferencia de Corte"};
+                  const concepto=conceptoMap[tipo];
                   const pago={
                     monto:servicioForm.montoCobrar,
-                    concepto:conceptoMap[tipo],
+                    concepto,
                     metodo:servicioForm.metodoCobro||"zelle",
                     nombreCliente:showServicioAdicional.clienteNombre,
                     refNum,
                     encargada:servicioForm.encargadaTramite||"",
                   };
                   await registrarPago(showServicioAdicional.clienteId,pago);
+
+                  // Agregar también como proceso dentro del caso para que cuente en Nómina
+                  try{
+                    const{db:db3,doc:doc3,updateDoc:upd3}=window._firebase;
+                    const clienteActual=clientes.find(c=>c.id===showServicioAdicional.clienteId);
+                    if(clienteActual){
+                      const casosActualizados=(clienteActual.casos||[]).map(ca=>{
+                        if(ca.id!==showServicioAdicional.casoId) return ca;
+                        const nuevoProceso={
+                          id:Date.now(),
+                          nombre:concepto,
+                          precio:servicioForm.montoCobrar,
+                          pagado:servicioForm.montoCobrar,
+                          encargadaProceso:servicioForm.encargadaTramite||"",
+                          notas:"Trámite adicional",
+                        };
+                        return {...ca,procesos:[...(ca.procesos||[]),nuevoProceso]};
+                      });
+                      await upd3(doc3(db3,"clientes",showServicioAdicional.clienteId),{casos:casosActualizados});
+                    }
+                  }catch(pe){console.error("Error agregando proceso para nómina:",pe);}
+
                   try{
                     const{db:db2,collection:col2,addDoc:add2}=window._firebase;
                     const officeId=officeData?.id||userData?.officeId||"";
                     await add2(col2(db2,"historial"),{
                       clienteId:showServicioAdicional.clienteId,officeId,
-                      cambios:[{icono:cfg.icon,texto:`${conceptoMap[tipo]} completado — $${servicioForm.montoCobrar}`}],
+                      cambios:[{icono:cfg.icon,texto:`${concepto} completado — $${servicioForm.montoCobrar}`}],
                       usuario:window._firebase.auth.currentUser?.email||"",
                       fecha:new Date().toISOString(),
                     });
@@ -3210,6 +3246,7 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
                 }
                 showToastFn("Trámite completado ✓");
                 closeModal();
+                if(typeof loadCases==="function") loadCases();
               }catch(e){console.error(e);showToastFn("Error al completar trámite","error");}
               setServicioSaving(false);
             };
