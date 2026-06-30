@@ -158,6 +158,30 @@ function ProcesosEditor({procesos,onChange}){
       <div style={{background:"#E2E8F0",borderRadius:20,height:5,marginTop:4}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`}}/></div>
       <div style={{fontSize:10,color:pc,fontWeight:700,marginTop:2}}>{pct!==null?`${pct}% — Saldo: ${fmtMoney(total-pagado)}`:"Sin info"}</div>
     </div>}
+
+    {clienteId&&(
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 12px",marginTop:10}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#64748B",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.03em"}}>➕ Servicios adicionales para este caso</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
+          <button onClick={()=>onIniciarServicio("uscis_dir")} style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 9px",borderRadius:7,border:"1px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
+            <span style={{fontSize:14}}>🏛️</span>
+            <span style={{fontSize:10.5,fontWeight:600,color:"#0F172A"}}>Cambio dir. USCIS</span>
+            <span style={{fontSize:9,color:"#94A3B8"}}>AR-11</span>
+          </button>
+          <button onClick={()=>onIniciarServicio("eoir_dir")} style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 9px",borderRadius:7,border:"1px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
+            <span style={{fontSize:14}}>⚖️</span>
+            <span style={{fontSize:10.5,fontWeight:600,color:"#0F172A"}}>Cambio dir. EOIR</span>
+            <span style={{fontSize:9,color:"#94A3B8"}}>EOIR-33/IC</span>
+          </button>
+          <button onClick={()=>onIniciarServicio("transferencia")} style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 9px",borderRadius:7,border:"1px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
+            <span style={{fontSize:14}}>🔁</span>
+            <span style={{fontSize:10.5,fontWeight:600,color:"#0F172A"}}>Transferir corte</span>
+            <span style={{fontSize:9,color:"#94A3B8"}}>Moción + EOIR-33</span>
+          </button>
+        </div>
+        <div style={{fontSize:9,color:"#94A3B8",marginTop:6}}>Disponible solo después de guardar el caso</div>
+      </div>
+    )}
   </div>);
 }
 
@@ -438,7 +462,11 @@ function App(){
   const[docsCliente,setDocsCliente]=useState({});const[activeDocTab,setActiveDocTab]=useState({});const[uploadingDoc,setUploadingDoc]=useState({});const[uploadProgress,setUploadProgress]=useState({});
   const[showPDF,setShowPDF]=useState(false);
   const[showHistorial,setShowHistorial]=useState(false);
-  const[showAlertas,setShowAlertas]=useState(false);const[showBanners,setShowBanners]=useState(true);const[alertFilter,setAlertFilter]=useState("todas");
+  const[showAlertas,setShowAlertas]=useState(false);
+  const[showServicioAdicional,setShowServicioAdicional]=useState(null);
+  const[servicioStep,setServicioStep]=useState(1);
+  const[servicioForm,setServicioForm]=useState({});
+  const[servicioSaving,setServicioSaving]=useState(false);const[showBanners,setShowBanners]=useState(true);const[alertFilter,setAlertFilter]=useState("todas");
   const[showChecklist,setShowChecklist]=useState(false);
   const[openMenuId,setOpenMenuId]=useState(null);
   const[lang,setLang]=useState("es");
@@ -465,7 +493,7 @@ function App(){
   const[cobrarConcepto,setCobrarConcepto]=useState("");
   const[cobrarMetodo,setCobrarMetodo]=useState("zelle");
   const[cobrarSaving,setCobrarSaving]=useState(false);
-  const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:""});
+  const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:"",precioCambioUSCIS:"40",precioCambioEOIR:"40",precioTransferencia:"75"});
   const[pagosPorCliente,setPagosPorCliente]=useState({});
   const[loadingPagos,setLoadingPagos]=useState({});
   const[configSaving,setConfigSaving]=useState(false);
@@ -713,6 +741,175 @@ const generarReciboPDF=async(pago)=>{
   pdoc.text("CONFIDENCIAL | "+(officeData?.name||"ImmigPath")+" | "+pago.refNum,M,pH-5);
   pdoc.save("recibo-"+pago.refNum+".pdf");
   showToastFn("Recibo descargado ✓");
+};
+
+
+const generarPDFCambioDireccion=async(datos,sistema)=>{
+  const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+  if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
+  const pdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"letter"});
+  const W=216; const M=18;
+  const esEoir=sistema==="eoir";
+  pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,28,"F");
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(13); pdoc.setFont("helvetica","bold");
+  pdoc.text(esEoir?"Formulario EOIR-33/IC":"Formulario AR-11",M,12);
+  pdoc.setFontSize(9); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
+  pdoc.text(esEoir?"Cambio de Direccion/Informacion de Contacto - Corte de Inmigracion":"Cambio de Direccion - USCIS",M,19);
+  pdoc.setFontSize(7.5);
+  pdoc.text("Generado: "+new Date().toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}),M,25);
+
+  let y=38;
+  const addSec=(title)=>{
+    pdoc.setFillColor(241,245,249); pdoc.rect(M,y,W-M*2,7,"F");
+    pdoc.setTextColor(30,58,95); pdoc.setFontSize(8.5); pdoc.setFont("helvetica","bold");
+    pdoc.text(title,M+3,y+5); y+=11;
+  };
+  const addRow=(label,val,bold=false)=>{
+    pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(M,y+5,W-M,y+5);
+    pdoc.setTextColor(100,116,139); pdoc.setFontSize(8); pdoc.setFont("helvetica","normal");
+    pdoc.text(label,M+2,y+3.5);
+    pdoc.setTextColor(30,41,59); if(bold)pdoc.setFont("helvetica","bold");
+    pdoc.text(String(val||"-"),W-M-2,y+3.5,{align:"right"});
+    pdoc.setFont("helvetica","normal"); y+=8;
+  };
+
+  addSec("INFORMACION DEL CLIENTE");
+  addRow("Nombre completo",datos.nombreCliente);
+  addRow("Numero A#",datos.alienNum);
+  y+=2;
+
+  addSec("DIRECCION ANTERIOR");
+  addRow("Direccion",datos.direccionAnterior);
+  y+=2;
+
+  addSec("DIRECCION NUEVA");
+  addRow("Direccion",datos.direccionNueva);
+  addRow("Fecha de mudanza",datos.fechaMudanza);
+  addRow("Telefono nuevo",datos.telefonoNuevo||"Sin cambio");
+  y+=2;
+
+  if(esEoir){
+    addSec("INFORMACION DEL TRIBUNAL");
+    addRow("Tribunal de inmigracion",datos.tribunal||"-");
+    addRow("Numero de caso",datos.numeroCaso||"-");
+    y+=2;
+    addSec("PRUEBA DE NOTIFICACION");
+    addRow("Copia enviada a DHS/ICE OPLA",datos.notificacionICE?"Si":"Pendiente");
+    addRow("Metodo de notificacion",datos.metodoNotificacion||"-");
+    y+=2;
+  }
+
+  y+=4;
+  pdoc.setFillColor(255,251,235); pdoc.setDrawColor(245,158,11); pdoc.setLineWidth(0.4);
+  pdoc.roundedRect(M,y,W-M*2,esEoir?20:14,2,2,"FD");
+  pdoc.setTextColor(146,64,14); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","bold");
+  if(esEoir){
+    pdoc.text("IMPORTANTE: Este formulario debe presentarse dentro de 5 dias habiles tras la",M+4,y+6);
+    pdoc.text("mudanza ante la corte donde el caso esta activo. Debe enviarse copia a ICE OPLA.",M+4,y+11);
+    pdoc.text("La corte no actualiza la direccion sin la recepcion de este formulario.",M+4,y+16);
+  } else {
+    pdoc.text("Debe presentarse dentro de 10 dias de mudanza, segun INA 265.",M+4,y+6);
+    pdoc.text("Puede presentarse en linea en uscis.gov/addresschange",M+4,y+11);
+  }
+  y+=esEoir?28:20;
+
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","italic");
+  pdoc.text("Declaro bajo pena de perjurio que la informacion en este formulario es verdadera y correcta.",M,y);
+  y+=14;
+  pdoc.setDrawColor(100,116,139); pdoc.setLineWidth(0.2);
+  pdoc.line(M,y,M+70,y);
+  pdoc.line(W-M-70,y,W-M,y);
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal");
+  pdoc.text("Firma del cliente",M,y+4);
+  pdoc.text("Fecha",W-M-70,y+4);
+
+  const pH=pdoc.internal.pageSize.height;
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(M,pH-10,W-M,pH-10);
+  pdoc.setFontSize(7); pdoc.setTextColor(148,163,184);
+  pdoc.text("CONFIDENCIAL | "+(officeData?.name||"ImmigPath")+" | "+(esEoir?"EOIR-33":"AR-11"),M,pH-5);
+  pdoc.save((esEoir?"EOIR-33-":"AR11-")+(datos.nombreCliente||"cliente").replace(/\s+/g,"_")+".pdf");
+  showToastFn("PDF generado ✓");
+};
+
+const generarPDFTransferenciaCorte=async(datos)=>{
+  const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+  if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
+  const pdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"letter"});
+  const W=216; const M=18;
+  pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,28,"F");
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(13); pdoc.setFont("helvetica","bold");
+  pdoc.text("Mocion de Cambio de Jurisdiccion (Cambio de Venue)",M,12);
+  pdoc.setFontSize(9); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
+  pdoc.text("Incluye Formulario EOIR-33/IC adjunto",M,19);
+  pdoc.setFontSize(7.5);
+  pdoc.text("Generado: "+new Date().toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}),M,25);
+
+  let y=38;
+  const addSec=(title)=>{
+    pdoc.setFillColor(241,245,249); pdoc.rect(M,y,W-M*2,7,"F");
+    pdoc.setTextColor(30,58,95); pdoc.setFontSize(8.5); pdoc.setFont("helvetica","bold");
+    pdoc.text(title,M+3,y+5); y+=11;
+  };
+  const addRow=(label,val,bold=false)=>{
+    pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(M,y+5,W-M,y+5);
+    pdoc.setTextColor(100,116,139); pdoc.setFontSize(8); pdoc.setFont("helvetica","normal");
+    pdoc.text(label,M+2,y+3.5);
+    pdoc.setTextColor(30,41,59); if(bold)pdoc.setFont("helvetica","bold");
+    pdoc.text(String(val||"-"),W-M-2,y+3.5,{align:"right"});
+    pdoc.setFont("helvetica","normal"); y+=8;
+  };
+  const addParagraph=(text)=>{
+    pdoc.setTextColor(30,41,59); pdoc.setFontSize(8.5); pdoc.setFont("helvetica","normal");
+    const lines=pdoc.splitTextToSize(text,W-M*2-4);
+    pdoc.text(lines,M+2,y+4);
+    y+=lines.length*4.5+4;
+  };
+
+  addSec("INFORMACION DEL CLIENTE");
+  addRow("Nombre completo",datos.nombreCliente);
+  addRow("Numero A#",datos.alienNum);
+  addRow("Numero de caso",datos.numeroCaso);
+  y+=2;
+
+  addSec("MOTIVO DEL CAMBIO");
+  addParagraph(datos.motivo||"-");
+
+  addSec("TRIBUNAL ACTUAL Y TRIBUNAL DESTINO");
+  addRow("Tribunal actual",datos.tribunalActual);
+  addRow("Tribunal solicitado",datos.tribunalDestino);
+  y+=2;
+
+  addSec("NUEVA DIRECCION");
+  addRow("Direccion",datos.direccionNueva);
+  addRow("Fecha de mudanza",datos.fechaMudanza);
+  y+=2;
+
+  addSec("EVIDENCIA DE LA MUDANZA");
+  addRow("Tipo de evidencia",datos.tipoEvidencia||"-");
+  addRow("Formulario EOIR-33 incluido",datos.eoir33Incluido?"Si":"Pendiente");
+  y+=4;
+
+  pdoc.setFillColor(255,251,235); pdoc.setDrawColor(245,158,11); pdoc.setLineWidth(0.4);
+  pdoc.roundedRect(M,y,W-M*2,18,2,2,"FD");
+  pdoc.setTextColor(146,64,14); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","bold");
+  pdoc.text("IMPORTANTE: Hasta que la mocion no sea otorgada por el juez, el cliente debe",M+4,y+6);
+  pdoc.text("comparecer a todas las audiencias ya programadas en el tribunal actual.",M+4,y+11);
+  pdoc.text("Adjuntar Formulario EOIR-33/IC y evidencia documental de la mudanza.",M+4,y+16);
+  y+=26;
+
+  pdoc.setDrawColor(100,116,139); pdoc.setLineWidth(0.2);
+  pdoc.line(M,y,M+70,y);
+  pdoc.line(W-M-70,y,W-M,y);
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal");
+  pdoc.text("Firma del cliente",M,y+4);
+  pdoc.text("Fecha",W-M-70,y+4);
+
+  const pH=pdoc.internal.pageSize.height;
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(M,pH-10,W-M,pH-10);
+  pdoc.setFontSize(7); pdoc.setTextColor(148,163,184);
+  pdoc.text("CONFIDENCIAL | "+(officeData?.name||"ImmigPath")+" | Transferencia de Corte",M,pH-5);
+  pdoc.save("Transferencia-Corte-"+(datos.nombreCliente||"cliente").replace(/\s+/g,"_")+".pdf");
+  showToastFn("PDF generado ✓");
 };
 
 const loadTeam=async()=>{
@@ -1641,7 +1838,7 @@ const loadTeam=async()=>{
             <button onClick={addCaso} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>{ t("+ Agregar caso","+ Add case") }</button>
           </div>
           {formCliente.casos.length===0&&<div style={{textAlign:"center",padding:"20px",color:"#94A3B8",fontSize:13,background:"#F8FAFC",borderRadius:10,border:"1px dashed #E2E8F0",marginBottom:14}}>Sin casos. Haz clic en "{ t("+ Agregar caso","+ Add case") }".</div>}
-          {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo} isAdmin={isAdmin}/>))}
+          {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo} isAdmin={isAdmin} clienteId={editId} clienteNombre={formCliente.nombre} onIniciarServicio={(tipo)=>setShowServicioAdicional({tipo,clienteId:editId,clienteNombre:formCliente.nombre,casoAlien:formCliente.alienNum})}/>))}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
             <button onClick={()=>setShowModal(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>{ t("Cancelar","Cancel") }</button>
             <button onClick={handleSubmit} disabled={!formCliente.nombre||saving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(!formCliente.nombre||saving)?"#E5E7EB":"#1E40AF",color:(!formCliente.nombre||saving)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(!formCliente.nombre||saving)?"not-allowed":"pointer"}}>{ saving ? t("Guardando...","Saving...") : editId ? t("Guardar cambios","Save changes") : t("Agregar cliente","Add client") }</button>
@@ -2840,6 +3037,26 @@ const loadTeam=async()=>{
             <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/app.html?o="+(officeData?.id||"")).then(()=>showToastFn("Link copiado ✓"));}} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>📋 {t("Copiar link","Copy link")}</button>
             <div style={{fontSize:11,color:"#64748B",marginTop:6}}>Comparte este link con tu equipo — verán tu logo al entrar</div>
           </div>
+
+          <div style={{background:"#F8FAFC",borderRadius:10,padding:14,marginBottom:16,border:"1px solid #E2E8F0"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>💲 Precios de Servicios Adicionales</div>
+            <div style={{fontSize:11,color:"#64748B",marginBottom:10}}>Estos montos se sugieren automáticamente al iniciar cada trámite. Puedes editarlos caso por caso.</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+              <div>
+                <label style={{display:"block",fontSize:10,fontWeight:600,color:"#374151",marginBottom:3}}>Cambio Dir. USCIS</label>
+                <input value={pagosConfig.precioCambioUSCIS||""} onChange={e=>setPagosConfig(p=>({...p,precioCambioUSCIS:e.target.value}))} placeholder="40" style={{width:"100%",padding:"7px 9px",borderRadius:6,border:"1px solid #D1D5DB",fontSize:12}}/>
+              </div>
+              <div>
+                <label style={{display:"block",fontSize:10,fontWeight:600,color:"#374151",marginBottom:3}}>Cambio Dir. EOIR</label>
+                <input value={pagosConfig.precioCambioEOIR||""} onChange={e=>setPagosConfig(p=>({...p,precioCambioEOIR:e.target.value}))} placeholder="40" style={{width:"100%",padding:"7px 9px",borderRadius:6,border:"1px solid #D1D5DB",fontSize:12}}/>
+              </div>
+              <div>
+                <label style={{display:"block",fontSize:10,fontWeight:600,color:"#374151",marginBottom:3}}>Transf. Corte</label>
+                <input value={pagosConfig.precioTransferencia||""} onChange={e=>setPagosConfig(p=>({...p,precioTransferencia:e.target.value}))} placeholder="75" style={{width:"100%",padding:"7px 9px",borderRadius:6,border:"1px solid #D1D5DB",fontSize:12}}/>
+              </div>
+            </div>
+          </div>
+
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <button onClick={()=>setShowPagosConfig(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:14,cursor:"pointer"}}>Cancelar</button>
             <button onClick={()=>savePagosConfig(pagosConfig)} disabled={configSaving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:configSaving?"#E5E7EB":"#1E3A5F",color:configSaving?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:configSaving?"not-allowed":"pointer"}}>{configSaving ? t("Guardando...","Saving...") : t("Guardar","Save")}</button>
@@ -2933,12 +3150,223 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
       </div>
     )}
 
+    {showServicioAdicional&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:120,padding:16}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:520,padding:0,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
+
+          {(()=>{
+            const tipo=showServicioAdicional.tipo;
+            const titulos={
+              uscis_dir:{icon:"🏛️",label:"Cambio de Dirección USCIS (AR-11)"},
+              eoir_dir:{icon:"⚖️",label:"Cambio de Dirección EOIR (EOIR-33/IC)"},
+              transferencia:{icon:"🔁",label:"Transferencia de Corte"},
+            };
+            const totalSteps=tipo==="transferencia"?5:(tipo==="eoir_dir"?4:3);
+            const cfg=titulos[tipo];
+
+            const closeModal=()=>{setShowServicioAdicional(null);setServicioStep(1);setServicioForm({});};
+
+            const upd=(field,val)=>setServicioForm(p=>({...p,[field]:val}));
+
+            const finalizarYCobrar=async()=>{
+              setServicioSaving(true);
+              try{
+                const datosCompletos={...servicioForm,nombreCliente:showServicioAdicional.clienteNombre,alienNum:showServicioAdicional.casoAlien};
+                if(tipo==="uscis_dir") await generarPDFCambioDireccion(datosCompletos,"uscis");
+                else if(tipo==="eoir_dir") await generarPDFCambioDireccion(datosCompletos,"eoir");
+                else await generarPDFTransferenciaCorte(datosCompletos);
+
+                if(servicioForm.montoCobrar&&parseFloat(servicioForm.montoCobrar)>0){
+                  const refNum="REC-"+Date.now().toString(36).toUpperCase();
+                  const conceptoMap={uscis_dir:"Cambio de Dirección USCIS",eoir_dir:"Cambio de Dirección EOIR",transferencia:"Transferencia de Corte"};
+                  const pago={
+                    monto:servicioForm.montoCobrar,
+                    concepto:conceptoMap[tipo],
+                    metodo:servicioForm.metodoCobro||"zelle",
+                    nombreCliente:showServicioAdicional.clienteNombre,
+                    refNum,
+                    encargada:servicioForm.encargadaTramite||"",
+                  };
+                  await registrarPago(showServicioAdicional.clienteId,pago);
+                  try{
+                    const{db:db2,collection:col2,addDoc:add2}=window._firebase;
+                    const officeId=officeData?.id||userData?.officeId||"";
+                    await add2(col2(db2,"historial"),{
+                      clienteId:showServicioAdicional.clienteId,officeId,
+                      cambios:[{icono:cfg.icon,texto:`${conceptoMap[tipo]} completado — $${servicioForm.montoCobrar}`}],
+                      usuario:window._firebase.auth.currentUser?.email||"",
+                      fecha:new Date().toISOString(),
+                    });
+                  }catch(he){console.error(he);}
+                }
+                showToastFn("Trámite completado ✓");
+                closeModal();
+              }catch(e){console.error(e);showToastFn("Error al completar trámite","error");}
+              setServicioSaving(false);
+            };
+
+            return(<>
+              <div style={{padding:"20px 24px 14px",borderBottom:"1px solid #F1F5F9"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <h2 style={{margin:0,fontSize:16,fontWeight:700,color:"#0F172A"}}>{cfg.icon} {cfg.label}</h2>
+                  <button onClick={closeModal} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer"}}>✕</button>
+                </div>
+                <div style={{fontSize:12,color:"#64748B"}}>{showServicioAdicional.clienteNombre}</div>
+                <div style={{display:"flex",gap:5,marginTop:12}}>
+                  {Array.from({length:totalSteps}).map((_,i)=>(
+                    <div key={i} style={{flex:1,height:4,borderRadius:2,background:i<servicioStep?"#16A34A":"#E2E8F0"}}/>
+                  ))}
+                </div>
+                <div style={{fontSize:11,fontWeight:600,color:"#16A34A",marginTop:6}}>Paso {servicioStep} de {totalSteps}</div>
+              </div>
+
+              <div style={{padding:"18px 24px"}}>
+
+                {tipo==="uscis_dir"&&servicioStep===1&&(<>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Dirección anterior</label>
+                  <input value={servicioForm.direccionAnterior||""} onChange={e=>upd("direccionAnterior",e.target.value)} placeholder="Calle, ciudad, estado, código postal" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:14}}/>
+                  <div style={{background:"#FFFBEB",borderRadius:8,padding:"10px 12px",fontSize:11,color:"#92400E"}}>📌 Debe presentarse dentro de 10 días de mudanza, según INA 265.</div>
+                </>)}
+                {tipo==="uscis_dir"&&servicioStep===2&&(<>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Dirección nueva</label>
+                  <input value={servicioForm.direccionNueva||""} onChange={e=>upd("direccionNueva",e.target.value)} placeholder="Calle, ciudad, estado, código postal" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:10}}/>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                    <div><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Fecha de mudanza</label><input type="date" value={servicioForm.fechaMudanza||""} onChange={e=>upd("fechaMudanza",e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13}}/></div>
+                    <div><label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Teléfono nuevo</label><input value={servicioForm.telefonoNuevo||""} onChange={e=>upd("telefonoNuevo",e.target.value)} placeholder="(opcional)" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13}}/></div>
+                  </div>
+                </>)}
+                {tipo==="uscis_dir"&&servicioStep===3&&(<>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>Revisión y cobro</div>
+                  <div style={{background:"#F8FAFC",borderRadius:8,padding:12,marginBottom:14,fontSize:12,color:"#374151"}}>
+                    <div style={{marginBottom:4}}><b>Anterior:</b> {servicioForm.direccionAnterior||"-"}</div>
+                    <div style={{marginBottom:4}}><b>Nueva:</b> {servicioForm.direccionNueva||"-"}</div>
+                    <div><b>Fecha:</b> {servicioForm.fechaMudanza||"-"}</div>
+                  </div>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Monto a cobrar</label>
+                  <input value={servicioForm.montoCobrar!==undefined?servicioForm.montoCobrar:(pagosConfig.precioCambioUSCIS||"")} onChange={e=>upd("montoCobrar",e.target.value)} placeholder="40" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:10}}/>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Asignar a</label>
+                  <select value={servicioForm.encargadaTramite||""} onChange={e=>upd("encargadaTramite",e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13}}>
+                    <option value="">Sin asignar</option>{equipo.map(m=><option key={m} value={m}>{m}</option>)}
+                  </select>
+                </>)}
+
+                {tipo==="eoir_dir"&&servicioStep===1&&(<>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Tribunal de inmigración</label>
+                  <input value={servicioForm.tribunal||""} onChange={e=>upd("tribunal",e.target.value)} placeholder="Ej. Orlando Immigration Court" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:10}}/>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Número de caso</label>
+                  <input value={servicioForm.numeroCaso||""} onChange={e=>upd("numeroCaso",e.target.value)} placeholder="Número de caso EOIR" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13}}/>
+                </>)}
+                {tipo==="eoir_dir"&&servicioStep===2&&(<>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Dirección anterior</label>
+                  <input value={servicioForm.direccionAnterior||""} onChange={e=>upd("direccionAnterior",e.target.value)} placeholder="Calle, ciudad, estado, código postal" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:10}}/>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Dirección nueva</label>
+                  <input value={servicioForm.direccionNueva||""} onChange={e=>upd("direccionNueva",e.target.value)} placeholder="Calle, ciudad, estado, código postal" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:10}}/>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Fecha de mudanza</label>
+                  <input type="date" value={servicioForm.fechaMudanza||""} onChange={e=>upd("fechaMudanza",e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13}}/>
+                  <div style={{background:"#FFFBEB",borderRadius:8,padding:"10px 12px",fontSize:11,color:"#92400E",marginTop:12}}>📌 Debe presentarse dentro de 5 días hábiles tras la mudanza.</div>
+                </>)}
+                {tipo==="eoir_dir"&&servicioStep===3&&(<>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>Prueba de notificación a ICE</div>
+                  <div style={{fontSize:12,color:"#64748B",marginBottom:12}}>El formulario EOIR-33 requiere copia enviada al abogado de DHS/ICE (OPLA) para ser válido.</div>
+                  <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}}>
+                    <input type="checkbox" checked={servicioForm.notificacionICE||false} onChange={e=>upd("notificacionICE",e.target.checked)} style={{width:16,height:16}}/>
+                    <span style={{fontSize:13,color:"#374151"}}>Copia enviada a DHS ICE OPLA</span>
+                  </label>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Método de notificación</label>
+                  <select value={servicioForm.metodoNotificacion||""} onChange={e=>upd("metodoNotificacion",e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13}}>
+                    <option value="">Seleccionar...</option>
+                    <option value="Portal eService ICE">Portal eService ICE</option>
+                    <option value="Correo postal">Correo postal</option>
+                    <option value="En persona">En persona</option>
+                  </select>
+                </>)}
+                {tipo==="eoir_dir"&&servicioStep===4&&(<>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>Revisión y cobro</div>
+                  <div style={{background:"#F8FAFC",borderRadius:8,padding:12,marginBottom:14,fontSize:12,color:"#374151"}}>
+                    <div style={{marginBottom:4}}><b>Tribunal:</b> {servicioForm.tribunal||"-"}</div>
+                    <div style={{marginBottom:4}}><b>Nueva dirección:</b> {servicioForm.direccionNueva||"-"}</div>
+                    <div><b>Notificación ICE:</b> {servicioForm.notificacionICE?"Sí":"Pendiente"}</div>
+                  </div>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Monto a cobrar</label>
+                  <input value={servicioForm.montoCobrar!==undefined?servicioForm.montoCobrar:(pagosConfig.precioCambioEOIR||"")} onChange={e=>upd("montoCobrar",e.target.value)} placeholder="40" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:10}}/>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Asignar a</label>
+                  <select value={servicioForm.encargadaTramite||""} onChange={e=>upd("encargadaTramite",e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13}}>
+                    <option value="">Sin asignar</option>{equipo.map(m=><option key={m} value={m}>{m}</option>)}
+                  </select>
+                </>)}
+
+                {tipo==="transferencia"&&servicioStep===1&&(<>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Motivo del cambio</label>
+                  <textarea value={servicioForm.motivo||""} onChange={e=>upd("motivo",e.target.value)} placeholder="Explique detalladamente por qué el cliente desea cambiar de tribunal..." rows={5} style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical"}}/>
+                </>)}
+                {tipo==="transferencia"&&servicioStep===2&&(<>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Tribunal actual</label>
+                  <input value={servicioForm.tribunalActual||""} onChange={e=>upd("tribunalActual",e.target.value)} placeholder="Ej. Miami Immigration Court" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:10}}/>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Tribunal solicitado (destino)</label>
+                  <input value={servicioForm.tribunalDestino||""} onChange={e=>upd("tribunalDestino",e.target.value)} placeholder="Ej. Orlando Immigration Court" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:10}}/>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Número de caso</label>
+                  <input value={servicioForm.numeroCaso||""} onChange={e=>upd("numeroCaso",e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13}}/>
+                </>)}
+                {tipo==="transferencia"&&servicioStep===3&&(<>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Dirección nueva</label>
+                  <input value={servicioForm.direccionNueva||""} onChange={e=>upd("direccionNueva",e.target.value)} placeholder="Calle, ciudad, estado, código postal" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:10}}/>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Fecha de mudanza</label>
+                  <input type="date" value={servicioForm.fechaMudanza||""} onChange={e=>upd("fechaMudanza",e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13}}/>
+                  <div style={{background:"#FFFBEB",borderRadius:8,padding:"10px 12px",fontSize:11,color:"#92400E",marginTop:12}}>📌 El cliente debe comparecer a audiencias ya programadas hasta que se otorgue la moción.</div>
+                </>)}
+                {tipo==="transferencia"&&servicioStep===4&&(<>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Tipo de evidencia de mudanza</label>
+                  <select value={servicioForm.tipoEvidencia||""} onChange={e=>upd("tipoEvidencia",e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:12}}>
+                    <option value="">Seleccionar...</option>
+                    <option value="Contrato de renta">Contrato de renta</option>
+                    <option value="Factura de servicios">Factura de servicios (luz, agua, internet)</option>
+                    <option value="Licencia de conducir">Licencia de conducir actualizada</option>
+                    <option value="Carta del empleador">Carta del empleador</option>
+                    <option value="Otro">Otro documento</option>
+                  </select>
+                  <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                    <input type="checkbox" checked={servicioForm.eoir33Incluido||false} onChange={e=>upd("eoir33Incluido",e.target.checked)} style={{width:16,height:16}}/>
+                    <span style={{fontSize:13,color:"#374151"}}>Formulario EOIR-33/IC incluido con esta moción</span>
+                  </label>
+                </>)}
+                {tipo==="transferencia"&&servicioStep===5&&(<>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>Revisión y cobro</div>
+                  <div style={{background:"#F8FAFC",borderRadius:8,padding:12,marginBottom:14,fontSize:12,color:"#374151"}}>
+                    <div style={{marginBottom:4}}><b>De:</b> {servicioForm.tribunalActual||"-"} <b>A:</b> {servicioForm.tribunalDestino||"-"}</div>
+                    <div style={{marginBottom:4}}><b>Nueva dirección:</b> {servicioForm.direccionNueva||"-"}</div>
+                    <div><b>Evidencia:</b> {servicioForm.tipoEvidencia||"-"}</div>
+                  </div>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Monto a cobrar</label>
+                  <input value={servicioForm.montoCobrar!==undefined?servicioForm.montoCobrar:(pagosConfig.precioTransferencia||"")} onChange={e=>upd("montoCobrar",e.target.value)} placeholder="75" style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,marginBottom:10}}/>
+                  <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:4}}>Asignar a</label>
+                  <select value={servicioForm.encargadaTramite||""} onChange={e=>upd("encargadaTramite",e.target.value)} style={{width:"100%",padding:"9px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13}}>
+                    <option value="">Sin asignar</option>{equipo.map(m=><option key={m} value={m}>{m}</option>)}
+                  </select>
+                </>)}
+
+              </div>
+
+              <div style={{padding:"14px 24px 20px",borderTop:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between"}}>
+                <button onClick={()=>servicioStep===1?closeModal():setServicioStep(s=>s-1)} style={{padding:"9px 18px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",fontSize:13,cursor:"pointer"}}>{servicioStep===1?"Cancelar":"← Atrás"}</button>
+                {servicioStep<totalSteps?(
+                  <button onClick={()=>setServicioStep(s=>s+1)} style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>Siguiente →</button>
+                ):(
+                  <button disabled={servicioSaving} onClick={finalizarYCobrar} style={{padding:"9px 20px",borderRadius:8,border:"none",background:servicioSaving?"#94A3B8":"#16A34A",color:"#fff",fontSize:13,fontWeight:700,cursor:servicioSaving?"not-allowed":"pointer"}}>{servicioSaving?"Procesando...":"✅ Confirmar y generar PDF"}</button>
+                )}
+              </div>
+            </>);
+          })()}
+
+        </div>
+      </div>
+    )}
+
         {toast&&<div style={{position:"fixed",bottom:24,right:24,background:toast.type==="error"?"#EF4444":"#0F172A",color:"#fff",padding:"11px 18px",borderRadius:10,fontSize:14,fontWeight:500,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",zIndex:200}}>{toast.msg}</div>}
   </div>);
 }
 
 //  Editor de Caso simplificado 
-function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true}){
+function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],clienteId=null,clienteNombre="",onIniciarServicio=()=>{}}){
   const sys=SISTEMAS[caso.sistema]||SISTEMAS.uscis;
   return(<div style={{background:"#F8FAFC",border:`2px solid ${sys.border}`,borderRadius:10,padding:"14px",marginBottom:12}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
