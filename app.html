@@ -440,7 +440,7 @@ function App(){
   const[enabledModules,setEnabledModules]=useState(["immigration"]);
   const[authLoading,setAuthLoading]=useState(true);
   const[clientes,setClientes]=useState([]);const[loading,setLoading]=useState(false);const[solicitudesServicio,setSolicitudesServicio]=useState([]);
-  const[showModal,setShowModal]=useState(false);const[editId,setEditId]=useState(null);const[formCliente,setFormCliente]=useState(emptyCliente);const[tabCliente,setTabCliente]=useState("general");
+  const[showModal,setShowModal]=useState(false);const[editId,setEditId]=useState(null);const[formCliente,setFormCliente]=useState(emptyCliente);
   const[filtroStatus,setFiltroStatus]=useState("todos");const[filtroSistema,setFiltroSistema]=useState("todos");
   const[búsqueda,setBúsqueda]=useState("");const[busquedaActiva,setBusquedaActiva]=useState("");const[saving,setSaving]=useState(false);
   const[toast,setToast]=useState(null);const[sortBy,setSortBy]=useState("fecha");
@@ -1119,7 +1119,7 @@ const loadTeam=async()=>{
   const showToastFn=(msg,type="ok")=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
   const handleLogout=async()=>{const{auth,signOut}=window._firebase;await signOut(auth);setUser(null);setUserData(null);setOfficeData(null);setClientes([]);};
 
-  const openAdd=()=>{setEditId(null);setFormCliente({...emptyCliente,casos:[]});setTabCliente("general");setShowModal(true);};
+  const openAdd=()=>{setEditId(null);setFormCliente({...emptyCliente,casos:[]});setShowModal(true);};
   const openHistorial=async(c)=>{
     setHistorialCliente(c);
     setHistorialData([]);
@@ -1152,7 +1152,6 @@ const loadTeam=async()=>{
       casos:(c.casos||[]).map(ca=>({...emptyCaso,...ca,alienNum:ca.alienNum||clienteAlien})),
       nota:c.nota||""
     });
-    setTabCliente("general");
     setShowModal(true);
   };
 
@@ -2127,8 +2126,7 @@ const loadTeam=async()=>{
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
         <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:580,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"94vh",overflowY:"auto"}}>
           <h2 style={{margin:"0 0 16px",fontSize:17,fontWeight:700,color:"#0F172A"}}>{ editId ? t("Editar cliente","Edit client") : t("Nuevo cliente","New client") }</h2>
-          <TabsCliente tab={tabCliente} setTab={setTabCliente} casos={formCliente.casos}/>
-          {tabCliente==="general"&&<div style={{background:"#F8FAFC",borderRadius:10,padding:"14px",marginBottom:16,border:"1px solid #E2E8F0"}}>
+          <div style={{background:"#F8FAFC",borderRadius:10,padding:"14px",marginBottom:16,border:"1px solid #E2E8F0"}}>
             <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:10,textTransform:"uppercase"}}>{ t("Información personal","Personal information") }</div>
             <Field label={t("Nombre completo *","Full name *")} value={formCliente.nombre} onChange={v=>setFormCliente(p=>({...p,nombre:v}))} placeholder="Nombre completo"/>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -2154,16 +2152,16 @@ const loadTeam=async()=>{
               <label style={{display:"block",fontSize:12,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Notas generales</label>
               <textarea value={formCliente.nota} onChange={e=>setFormCliente(p=>({...p,nota:e.target.value}))} placeholder={t("Observaciones del cliente...","Client notes...")} rows={2} style={{width:"100%",padding:"8px 11px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:14,resize:"vertical",outline:"none"}}/>
             </div>
-          </div>}
+          </div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <div style={{fontSize:13,fontWeight:700,color:"#0F172A"}}>{ t("Casos del cliente","Client cases") }</div>
             <button onClick={addCaso} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>{ t("+ Agregar caso","+ Add case") }</button>
           </div>
           {formCliente.casos.length===0&&<div style={{textAlign:"center",padding:"20px",color:"#94A3B8",fontSize:13,background:"#F8FAFC",borderRadius:10,border:"1px dashed #E2E8F0",marginBottom:14}}>Sin casos. Haz clic en "+ Agregar caso".</div>}
-          {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo} isAdmin={isAdmin} clienteId={editId} clienteNombre={formCliente.nombre} onIniciarServicio={(tipo)=>setShowServicioAdicional({tipo,clienteId:editId,clienteNombre:formCliente.nombre,casoAlien:formCliente.alienNum})} tabActiva={tabCliente}/>))}
+          {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo} isAdmin={isAdmin} clienteId={editId} clienteNombre={formCliente.nombre} onIniciarServicio={(tipo)=>setShowServicioAdicional({tipo,clienteId:editId,clienteNombre:formCliente.nombre,casoAlien:formCliente.alienNum})}/>))}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
             <button onClick={()=>setShowModal(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={handleSubmit} disabled={!formCliente.nombre||saving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(!formCliente.nombre||saving)?"#E5E7EB":"#1E40AF",color:(!formCliente.nombre||saving)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(!formCliente.nombre||saving)?"not-allowed":"pointer"}}>{ saving ? t("Guardando...","Saving...") : editId ? t("Guardar cliente","Save client") : t("Agregar cliente","Add client") }</button>
+            <button onClick={handleSubmit} disabled={!formCliente.nombre||saving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(!formCliente.nombre||saving)?"#E5E7EB":"#1E40AF",color:(!formCliente.nombre||saving)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(!formCliente.nombre||saving)?"not-allowed":"pointer"}}>{ saving ? t("Guardando...","Saving...") : editId ? t("Guardar cambios","Save changes") : t("Agregar cliente","Add client") }</button>
           </div>
         </div>
       </div>
@@ -3871,27 +3869,7 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
 }
 
 //  Editor de Caso simplificado 
-function TabsCliente({tab,setTab,casos}){
-  const tieneUSCIS=(casos||[]).some(c=>c.sistema==="uscis");
-  const tieneEOIR=(casos||[]).some(c=>c.sistema==="eoir");
-  const tieneFOIA=(casos||[]).some(c=>c.sistema==="foia");
-  const TABS=[
-    {key:"general",label:t("General","General"),icon:"👤",show:true},
-    {key:"uscis",label:"USCIS",icon:"🏛",show:tieneUSCIS},
-    {key:"eoir",label:"EOIR",icon:"⚖️",show:tieneEOIR},
-    {key:"foia",label:"FOIA",icon:"📂",show:tieneFOIA},
-    {key:"adicionales",label:t("Adicionales","Additional"),icon:"➕",show:true},
-  ];
-  return(<div style={{display:"flex",gap:4,marginBottom:16,borderBottom:"2px solid #E2E8F0",overflowX:"auto"}}>
-    {TABS.filter(tb=>tb.show).map(tb=>(
-      <button key={tb.key} onClick={()=>setTab(tb.key)} style={{padding:"9px 14px",border:"none",borderBottom:tab===tb.key?"3px solid #1E40AF":"3px solid transparent",background:"transparent",color:tab===tb.key?"#1E40AF":"#64748B",fontWeight:tab===tb.key?700:500,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5,marginBottom:-2}}>
-        <span>{tb.icon}</span>{tb.label}
-      </button>
-    ))}
-  </div>);
-}
-
-function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],clienteId=null,clienteNombre="",onIniciarServicio=()=>{},tabActiva="general"}){
+function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],clienteId=null,clienteNombre="",onIniciarServicio=()=>{}}){
   const sys=SISTEMAS[caso.sistema]||SISTEMAS.uscis;
   return(<div style={{background:"#F8FAFC",border:`2px solid ${sys.border}`,borderRadius:10,padding:"14px",marginBottom:12}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
@@ -3908,15 +3886,15 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
         <option value="">Seleccionar...</option>{SISTEMAS[caso.sistema].tiposCaso.map(t=><option key={t} value={t}>{t}</option>)}
       </select>
     </div>
-    {tabActiva==="general"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
       {caso.sistema==="uscis"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("N° Recibo","Receipt #")}</label><input value={caso.receiptNum||""} onChange={e=>onChange({...caso,receiptNum:e.target.value.toUpperCase()})} placeholder="IOE0912345678" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>}
       <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("A# Alien","Alien #")}</label><input value={caso.alienNum||""} onChange={e=>onChange({...caso,alienNum:e.target.value.replace(/[^\d-]/g,"")})} placeholder="012-345-678" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>
       {caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Corte","Court")}</label><input value={caso.corte||""} onChange={e=>onChange({...caso,corte:e.target.value})} placeholder="Miami Immigration Court" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
       {caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Juez","Judge")}</label><input value={caso.juez||""} onChange={e=>onChange({...caso,juez:e.target.value})} placeholder="Hon. Rivera" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
-    </div>}
+    </div>
 
     
-    {tabActiva==="uscis"&&caso.sistema==="uscis"&&(caso.tipoCaso||"").includes("I-589")&&(
+    {caso.sistema==="uscis"&&(caso.tipoCaso||"").includes("I-589")&&(
       <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
         <div style={{fontSize:11,fontWeight:700,color:"#1D4ED8",marginBottom:8}}>I-589 Asilo — Citas</div>
         <div style={{marginBottom:8}}>
@@ -3937,7 +3915,7 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
       </div>
     )}
 
-    {((tabActiva==="uscis"&&caso.sistema==="uscis"&&(caso.tipoCaso||"").includes("I-589"))||(tabActiva==="eoir"&&caso.sistema==="eoir"&&(caso.tipoCaso||"").toLowerCase().includes("asilo")))&&(
+    {(caso.sistema==="uscis"&&(caso.tipoCaso||"").includes("I-589")||caso.sistema==="eoir"&&(caso.tipoCaso||"").toLowerCase().includes("asilo"))&&(
       <div style={{background:"#FAF5FF",border:"1px solid #E9D5FF",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
         <div style={{fontSize:11,fontWeight:700,color:"#7C3AED",marginBottom:8}}>👨‍👩‍👧‍👦 {t("Caso Familiar","Family Case")}</div>
         <div style={{display:"flex",gap:8,marginBottom:(caso.dependientes||[]).length>0||caso.esFamiliar?10:0}}>
@@ -4022,7 +4000,7 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
     )}
 
     
-    {tabActiva==="uscis"&&caso.sistema==="uscis"&&<div style={{marginBottom:10}}>
+    {caso.sistema==="uscis"&&<div style={{marginBottom:10}}>
       <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.04em"}}>📋 Estatus del caso USCIS</label>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
         {[
@@ -4040,15 +4018,15 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
     </div>}
 
     
-    {tabActiva==="eoir"&&caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de corte</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
-    {tabActiva==="eoir"&&caso.sistema==="eoir"&&(caso.tipoCaso||"").toLowerCase().includes("asilo")&&<div style={{marginBottom:8}}>
+    {caso.sistema==="eoir"&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de corte</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
+    {caso.sistema==="eoir"&&(caso.tipoCaso||"").toLowerCase().includes("asilo")&&<div style={{marginBottom:8}}>
       <label style={{display:"block",fontSize:11,fontWeight:600,color:"#A5B4FC",marginBottom:3,textTransform:"uppercase"}}>⏱️ Fecha en que se presentó el asilo</label>
       <input type="date" value={caso.fechaAsilo||""} onChange={e=>onChange({...caso,fechaAsilo:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #4338CA",background:"#1E1B4B",color:"#fff",fontSize:13,outline:"none"}}/>
       {caso.fechaAsilo&&(()=>{const inicio=new Date(caso.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);const dias=Math.floor((hoy-inicio)/86400000);const pct=Math.min(100,Math.round((dias/180)*100));const color=dias>=180?"#4ADE80":dias>=120?"#FACC15":"#60A5FA";return(<div style={{background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:8,padding:"10px 12px",marginTop:6}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{textAlign:"center",minWidth:50}}><div style={{fontSize:28,fontWeight:800,color,lineHeight:1}}>{dias}</div><div style={{fontSize:10,color:"#A5B4FC"}}>{t("días","days")}</div></div><div style={{flex:1}}><div style={{background:"#312E81",borderRadius:20,height:8,overflow:"hidden",marginBottom:4}}><div style={{height:"100%",borderRadius:20,background:color,width:`${pct}%`}}/></div><div style={{fontSize:11,color,fontWeight:600}}>{dias>=180?(dias>=180?"✅ Elegible para EAD":"✅ Eligible for EAD")+" — "+dias+(_lang==="es"?" días":" days"):(_lang==="es"?`⏳ Faltan ${180-dias} días para EAD`:`⏳ ${180-dias} days until EAD`)}</div></div></div></div>);})()} 
     </div>}
 
     
-    {tabActiva==="uscis"&&caso.sistema==="uscis"&&(caso.tipoCaso||"").includes("I-765")&&<div style={{marginBottom:10}}>
+    {caso.sistema==="uscis"&&(caso.tipoCaso||"").includes("I-765")&&<div style={{marginBottom:10}}>
       <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:6,textTransform:"uppercase"}}>💼 Permiso de trabajo (EAD)</label>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
         {[["si","✅ Sí tiene"],["no","❌ No tiene"]].map(([k,l])=>(
@@ -4077,10 +4055,10 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
     </div>}
 
     
-    {tabActiva==="uscis"&&caso.sistema==="uscis"&&!(caso.tipoCaso||"").includes("I-589")&&!(caso.tipoCaso||"").includes("I-765")&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de cita</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
+    {caso.sistema==="uscis"&&!(caso.tipoCaso||"").includes("I-589")&&!(caso.tipoCaso||"").includes("I-765")&&<div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de cita</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>}
 
     
-    {tabActiva==="foia"&&caso.sistema==="foia"&&<>
+    {caso.sistema==="foia"&&<>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
         <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Tracking FOIA","FOIA Tracking")}</label><input value={caso.foiaTracking||""} onChange={e=>onChange({...caso,foiaTracking:e.target.value})} placeholder="NRC2024123456" style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/></div>
         <div><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>Estado FOIA</label>
@@ -4096,7 +4074,6 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
       <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha de envío</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/></div>
       <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Respuesta / Notas FOIA","FOIA Response / Notes")}</label><textarea value={caso.foiaRespuesta||""} onChange={e=>onChange({...caso,foiaRespuesta:e.target.value})} placeholder={t("Notas de la respuesta...","Response notes...")} rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
     </>}
-    {tabActiva==="adicionales"&&<>
     <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Notas del caso","Case notes")}</label><textarea value={caso.nota||""} onChange={e=>onChange({...caso,nota:e.target.value})} placeholder={t("Observaciones...","Notes...")} rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
     <ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>
 
@@ -4123,7 +4100,6 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
         <div style={{fontSize:9,color:"#94A3B8",marginTop:6}}>Disponible solo después de guardar el caso</div>
       </div>
     )}
-    </>}
   </div>);
 }
 
