@@ -686,6 +686,38 @@ const savePagosConfig=async(cfg)=>{
   setConfigSaving(false);
 };
 
+
+const assignExpedientes=async()=>{
+  try{
+    const{db,collection,getDocs,query,where,updateDoc,doc}=window._firebase;
+    const officeId=officeData?.id||userData?.officeId;
+    let q;
+    if(officeId){
+      q=query(collection(db,"clientes"),where("officeId","==",officeId));
+    }else{
+      q=collection(db,"clientes");
+    }
+    const snap=await getDocs(q);
+    const sorted=snap.docs.slice().sort((a,b)=>{
+      const fa=a.data().createdAt||"";
+      const fb=b.data().createdAt||"";
+      return fa.localeCompare(fb);
+    });
+    let maxNum=sorted.reduce((max,d)=>{
+      const n=parseInt((d.data().expediente||"").replace("EXP-",""))||0;
+      return n>max?n:max;
+    },0);
+    const sinExp=sorted.filter(d=>!d.data().expediente);
+    for(const d of sinExp){
+      maxNum++;
+      const expNum="EXP-"+String(maxNum).padStart(4,"0");
+      await updateDoc(doc(db,"clientes",d.id),{expediente:expNum});
+    }
+    await loadCases();
+    showToastFn(`Expedientes asignados — ${sinExp.length} clientes actualizados ✓`);
+  }catch(e){console.error("assignExpedientes error:",e);showToastFn("Error: "+e.message,"error");}
+};
+
 const registrarPago=async(clienteId,pago)=>{
   try{
     const{db,collection,addDoc}=window._firebase;
@@ -1196,7 +1228,15 @@ const loadTeam=async()=>{
       }else{
         //  MULTI-OFFICE: always save officeId 
         const encargadaAuto = formCliente.encargada || userData?.displayName || user.email || "";
-        const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString(),createdBy:user.email});
+        // Get next expediente number
+        let nextExp="EXP-0001";
+        try{
+          const{getDocs:gd,query:qq,where:ww}=window._firebase;
+          const allSnap=await gd(officeId?qq(collection(db,"clientes"),ww("officeId","==",officeId)):collection(db,"clientes"));
+          const maxN=allSnap.docs.reduce((max,d)=>{const n=parseInt((d.data().expediente||"").replace("EXP-",""))||0;return n>max?n:max;},0);
+          nextExp="EXP-"+String(maxN+1).padStart(4,"0");
+        }catch(ex){console.error(ex);}
+        const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,expediente:nextExp,createdAt:new Date().toISOString(),createdBy:user.email});
         try{await addDoc(collection(db,"historial"),{clienteId:ref.id,officeId,accion:"Cliente registrado",usuario:user.email,fecha:new Date().toISOString()});}catch(he){console.error(he);}
         setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString()},...prev]);
         showToastFn("Cliente agregado ✓");
@@ -1239,7 +1279,7 @@ const loadTeam=async()=>{
     if(filtroStatus!=="todos"&&st!==filtroStatus)return false;
     if(filtroSistema!=="todos"&&!(c.casos||[]).some(ca=>ca.sistema===filtroSistema))return false;
     const q=búsqueda.toLowerCase();
-    return!q||c.nombre.toLowerCase().includes(q)||(c.alienNum||"").replace(/\D/g,"").includes(q.replace(/\D/g,""))||(c.encargada||"").toLowerCase().includes(q)||(c.paisOrigen||"").toLowerCase().includes(q)||(c.casos||[]).some(ca=>(ca.receiptNum||"").toLowerCase().includes(q)||(ca.foiaTracking||"").toLowerCase().includes(q));
+    return!q||c.nombre.toLowerCase().includes(q)||(c.alienNum||"").replace(/\D/g,"").includes(q.replace(/\D/g,""))||(c.encargada||"").toLowerCase().includes(q)||(c.paisOrigen||"").toLowerCase().includes(q)||(c.expediente||"").toLowerCase().includes(q)||(c.casos||[]).some(ca=>(ca.receiptNum||"").toLowerCase().includes(q)||(ca.foiaTracking||"").toLowerCase().includes(q));
   }).sort((a,b)=>{
     if(sortBy==="fecha"){const fa=getPróximaFecha(a),fb=getPróximaFecha(b);if(!fa)return 1;if(!fb)return -1;return new Date(fa)-new Date(fb);}
     return a.nombre.localeCompare(b.nombre);
@@ -1540,6 +1580,11 @@ const loadTeam=async()=>{
         <div style={{display:"flex",alignItems:"center",gap:5,background:"#F1F5F9",borderRadius:8,padding:"7px 12px",fontSize:12,fontWeight:600,color:"#475569",flexShrink:0}}>
           👥 {clientes.length} {t("clientes","clients")}
         </div>
+        {clientes.some(c=>!c.expediente)&&(
+          <button onClick={assignExpedientes} style={{background:"#7C3AED",color:"#fff",border:"none",borderRadius:8,padding:"7px 12px",fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+            🔢 {t("Asignar EXP","Assign EXP")}
+          </button>
+        )}
         <button onClick={openAdd} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
           + {t("Nuevo Cliente","New Client")}
         </button>
@@ -1622,7 +1667,7 @@ const loadTeam=async()=>{
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
-                      <span style={{fontWeight:700,fontSize:15,color:"#0F172A"}}>{c.nombre}</span>
+                      {c.expediente&&<span style={{fontSize:11,color:"#0C447C",fontWeight:600,background:"#E6F1FB",borderRadius:4,padding:"2px 7px",marginRight:8,fontFamily:"monospace"}}>{c.expediente}</span>}<span style={{fontWeight:700,fontSize:15,color:"#0F172A"}}>{c.nombre}</span>
                       <Badge cfg={scfg} label={scfg.label}/>
                       {(()=>{
                         const tieneUSCIS=(c.casos||[]).some(ca=>ca.sistema==="uscis"||ca.sistema==="foia");
