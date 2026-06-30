@@ -158,30 +158,6 @@ function ProcesosEditor({procesos,onChange}){
       <div style={{background:"#E2E8F0",borderRadius:20,height:5,marginTop:4}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`}}/></div>
       <div style={{fontSize:10,color:pc,fontWeight:700,marginTop:2}}>{pct!==null?`${pct}% — Saldo: ${fmtMoney(total-pagado)}`:"Sin info"}</div>
     </div>}
-
-    {clienteId&&(
-      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 12px",marginTop:10}}>
-        <div style={{fontSize:10,fontWeight:700,color:"#64748B",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.03em"}}>➕ Servicios adicionales para este caso</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
-          <button onClick={()=>onIniciarServicio("uscis_dir")} style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 9px",borderRadius:7,border:"1px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
-            <span style={{fontSize:14}}>🏛️</span>
-            <span style={{fontSize:10.5,fontWeight:600,color:"#0F172A"}}>Cambio dir. USCIS</span>
-            <span style={{fontSize:9,color:"#94A3B8"}}>AR-11</span>
-          </button>
-          <button onClick={()=>onIniciarServicio("eoir_dir")} style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 9px",borderRadius:7,border:"1px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
-            <span style={{fontSize:14}}>⚖️</span>
-            <span style={{fontSize:10.5,fontWeight:600,color:"#0F172A"}}>Cambio dir. EOIR</span>
-            <span style={{fontSize:9,color:"#94A3B8"}}>EOIR-33/IC</span>
-          </button>
-          <button onClick={()=>onIniciarServicio("transferencia")} style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 9px",borderRadius:7,border:"1px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
-            <span style={{fontSize:14}}>🔁</span>
-            <span style={{fontSize:10.5,fontWeight:600,color:"#0F172A"}}>Transferir corte</span>
-            <span style={{fontSize:9,color:"#94A3B8"}}>Moción + EOIR-33</span>
-          </button>
-        </div>
-        <div style={{fontSize:9,color:"#94A3B8",marginTop:6}}>Disponible solo después de guardar el caso</div>
-      </div>
-    )}
   </div>);
 }
 
@@ -3522,6 +3498,30 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
     </>}
     <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>{t("Notas del caso","Case notes")}</label><textarea value={caso.nota||""} onChange={e=>onChange({...caso,nota:e.target.value})} placeholder={t("Observaciones...","Notes...")} rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:7,border:"1px solid #D1D5DB",fontSize:13,resize:"vertical",outline:"none"}}/></div>
     <ProcesosEditor procesos={caso.procesos||[]} onChange={v=>onChange({...caso,procesos:v})}/>
+
+    {clienteId&&(
+      <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 12px",marginTop:10}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#64748B",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.03em"}}>➕ Servicios adicionales para este caso</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
+          <button onClick={()=>onIniciarServicio("uscis_dir")} style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 9px",borderRadius:7,border:"1px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
+            <span style={{fontSize:14}}>🏛️</span>
+            <span style={{fontSize:10.5,fontWeight:600,color:"#0F172A"}}>Cambio dir. USCIS</span>
+            <span style={{fontSize:9,color:"#94A3B8"}}>AR-11</span>
+          </button>
+          <button onClick={()=>onIniciarServicio("eoir_dir")} style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 9px",borderRadius:7,border:"1px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
+            <span style={{fontSize:14}}>⚖️</span>
+            <span style={{fontSize:10.5,fontWeight:600,color:"#0F172A"}}>Cambio dir. EOIR</span>
+            <span style={{fontSize:9,color:"#94A3B8"}}>EOIR-33/IC</span>
+          </button>
+          <button onClick={()=>onIniciarServicio("transferencia")} style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 9px",borderRadius:7,border:"1px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
+            <span style={{fontSize:14}}>🔁</span>
+            <span style={{fontSize:10.5,fontWeight:600,color:"#0F172A"}}>Transferir corte</span>
+            <span style={{fontSize:9,color:"#94A3B8"}}>Moción + EOIR-33</span>
+          </button>
+        </div>
+        <div style={{fontSize:9,color:"#94A3B8",marginTop:6}}>Disponible solo después de guardar el caso</div>
+      </div>
+    )}
   </div>);
 }
 
