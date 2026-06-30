@@ -275,9 +275,9 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-he
             <button class="form-dropdown-item" onclick="openFormulario('i130')">👨‍👩‍👧 Petición familiar (I-130)</button>
             <button class="form-dropdown-item disabled">🗽 Ciudadanía (N-400) <span class="form-dropdown-soon">pronto</span></button>
             <div class="form-dropdown-title" style="border-top:1px solid #F1F5F9;margin-top:4px;">Otros trámites</div>
-            <button class="form-dropdown-item" onclick="openServicio('uscis_dir')">🏛️ Cambio de dirección USCIS</button>
-            <button class="form-dropdown-item" onclick="openServicio('eoir_dir')">⚖️ Cambio de dirección EOIR</button>
-            <button class="form-dropdown-item" onclick="openServicio('transferencia')">🔁 Transferencia de corte</button>
+            <button class="form-dropdown-item" onclick="openServicioModal('ar11')">🏛️ Cambio de dirección USCIS</button>
+            <button class="form-dropdown-item" onclick="openServicioModal('eoir33')">⚖️ Cambio de dirección EOIR</button>
+            <button class="form-dropdown-item" onclick="openServicioModal('transferencia')">🔁 Transferencia de corte</button>
           </div>
         </div>
       </div>
@@ -515,48 +515,195 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-he
 </div>
 
 <!-- ── Servicios Adicionales: Cambio de Dirección / Transferencia ── -->
-<div class="i589-modal" id="servicio-modal">
+<!-- ── AR-11: Cambio de Dirección USCIS ── -->
+<div class="i589-modal" id="ar11-modal">
   <div class="i589-box" style="max-width:480px;">
     <div class="i589-header">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:11px;color:#A8C4E0;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px" id="servicio-eyebrow">Trámite adicional</div>
-          <div style="font-size:20px;font-weight:800" id="servicio-titulo">Cambio de Dirección</div>
+          <div style="font-size:11px;color:#A8C4E0;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">USCIS Form AR-11</div>
+          <div style="font-size:20px;font-weight:800">Cambio de Dirección</div>
         </div>
-        <button onclick="closeServicio()" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:16px">✕</button>
+        <button onclick="closeServicioModal('ar11')" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:16px">✕</button>
       </div>
       <div style="margin-top:10px;background:rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;">
         <div style="font-size:12px;color:#CBD5E1">⚠️ Esta solicitud <strong style="color:#fff">no se presenta automáticamente</strong>. Tu oficina la revisará y completará el trámite oficial.</div>
       </div>
     </div>
-    <div class="i589-body" id="servicio-body" style="padding:20px;">
+    <div class="i589-body" style="padding:20px;">
+
+      <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">Información sobre usted</div>
+      <div class="i589-row2">
+        <div class="i589-field"><label class="i589-label">Apellido <span>*</span></label><input class="i589-input" id="ar11-apellido"></div>
+        <div class="i589-field"><label class="i589-label">Nombre <span>*</span></label><input class="i589-input" id="ar11-nombre"></div>
+      </div>
+      <div class="i589-row2">
+        <div class="i589-field"><label class="i589-label">Fecha de nacimiento <span>*</span></label><input class="i589-input" id="ar11-dob" type="date"></div>
+        <div class="i589-field"><label class="i589-label">Número A (si tiene)</label><input class="i589-input" id="ar11-aliennum" placeholder="A-000000000"></div>
+      </div>
+
+      <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">Dirección física actual</div>
+      <div class="i589-field"><label class="i589-label">Calle y número <span>*</span></label><input class="i589-input" id="ar11-actual-calle" placeholder="Street number and name"></div>
+      <div class="i589-row2">
+        <div class="i589-field"><label class="i589-label">Apto/Ste/Flr</label><input class="i589-input" id="ar11-actual-apto"></div>
+        <div class="i589-field"><label class="i589-label">Ciudad <span>*</span></label><input class="i589-input" id="ar11-actual-ciudad"></div>
+      </div>
+      <div class="i589-row2">
+        <div class="i589-field"><label class="i589-label">Estado <span>*</span></label><input class="i589-input" id="ar11-actual-estado" placeholder="FL"></div>
+        <div class="i589-field"><label class="i589-label">ZIP <span>*</span></label><input class="i589-input" id="ar11-actual-zip"></div>
+      </div>
+
+      <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">Dirección física anterior</div>
+      <div class="i589-field"><label class="i589-label">Calle y número</label><input class="i589-input" id="ar11-prev-calle"></div>
+      <div class="i589-row2">
+        <div class="i589-field"><label class="i589-label">Apto/Ste/Flr</label><input class="i589-input" id="ar11-prev-apto"></div>
+        <div class="i589-field"><label class="i589-label">Ciudad</label><input class="i589-input" id="ar11-prev-ciudad"></div>
+      </div>
+      <div class="i589-row2">
+        <div class="i589-field"><label class="i589-label">Estado</label><input class="i589-input" id="ar11-prev-estado" placeholder="FL"></div>
+        <div class="i589-field"><label class="i589-label">ZIP</label><input class="i589-input" id="ar11-prev-zip"></div>
+      </div>
+
+      <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">Dirección postal (opcional, si es diferente)</div>
+      <div class="i589-field"><label class="i589-label">Calle y número</label><input class="i589-input" id="ar11-postal-calle"></div>
+      <div class="i589-row2">
+        <div class="i589-field"><label class="i589-label">Apto/Ste/Flr</label><input class="i589-input" id="ar11-postal-apto"></div>
+        <div class="i589-field"><label class="i589-label">Ciudad</label><input class="i589-input" id="ar11-postal-ciudad"></div>
+      </div>
+      <div class="i589-row2">
+        <div class="i589-field"><label class="i589-label">Estado</label><input class="i589-input" id="ar11-postal-estado" placeholder="FL"></div>
+        <div class="i589-field"><label class="i589-label">ZIP</label><input class="i589-input" id="ar11-postal-zip"></div>
+      </div>
+
+      <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">✍️ Su firma</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:12px;line-height:1.5">Firma en el recuadro con el dedo o el mouse para certificar que esta información es correcta.</div>
+      <div class="sig-wrap" style="height:120px"><canvas id="sig-canvas-ar11"></canvas><div class="sig-hint" id="sig-hint-ar11">✏️ Firma aquí</div></div>
+      <div class="sig-actions">
+        <div style="font-size:11px;color:#94A3B8">🔒 Guardada de forma segura</div>
+        <button class="sig-clear" onclick="clearSig('ar11')">🗑 Limpiar</button>
+      </div>
+      <div class="sig-legal">Declaro bajo pena de perjurio, conforme a 18 U.S.C. § 1001, que la información de este formulario es verdadera y correcta.</div>
+
+    </div>
+    <div class="i589-footer">
+      <button class="i589-btn-cancel" onclick="closeServicioModal('ar11')">Cancelar</button>
+      <div style="flex:1"></div>
+      <button class="i589-btn-save" id="ar11-btn-save" onclick="saveAR11()">📨 Enviar a mi oficina</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EOIR-33/IC: Cambio de Dirección Corte de Inmigración ── -->
+<div class="i589-modal" id="eoir33-modal">
+  <div class="i589-box" style="max-width:480px;">
+    <div class="i589-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:11px;color:#A8C4E0;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Formulario EOIR-33/IC</div>
+          <div style="font-size:20px;font-weight:800">Cambio de Dirección — Corte</div>
+        </div>
+        <button onclick="closeServicioModal('eoir33')" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="margin-top:10px;background:rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;">
+        <div style="font-size:12px;color:#CBD5E1">⚠️ Esta solicitud <strong style="color:#fff">no se presenta automáticamente</strong>. Tu oficina la revisará, notificará a ICE OPLA y completará el trámite oficial.</div>
+      </div>
+    </div>
+    <div class="i589-body" style="padding:20px;">
+
+      <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">Información del caso</div>
+      <div class="i589-field"><label class="i589-label">Nombre completo (Apellido, Nombre, Segundo nombre) <span>*</span></label><input class="i589-input" id="eoir33-nombre"></div>
+      <div class="i589-field"><label class="i589-label">Número A <span>*</span></label><input class="i589-input" id="eoir33-aliennum" placeholder="A-000000000"></div>
+
+      <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">Mi dirección y teléfono anteriores</div>
+      <div class="i589-field"><label class="i589-label">Número, calle, apartamento</label><input class="i589-input" id="eoir33-prev-calle"></div>
+      <div class="i589-field"><label class="i589-label">Ciudad, Estado y código postal; País (si no es EE.UU.)</label><input class="i589-input" id="eoir33-prev-ciudad"></div>
+      <div class="i589-row2">
+        <div class="i589-field"><label class="i589-label">Teléfono</label><input class="i589-input" id="eoir33-prev-tel"></div>
+        <div class="i589-field"><label class="i589-label">Correo electrónico</label><input class="i589-input" id="eoir33-prev-email" type="email"></div>
+      </div>
+
+      <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">Mi dirección y teléfono actuales</div>
+      <div class="i589-field"><label class="i589-label">Número, calle, apartamento <span>*</span></label><input class="i589-input" id="eoir33-cur-calle"></div>
+      <div class="i589-field"><label class="i589-label">Ciudad, Estado y código postal; País (si no es EE.UU.) <span>*</span></label><input class="i589-input" id="eoir33-cur-ciudad"></div>
+      <div class="i589-row2">
+        <div class="i589-field"><label class="i589-label">Teléfono</label><input class="i589-input" id="eoir33-cur-tel"></div>
+        <div class="i589-field"><label class="i589-label">Correo electrónico</label><input class="i589-input" id="eoir33-cur-email" type="email"></div>
+      </div>
+
+      <div style="background:#FFFBEB;border-radius:8px;padding:10px 12px;margin:16px 0;display:flex;gap:8px;">
+        <span style="font-size:14px;flex-shrink:0;">📌</span>
+        <p style="margin:0;font-size:11px;color:#92400E;line-height:1.5;">Debe presentarse dentro de los 5 días hábiles siguientes al cambio. Tu oficina enviará copia a la Oficina del Asesor Jurídico Principal del DHS-ICE.</p>
+      </div>
+
+      <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">✍️ Su firma</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:12px;line-height:1.5">Firma en el recuadro con el dedo o el mouse para certificar que esta información es correcta.</div>
+      <div class="sig-wrap" style="height:120px"><canvas id="sig-canvas-eoir33"></canvas><div class="sig-hint" id="sig-hint-eoir33">✏️ Firma aquí</div></div>
+      <div class="sig-actions">
+        <div style="font-size:11px;color:#94A3B8">🔒 Guardada de forma segura</div>
+        <button class="sig-clear" onclick="clearSig('eoir33')">🗑 Limpiar</button>
+      </div>
+      <div class="sig-legal">Declaro bajo pena de perjurio, conforme al 28 U.S.C. § 1746, que soy la persona nombrada en este formulario y que la información es verdadera y correcta a mi leal saber y entender.</div>
+
+    </div>
+    <div class="i589-footer">
+      <button class="i589-btn-cancel" onclick="closeServicioModal('eoir33')">Cancelar</button>
+      <div style="flex:1"></div>
+      <button class="i589-btn-save" id="eoir33-btn-save" onclick="saveEOIR33()">📨 Enviar a mi oficina</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Transferencia de Corte (formulario simple, sin formato gubernamental único) ── -->
+<div class="i589-modal" id="transferencia-modal">
+  <div class="i589-box" style="max-width:480px;">
+    <div class="i589-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:11px;color:#A8C4E0;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Trámite EOIR</div>
+          <div style="font-size:20px;font-weight:800">Transferencia de Corte</div>
+        </div>
+        <button onclick="closeServicioModal('transferencia')" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="margin-top:10px;background:rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;">
+        <div style="font-size:12px;color:#CBD5E1">⚠️ Esta solicitud <strong style="color:#fff">no se presenta automáticamente</strong>. Tu oficina la revisará y preparará la moción oficial.</div>
+      </div>
+    </div>
+    <div class="i589-body" style="padding:20px;">
       <div class="i589-field">
         <label class="i589-label">Dirección nueva <span>*</span></label>
-        <input class="i589-input" id="serv-direccion" placeholder="Calle, ciudad, estado, código postal">
+        <input class="i589-input" id="transf-direccion" placeholder="Calle, ciudad, estado, código postal">
       </div>
       <div class="i589-row2">
         <div class="i589-field">
           <label class="i589-label">Fecha de mudanza <span>*</span></label>
-          <input class="i589-input" id="serv-fecha" type="date">
+          <input class="i589-input" id="transf-fecha" type="date">
         </div>
         <div class="i589-field">
           <label class="i589-label">Teléfono nuevo</label>
-          <input class="i589-input" id="serv-telefono" placeholder="(opcional)">
+          <input class="i589-input" id="transf-telefono" placeholder="(opcional)">
         </div>
       </div>
-      <div class="i589-field" id="serv-motivo-wrap" style="display:none;">
+      <div class="i589-field">
         <label class="i589-label">Motivo de la transferencia <span>*</span></label>
-        <textarea class="i589-input" id="serv-motivo" rows="3" style="resize:vertical;" placeholder="Explica brevemente por qué necesitas cambiar de tribunal..."></textarea>
+        <textarea class="i589-input" id="transf-motivo" rows="3" style="resize:vertical;" placeholder="Explica brevemente por qué necesitas cambiar de tribunal..."></textarea>
       </div>
       <div class="i589-field">
         <label class="i589-label">Comentarios adicionales</label>
-        <textarea class="i589-input" id="serv-notas" rows="2" style="resize:vertical;" placeholder="(opcional)"></textarea>
+        <textarea class="i589-input" id="transf-notas" rows="2" style="resize:vertical;" placeholder="(opcional)"></textarea>
       </div>
+
+      <div style="font-size:11px;font-weight:800;color:#1E40AF;text-transform:uppercase;letter-spacing:0.08em;margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid #DBEAFE;">✍️ Su firma</div>
+      <div class="sig-wrap" style="height:120px"><canvas id="sig-canvas-transferencia"></canvas><div class="sig-hint" id="sig-hint-transferencia">✏️ Firma aquí</div></div>
+      <div class="sig-actions">
+        <div style="font-size:11px;color:#94A3B8">🔒 Guardada de forma segura</div>
+        <button class="sig-clear" onclick="clearSig('transferencia')">🗑 Limpiar</button>
+      </div>
+      <div class="sig-legal">Al firmar, certifico que toda la información en esta solicitud es verdadera y correcta.</div>
     </div>
     <div class="i589-footer">
-      <button class="i589-btn-cancel" onclick="closeServicio()">Cancelar</button>
+      <button class="i589-btn-cancel" onclick="closeServicioModal('transferencia')">Cancelar</button>
       <div style="flex:1"></div>
-      <button class="i589-btn-save" id="servicio-btn-save" onclick="saveServicio()">📨 Enviar a mi oficina</button>
+      <button class="i589-btn-save" id="transferencia-btn-save" onclick="saveTransferencia()">📨 Enviar a mi oficina</button>
     </div>
   </div>
 </div>
@@ -1001,83 +1148,205 @@ window.closeForm = function(tipo) {
   document.body.style.overflow = '';
 };
 
-// ── Servicios Adicionales: Cambio de Dirección / Transferencia ──────────────
-let servicioTipoActual = null;
-const SERVICIO_LABELS = {
-  uscis_dir:    {eyebrow:"Trámite USCIS",  titulo:"Cambio de Dirección (AR-11)"},
-  eoir_dir:     {eyebrow:"Trámite EOIR",   titulo:"Cambio de Dirección (EOIR-33)"},
-  transferencia:{eyebrow:"Trámite EOIR",   titulo:"Transferencia de Corte"},
+// ── Sistema de firma digital (canvas) ──────────────────────────────────────
+const sigPads = {};
+function setupSigPad(id){
+  const canvas = document.getElementById("sig-canvas-"+id);
+  if(!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const hint = document.getElementById("sig-hint-"+id);
+  let drawing = false, hasDrawn = false;
+  function resize(){
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    canvas.style.width = rect.width + "px";
+    canvas.style.height = rect.height + "px";
+    ctx.scale(ratio, ratio);
+    ctx.strokeStyle = "#1E293B";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }
+  resize();
+  window.addEventListener("resize", resize);
+  function getPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return {x: t.clientX - rect.left, y: t.clientY - rect.top};
+  }
+  function start(e){
+    e.preventDefault();
+    drawing = true; hasDrawn = true;
+    if(hint) hint.style.display = "none";
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }
+  function move(e){
+    if(!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  function end(){ drawing = false; }
+  canvas.addEventListener("mousedown", start);
+  canvas.addEventListener("mousemove", move);
+  canvas.addEventListener("mouseup", end);
+  canvas.addEventListener("mouseleave", end);
+  canvas.addEventListener("touchstart", start, {passive:false});
+  canvas.addEventListener("touchmove", move, {passive:false});
+  canvas.addEventListener("touchend", end);
+  sigPads[id] = {
+    canvas, ctx,
+    isEmpty: () => !hasDrawn,
+    clear: () => { ctx.clearRect(0,0,canvas.width,canvas.height); hasDrawn=false; if(hint) hint.style.display="flex"; },
+    toDataURL: () => canvas.toDataURL("image/png"),
+  };
+}
+window.clearSig = function(id){
+  if(sigPads[id]) sigPads[id].clear();
 };
-window.openServicio = function(tipo){
+["ar11","eoir33","transferencia"].forEach(id => setTimeout(()=>setupSigPad(id), 100));
+
+// ── Modales de Servicios Adicionales ────────────────────────────────────────
+window.openServicioModal = function(tipo){
   document.getElementById("form-dropdown")?.classList.remove("open");
-  servicioTipoActual = tipo;
-  const lbl = SERVICIO_LABELS[tipo] || SERVICIO_LABELS.uscis_dir;
-  document.getElementById("servicio-eyebrow").textContent = lbl.eyebrow;
-  document.getElementById("servicio-titulo").textContent = lbl.titulo;
-  document.getElementById("serv-motivo-wrap").style.display = tipo === "transferencia" ? "block" : "none";
-  // Clear fields
-  ["serv-direccion","serv-fecha","serv-telefono","serv-motivo","serv-notas"].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.value="";
-  });
-  document.getElementById("servicio-modal").classList.add("open");
+  document.getElementById(tipo+"-modal").classList.add("open");
   document.body.style.overflow = "hidden";
+  setTimeout(()=>{ if(sigPads[tipo]) sigPads[tipo].clear(); else setupSigPad(tipo); }, 50);
 };
-window.closeServicio = function(){
-  document.getElementById("servicio-modal").classList.remove("open");
+window.closeServicioModal = function(tipo){
+  document.getElementById(tipo+"-modal").classList.remove("open");
   document.body.style.overflow = "";
 };
-window.saveServicio = async function(){
-  const direccion = document.getElementById("serv-direccion").value.trim();
-  const fecha = document.getElementById("serv-fecha").value;
-  const motivo = document.getElementById("serv-motivo").value.trim();
-  if(!direccion || !fecha){
-    alert("Por favor completa la dirección nueva y la fecha de mudanza.");
-    return;
+
+async function enviarSolicitudServicio(tipo, datos, iconoLabel, conceptoLabel){
+  const sig = sigPads[tipo];
+  if(sig && sig.isEmpty()){
+    alert("Por favor firma el formulario antes de enviarlo.");
+    return false;
   }
-  if(servicioTipoActual === "transferencia" && !motivo){
-    alert("Por favor explica el motivo de la transferencia.");
-    return;
-  }
-  const btn = document.getElementById("servicio-btn-save");
-  btn.textContent = "Enviando..."; btn.disabled = true;
+  const btn = document.getElementById(tipo+"-btn-save");
+  if(btn){ btn.textContent = "Enviando..."; btn.disabled = true; }
   try{
-    const solicitud = {
-      tipo: servicioTipoActual,
-      direccionNueva: direccion,
-      fechaMudanza: fecha,
-      telefonoNuevo: document.getElementById("serv-telefono").value.trim(),
-      motivo: motivo,
-      notas: document.getElementById("serv-notas").value.trim(),
+    const officeId = clientData?.officeId || "";
+    const firma = sig ? sig.toDataURL() : null;
+    await addDoc(collection(db,"solicitudesServicio"),{
+      tipo,
+      ...datos,
+      firma,
       estado: "pendiente_revision",
       solicitadoAt: new Date().toISOString(),
-    };
-    const officeId = clientData?.officeId || "";
-    await addDoc(collection(db,"solicitudesServicio"),{
-      ...solicitud,
       clienteId, officeId,
       clienteNombre: clientData?.nombre || "",
     });
-    // Log in historial too
     try{
-      const iconMap={uscis_dir:"🏛️",eoir_dir:"⚖️",transferencia:"🔁"};
-      const labelMap={uscis_dir:"Cambio de dirección USCIS",eoir_dir:"Cambio de dirección EOIR",transferencia:"Transferencia de corte"};
       await addDoc(collection(db,"historial"),{
         clienteId, officeId,
-        cambios:[{icono:iconMap[servicioTipoActual],texto:`Cliente solicitó: ${labelMap[servicioTipoActual]} (pendiente de revisión)`}],
+        cambios:[{icono:iconoLabel,texto:`Cliente solicitó: ${conceptoLabel} (pendiente de revisión)`}],
         usuario:"Portal del cliente",
         fecha:new Date().toISOString(),
       });
     }catch(he){console.error(he);}
-    closeServicio();
+    closeServicioModal(tipo);
     const toast=document.createElement("div");
     toast.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.2);white-space:nowrap";
     toast.textContent="✅ Solicitud enviada — tu oficina la revisará pronto";
     document.body.appendChild(toast);
     setTimeout(()=>toast.remove(),4000);
+    return true;
   }catch(err){
     alert("Error al enviar: "+err.message);
+    return false;
+  }finally{
+    if(btn){ btn.textContent = "📨 Enviar a mi oficina"; btn.disabled = false; }
   }
-  btn.textContent = "📨 Enviar a mi oficina"; btn.disabled = false;
+}
+
+window.saveAR11 = async function(){
+  const apellido = document.getElementById("ar11-apellido").value.trim();
+  const nombre = document.getElementById("ar11-nombre").value.trim();
+  const dob = document.getElementById("ar11-dob").value;
+  const actualCalle = document.getElementById("ar11-actual-calle").value.trim();
+  const actualCiudad = document.getElementById("ar11-actual-ciudad").value.trim();
+  const actualEstado = document.getElementById("ar11-actual-estado").value.trim();
+  const actualZip = document.getElementById("ar11-actual-zip").value.trim();
+  if(!apellido || !nombre || !dob || !actualCalle || !actualCiudad || !actualEstado || !actualZip){
+    alert("Por favor completa todos los campos obligatorios (*).");
+    return;
+  }
+  const datos = {
+    apellido, nombre, dob,
+    alienNum: document.getElementById("ar11-aliennum").value.trim(),
+    direccionActual: {
+      calle: actualCalle,
+      apto: document.getElementById("ar11-actual-apto").value.trim(),
+      ciudad: actualCiudad, estado: actualEstado, zip: actualZip,
+    },
+    direccionAnterior: {
+      calle: document.getElementById("ar11-prev-calle").value.trim(),
+      apto: document.getElementById("ar11-prev-apto").value.trim(),
+      ciudad: document.getElementById("ar11-prev-ciudad").value.trim(),
+      estado: document.getElementById("ar11-prev-estado").value.trim(),
+      zip: document.getElementById("ar11-prev-zip").value.trim(),
+    },
+    direccionPostal: {
+      calle: document.getElementById("ar11-postal-calle").value.trim(),
+      apto: document.getElementById("ar11-postal-apto").value.trim(),
+      ciudad: document.getElementById("ar11-postal-ciudad").value.trim(),
+      estado: document.getElementById("ar11-postal-estado").value.trim(),
+      zip: document.getElementById("ar11-postal-zip").value.trim(),
+    },
+  };
+  await enviarSolicitudServicio("ar11", datos, "🏛️", "Cambio de Dirección USCIS (AR-11)");
+};
+
+window.saveEOIR33 = async function(){
+  const nombreCompleto = document.getElementById("eoir33-nombre").value.trim();
+  const alienNum = document.getElementById("eoir33-aliennum").value.trim();
+  const curCalle = document.getElementById("eoir33-cur-calle").value.trim();
+  const curCiudad = document.getElementById("eoir33-cur-ciudad").value.trim();
+  if(!nombreCompleto || !alienNum || !curCalle || !curCiudad){
+    alert("Por favor completa todos los campos obligatorios (*).");
+    return;
+  }
+  const datos = {
+    nombreCompleto, alienNum,
+    direccionAnterior: {
+      calle: document.getElementById("eoir33-prev-calle").value.trim(),
+      ciudadEstadoZip: document.getElementById("eoir33-prev-ciudad").value.trim(),
+      telefono: document.getElementById("eoir33-prev-tel").value.trim(),
+      email: document.getElementById("eoir33-prev-email").value.trim(),
+    },
+    direccionActual: {
+      calle: curCalle,
+      ciudadEstadoZip: curCiudad,
+      telefono: document.getElementById("eoir33-cur-tel").value.trim(),
+      email: document.getElementById("eoir33-cur-email").value.trim(),
+    },
+  };
+  await enviarSolicitudServicio("eoir33", datos, "⚖️", "Cambio de Dirección EOIR (EOIR-33/IC)");
+};
+
+window.saveTransferencia = async function(){
+  const direccion = document.getElementById("transf-direccion").value.trim();
+  const fecha = document.getElementById("transf-fecha").value;
+  const motivo = document.getElementById("transf-motivo").value.trim();
+  if(!direccion || !fecha || !motivo){
+    alert("Por favor completa la dirección nueva, fecha de mudanza y motivo.");
+    return;
+  }
+  const datos = {
+    direccionNueva: direccion,
+    fechaMudanza: fecha,
+    telefonoNuevo: document.getElementById("transf-telefono").value.trim(),
+    motivo,
+    notas: document.getElementById("transf-notas").value.trim(),
+  };
+  await enviarSolicitudServicio("transferencia", datos, "🔁", "Transferencia de Corte");
 };
 
 function collectFormData(tipo) {
