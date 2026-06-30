@@ -274,6 +274,10 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-he
             <button class="form-dropdown-item" onclick="openFormulario('i485')">🏠 Residencia (I-485)</button>
             <button class="form-dropdown-item" onclick="openFormulario('i130')">👨‍👩‍👧 Petición familiar (I-130)</button>
             <button class="form-dropdown-item disabled">🗽 Ciudadanía (N-400) <span class="form-dropdown-soon">pronto</span></button>
+            <div class="form-dropdown-title" style="border-top:1px solid #F1F5F9;margin-top:4px;">Otros trámites</div>
+            <button class="form-dropdown-item" onclick="openServicio('uscis_dir')">🏛️ Cambio de dirección USCIS</button>
+            <button class="form-dropdown-item" onclick="openServicio('eoir_dir')">⚖️ Cambio de dirección EOIR</button>
+            <button class="form-dropdown-item" onclick="openServicio('transferencia')">🔁 Transferencia de corte</button>
           </div>
         </div>
       </div>
@@ -510,9 +514,56 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-he
   </div>
 </div>
 
+<!-- ── Servicios Adicionales: Cambio de Dirección / Transferencia ── -->
+<div class="i589-modal" id="servicio-modal">
+  <div class="i589-box" style="max-width:480px;">
+    <div class="i589-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:11px;color:#A8C4E0;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px" id="servicio-eyebrow">Trámite adicional</div>
+          <div style="font-size:20px;font-weight:800" id="servicio-titulo">Cambio de Dirección</div>
+        </div>
+        <button onclick="closeServicio()" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;padding:8px 10px;cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="margin-top:10px;background:rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;">
+        <div style="font-size:12px;color:#CBD5E1">⚠️ Esta solicitud <strong style="color:#fff">no se presenta automáticamente</strong>. Tu oficina la revisará y completará el trámite oficial.</div>
+      </div>
+    </div>
+    <div class="i589-body" id="servicio-body" style="padding:20px;">
+      <div class="i589-field">
+        <label class="i589-label">Dirección nueva <span>*</span></label>
+        <input class="i589-input" id="serv-direccion" placeholder="Calle, ciudad, estado, código postal">
+      </div>
+      <div class="i589-row2">
+        <div class="i589-field">
+          <label class="i589-label">Fecha de mudanza <span>*</span></label>
+          <input class="i589-input" id="serv-fecha" type="date">
+        </div>
+        <div class="i589-field">
+          <label class="i589-label">Teléfono nuevo</label>
+          <input class="i589-input" id="serv-telefono" placeholder="(opcional)">
+        </div>
+      </div>
+      <div class="i589-field" id="serv-motivo-wrap" style="display:none;">
+        <label class="i589-label">Motivo de la transferencia <span>*</span></label>
+        <textarea class="i589-input" id="serv-motivo" rows="3" style="resize:vertical;" placeholder="Explica brevemente por qué necesitas cambiar de tribunal..."></textarea>
+      </div>
+      <div class="i589-field">
+        <label class="i589-label">Comentarios adicionales</label>
+        <textarea class="i589-input" id="serv-notas" rows="2" style="resize:vertical;" placeholder="(opcional)"></textarea>
+      </div>
+    </div>
+    <div class="i589-footer">
+      <button class="i589-btn-cancel" onclick="closeServicio()">Cancelar</button>
+      <div style="flex:1"></div>
+      <button class="i589-btn-save" id="servicio-btn-save" onclick="saveServicio()">📨 Enviar a mi oficina</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
@@ -948,6 +999,85 @@ window.openFormulario = function(tipo) {
 window.closeForm = function(tipo) {
   document.getElementById(tipo+'-modal').classList.remove('open');
   document.body.style.overflow = '';
+};
+
+// ── Servicios Adicionales: Cambio de Dirección / Transferencia ──────────────
+let servicioTipoActual = null;
+const SERVICIO_LABELS = {
+  uscis_dir:    {eyebrow:"Trámite USCIS",  titulo:"Cambio de Dirección (AR-11)"},
+  eoir_dir:     {eyebrow:"Trámite EOIR",   titulo:"Cambio de Dirección (EOIR-33)"},
+  transferencia:{eyebrow:"Trámite EOIR",   titulo:"Transferencia de Corte"},
+};
+window.openServicio = function(tipo){
+  document.getElementById("form-dropdown")?.classList.remove("open");
+  servicioTipoActual = tipo;
+  const lbl = SERVICIO_LABELS[tipo] || SERVICIO_LABELS.uscis_dir;
+  document.getElementById("servicio-eyebrow").textContent = lbl.eyebrow;
+  document.getElementById("servicio-titulo").textContent = lbl.titulo;
+  document.getElementById("serv-motivo-wrap").style.display = tipo === "transferencia" ? "block" : "none";
+  // Clear fields
+  ["serv-direccion","serv-fecha","serv-telefono","serv-motivo","serv-notas"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value="";
+  });
+  document.getElementById("servicio-modal").classList.add("open");
+  document.body.style.overflow = "hidden";
+};
+window.closeServicio = function(){
+  document.getElementById("servicio-modal").classList.remove("open");
+  document.body.style.overflow = "";
+};
+window.saveServicio = async function(){
+  const direccion = document.getElementById("serv-direccion").value.trim();
+  const fecha = document.getElementById("serv-fecha").value;
+  const motivo = document.getElementById("serv-motivo").value.trim();
+  if(!direccion || !fecha){
+    alert("Por favor completa la dirección nueva y la fecha de mudanza.");
+    return;
+  }
+  if(servicioTipoActual === "transferencia" && !motivo){
+    alert("Por favor explica el motivo de la transferencia.");
+    return;
+  }
+  const btn = document.getElementById("servicio-btn-save");
+  btn.textContent = "Enviando..."; btn.disabled = true;
+  try{
+    const solicitud = {
+      tipo: servicioTipoActual,
+      direccionNueva: direccion,
+      fechaMudanza: fecha,
+      telefonoNuevo: document.getElementById("serv-telefono").value.trim(),
+      motivo: motivo,
+      notas: document.getElementById("serv-notas").value.trim(),
+      estado: "pendiente_revision",
+      solicitadoAt: new Date().toISOString(),
+    };
+    const officeId = clientData?.officeId || "";
+    await addDoc(collection(db,"solicitudesServicio"),{
+      ...solicitud,
+      clienteId, officeId,
+      clienteNombre: clientData?.nombre || "",
+    });
+    // Log in historial too
+    try{
+      const iconMap={uscis_dir:"🏛️",eoir_dir:"⚖️",transferencia:"🔁"};
+      const labelMap={uscis_dir:"Cambio de dirección USCIS",eoir_dir:"Cambio de dirección EOIR",transferencia:"Transferencia de corte"};
+      await addDoc(collection(db,"historial"),{
+        clienteId, officeId,
+        cambios:[{icono:iconMap[servicioTipoActual],texto:`Cliente solicitó: ${labelMap[servicioTipoActual]} (pendiente de revisión)`}],
+        usuario:"Portal del cliente",
+        fecha:new Date().toISOString(),
+      });
+    }catch(he){console.error(he);}
+    closeServicio();
+    const toast=document.createElement("div");
+    toast.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.2);white-space:nowrap";
+    toast.textContent="✅ Solicitud enviada — tu oficina la revisará pronto";
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(),4000);
+  }catch(err){
+    alert("Error al enviar: "+err.message);
+  }
+  btn.textContent = "📨 Enviar a mi oficina"; btn.disabled = false;
 };
 
 function collectFormData(tipo) {
