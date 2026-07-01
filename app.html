@@ -1238,7 +1238,7 @@ const loadTeam=async()=>{
         }catch(ex){console.error(ex);}
         const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,expediente:nextExp,createdAt:new Date().toISOString(),createdBy:user.email});
         try{await addDoc(collection(db,"historial"),{clienteId:ref.id,officeId,accion:"Cliente registrado",usuario:user.email,fecha:new Date().toISOString()});}catch(he){console.error(he);}
-        setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,createdAt:new Date().toISOString()},...prev]);
+        setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,expediente:nextExp,createdAt:new Date().toISOString()},...prev]);
         showToastFn("Cliente agregado ✓");
       }
     }catch(e){console.error("Error al guardar:",e);showToastFn("Error al guardar: "+e.message,"error");}
@@ -3191,57 +3191,88 @@ const loadTeam=async()=>{
               </div>
             </div>
 
-            
-            {clientesPendientes.length>0&&<div style={{background:"#fff",borderRadius:12,padding:"16px",marginBottom:12,border:"1px solid #E2E8F0"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#DC2626",marginBottom:12}}>⏳ Clientes con saldo pendiente ({clientesPendientes.length})</div>
-              <table style={{width:"100%",borderCollapse:"collapse"}}>
-                <thead>
-                  <tr style={{background:"#FEF2F2"}}>
-                    {["Cliente","Encargada","Total","Cobrado","Saldo","%"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:11,fontWeight:600,color:"#374151",textTransform:"uppercase"}}>{h}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {clientesPendientes.map(c=>{
-                    const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-                    const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
-                    const pct=getPct(t,p);
-                    const pc=pagoColor(pct);
-                    return(
-                      <tr key={c.id} style={{borderBottom:"1px solid #FEF2F2"}}>
-                        <td style={{padding:"8px 12px",fontSize:13,fontWeight:500}}>{c.nombre}</td>
-                        <td style={{padding:"8px 12px",fontSize:12,color:"#7C3AED"}}>{c.encargada||"—"}</td>
-                        <td style={{padding:"8px 12px",fontSize:13}}>{fmtMoney(t)}</td>
-                        <td style={{padding:"8px 12px",fontSize:13,color:"#16A34A",fontWeight:600}}>{fmtMoney(p)}</td>
-                        <td style={{padding:"8px 12px",fontSize:13,color:"#DC2626",fontWeight:700}}>{fmtMoney(t-p)}</td>
-                        <td style={{padding:"8px 12px"}}>
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <div style={{background:"#E2E8F0",borderRadius:20,height:6,width:60,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`}}/></div>
-                            <span style={{fontSize:11,fontWeight:700,color:pc}}>{pct||0}%</span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>}
-
-            
-            {clientesPagados.length>0&&<div style={{background:"#fff",borderRadius:12,padding:"16px",border:"1px solid #E2E8F0"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#16A34A",marginBottom:12}}>✅ Clientes con pago completo ({clientesPagados.length})</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
-                {clientesPagados.map(c=>{
-                  const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-                  return(
-                    <div key={c.id} style={{background:"#F0FDF4",borderRadius:8,padding:"10px 12px",border:"1px solid #BBF7D0"}}>
-                      <div style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{c.nombre}</div>
-                      <div style={{fontSize:11,color:"#7C3AED"}}>{c.encargada||"—"}</div>
-                      <div style={{fontSize:12,fontWeight:700,color:"#16A34A",marginTop:4}}>✅ {fmtMoney(t)}</div>
+            {(()=>{
+              const todosClientes=[
+                ...(clientesPendientes||[]).map(c=>({...c,_estado:"pendiente"})),
+                ...(clientesPagados||[]).map(c=>({...c,_estado:"completo"}))
+              ];
+              const [_busq,_setBusq]=React.useState("");
+              const [_emp,_setEmp]=React.useState("");
+              const [_est,_setEst]=React.useState("");
+              const [_pag,_setPag]=React.useState(1);
+              const POR_PAG=10;
+              const empleadas=[...new Set(todosClientes.map(c=>c.encargada).filter(Boolean))].sort();
+              const filtrados=todosClientes.filter(c=>{
+                const qOk=!_busq||c.nombre.toLowerCase().includes(_busq.toLowerCase());
+                const eOk=!_emp||c.encargada===_emp;
+                const stOk=!_est||c._estado===_est;
+                return qOk&&eOk&&stOk;
+              });
+              const totalPags=Math.max(1,Math.ceil(filtrados.length/POR_PAG));
+              const pagActual=Math.min(_pag,totalPags);
+              const paginados=filtrados.slice((pagActual-1)*POR_PAG,pagActual*POR_PAG);
+              return(
+                <div style={{background:"#fff",borderRadius:12,padding:"16px",border:"1px solid #E2E8F0"}}>
+                  <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+                    <div style={{position:"relative",flex:1,minWidth:160}}>
+                      <span style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",fontSize:14,color:"#94A3B8"}}>🔍</span>
+                      <input value={_busq} onChange={e=>{_setBusq(e.target.value);_setPag(1);}} placeholder={t("Buscar cliente...","Search client...")} style={{paddingLeft:30,width:"100%",boxSizing:"border-box",padding:"7px 10px 7px 30px",border:"1px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none"}}/>
                     </div>
-                  );
-                })}
-              </div>
-            </div>}
+                    <select value={_emp} onChange={e=>{_setEmp(e.target.value);_setPag(1);}} style={{fontSize:13,padding:"7px 10px",border:"1px solid #E2E8F0",borderRadius:8,background:"#fff",cursor:"pointer"}}>
+                      <option value="">{t("Todas las empleadas","All staff")}</option>
+                      {empleadas.map(e=><option key={e} value={e}>{e}</option>)}
+                    </select>
+                    <select value={_est} onChange={e=>{_setEst(e.target.value);_setPag(1);}} style={{fontSize:13,padding:"7px 10px",border:"1px solid #E2E8F0",borderRadius:8,background:"#fff",cursor:"pointer"}}>
+                      <option value="">{t("Todos","All")}</option>
+                      <option value="completo">✅ {t("Completo","Complete")}</option>
+                      <option value="pendiente">⏳ {t("Pendiente","Pending")}</option>
+                    </select>
+                    <span style={{fontSize:12,color:"#64748B",whiteSpace:"nowrap"}}>{filtrados.length} {t("clientes","clients")}</span>
+                  </div>
+                  <div style={{border:"1px solid #E2E8F0",borderRadius:8,overflow:"hidden"}}>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,tableLayout:"fixed"}}>
+                      <thead>
+                        <tr style={{background:"#F8FAFC"}}>
+                          {[{l:t("Cliente","Client"),w:"30%"},{l:t("Empleada","Staff"),w:"18%"},{l:t("Facturado","Billed"),w:"14%"},{l:t("Cobrado","Collected"),w:"14%"},{l:t("Saldo","Balance"),w:"12%"},{l:"%",w:"12%"}].map(h=>(
+                            <th key={h.l} style={{padding:"8px 10px",textAlign:"left",fontSize:11,fontWeight:600,color:"#374151",textTransform:"uppercase",width:h.w}}>{h.l}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginados.length===0&&<tr><td colSpan={6} style={{padding:"2rem",textAlign:"center",color:"#94A3B8"}}>{t("Sin resultados","No results")}</td></tr>}
+                        {paginados.map((c,i)=>{
+                          const tot=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
+                          const pag=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                          const saldo=tot-pag;
+                          const pct=getPct(tot,pag);
+                          const pc=pagoColor(pct);
+                          return(
+                            <tr key={c.id} style={{borderTop:"1px solid #F1F5F9",background:i%2===0?"#fff":"#FAFAFA"}}>
+                              <td style={{padding:"8px 10px",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nombre}</td>
+                              <td style={{padding:"8px 10px",color:"#7C3AED",fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.encargada||"—"}</td>
+                              <td style={{padding:"8px 10px"}}>{fmtMoney(tot)}</td>
+                              <td style={{padding:"8px 10px",color:"#16A34A",fontWeight:600}}>{fmtMoney(pag)}</td>
+                              <td style={{padding:"8px 10px",color:saldo>0?"#DC2626":"#16A34A",fontWeight:600}}>{fmtMoney(saldo)}</td>
+                              <td style={{padding:"8px 10px"}}>
+                                <div style={{display:"flex",alignItems:"center",gap:4}}>
+                                  <div style={{background:"#E2E8F0",borderRadius:20,height:5,width:40,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`}}/></div>
+                                  <span style={{fontSize:11,fontWeight:700,color:pc}}>{pct||0}%</span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {totalPags>1&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10}}>
+                    <button onClick={()=>_setPag(p=>Math.max(1,p-1))} disabled={pagActual<=1} style={{fontSize:12,padding:"6px 12px",border:"1px solid #E2E8F0",borderRadius:7,background:"#fff",cursor:pagActual<=1?"not-allowed":"pointer",color:pagActual<=1?"#CBD5E1":"#374151"}}>← {t("Anterior","Previous")}</button>
+                    <span style={{fontSize:12,color:"#64748B"}}>{t("Página","Page")} {pagActual} {t("de","of")} {totalPags}</span>
+                    <button onClick={()=>_setPag(p=>Math.min(totalPags,p+1))} disabled={pagActual>=totalPags} style={{fontSize:12,padding:"6px 12px",border:"1px solid #E2E8F0",borderRadius:7,background:"#fff",cursor:pagActual>=totalPags?"not-allowed":"pointer",color:pagActual>=totalPags?"#CBD5E1":"#374151"}}>{t("Siguiente","Next")} →</button>
+                  </div>}
+                </div>
+              );
+            })()}
           </div>
         </div>
       );
