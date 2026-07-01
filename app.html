@@ -1469,7 +1469,7 @@ const loadTeam=async()=>{
     {id:"dashboard", label:t("Dashboard","Dashboard"),             icon:"📊", badge: isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
     {id:"formularios",label:t("Formularios","Forms"),              icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
     // Admin only items below
-    {id:"pagos",     label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
+    {id:"pagos",     label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
     {id:"cobros",    label:t("Cobros","Collections"),              icon:"💰", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
     {id:"nomina",    label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNómina(true)},
     {id:"notaria",   label:t("Notaría","Notary"),                  icon:"📜", href:"/notaria.html", show:enabledModules.includes("notary")},
