@@ -3596,7 +3596,7 @@ const loadTeam=async()=>{
 
     {showPagosConfig&&isAdmin&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:480,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:480,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
             <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>⚙️ Configuración de Oficina</h2>
             <button onClick={()=>setShowPagosConfig(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer"}}>✕</button>
