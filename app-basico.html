@@ -1460,7 +1460,7 @@ const loadTeam=async()=>{
     {id:"clientes",   label:t("Clientes","Clients"),                icon:"👥", onClick:()=>{setActiveNav("monitor");window.scrollTo(0,160);}},
     {id:"formularios",label:t("Formularios","Forms"),               icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
     {id:"nomina",     label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNómina(true)},
-    {id:"pagos",      label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
+    {id:"pagos",      label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
     {id:"cobros",     label:t("Cobros","Collections"),              icon:"💰", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
     {id:"equipo",     label:t("Equipo","Team"),                     icon:"🤝", show:isAdmin, onClick:()=>setShowTeam(true)},
     {id:"actividad", label:t("Actividad","Activity"),               icon:"📊", show:isAdmin, onClick:()=>{setShowActividad(true);loadActividad();}},
