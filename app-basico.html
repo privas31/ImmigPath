@@ -481,7 +481,7 @@ function App(){
   const[cobrarConcepto,setCobrarConcepto]=useState("");
   const[cobrarMetodo,setCobrarMetodo]=useState("zelle");
   const[cobrarSaving,setCobrarSaving]=useState(false);
-  const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:"",precioCambioUSCIS:"40",precioCambioEOIR:"40",precioTransferencia:"75"});
+  const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:"",precioCambioUSCIS:"40",precioCambioEOIR:"40",precioTransferencia:"75",oficinaTel:"",oficinaEmail:"",oficinaDir:""});
   const[pagosPorCliente,setPagosPorCliente]=useState({});
   const[loadingPagos,setLoadingPagos]=useState({});
   const[configSaving,setConfigSaving]=useState(false);
@@ -3486,7 +3486,7 @@ const loadTeam=async()=>{
 
     {showPagosConfig&&isAdmin&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:480,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:480,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
             <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>⚙️ Configuración de Oficina</h2>
             <button onClick={()=>setShowPagosConfig(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer"}}>✕</button>
@@ -3534,6 +3534,22 @@ const loadTeam=async()=>{
             <div style={{fontFamily:"monospace",fontSize:12,color:"#1E3A5F",wordBreak:"break-all",marginBottom:8}}>{window.location.origin+"/app.html?o="+(officeData?.id||"")}</div>
             <button onClick={()=>{navigator.clipboard.writeText(window.location.origin+"/app.html?o="+(officeData?.id||"")).then(()=>showToastFn("Link copiado ✓"));}} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>📋 {t("Copiar link","Copy link")}</button>
             <div style={{fontSize:11,color:"#64748B",marginTop:6}}>Comparte este link con tu equipo — verán tu logo al entrar</div>
+          </div>
+
+          <div style={{background:"#F8FAFC",borderRadius:10,padding:"16px",marginBottom:14,border:"1px solid #E2E8F0"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>📋 Información de contacto (aparece en recibos)</div>
+            <div style={{marginBottom:10}}>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Teléfono de la oficina</label>
+              <input value={pagosConfig.oficinaTel||""} onChange={e=>setPagosConfig(p=>({...p,oficinaTel:e.target.value}))} placeholder="(407) 555-1234" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            </div>
+            <div style={{marginBottom:10}}>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Email de la oficina</label>
+              <input value={pagosConfig.oficinaEmail||""} onChange={e=>setPagosConfig(p=>({...p,oficinaEmail:e.target.value}))} placeholder="oficina@email.com" type="email" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            </div>
+            <div>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Dirección (opcional)</label>
+              <input value={pagosConfig.oficinaDir||""} onChange={e=>setPagosConfig(p=>({...p,oficinaDir:e.target.value}))} placeholder="123 Main St, Orlando FL 32801" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            </div>
           </div>
 
           <div style={{background:"#F8FAFC",borderRadius:10,padding:14,marginBottom:16,border:"1px solid #E2E8F0"}}>
@@ -3622,7 +3638,7 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
               if(!cobrarMonto||!cobrarConcepto){showToastFn("Completa monto y concepto","error");return;}
               setCobrarSaving(true);
               const refNum="REC-"+Date.now().toString(36).toUpperCase();
-              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum,alienNum:cobrarCliente.alienNum||"",expediente:cobrarCliente.expediente||"",encargada:cobrarCliente.encargada||"",oficinaNombre:officeData?.name||"ImmigPath",oficinaEmail:officeData?.email||"",oficinaTel:officeData?.telefono||""};
+              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum,alienNum:cobrarCliente.alienNum||"",expediente:cobrarCliente.expediente||"",encargada:cobrarCliente.encargada||"",oficinaNombre:officeData?.name||"ImmigPath",oficinaEmail:pagosConfig.oficinaEmail||"",oficinaTel:pagosConfig.oficinaTel||"",oficinaDir:pagosConfig.oficinaDir||""};
               await registrarPago(cobrarCliente.id,pago);
               await generarReciboPDF(pago);
               try{
