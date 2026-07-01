@@ -616,52 +616,106 @@ const descargarReciboPDF=async(pago)=>{
   const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
   if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
   const pdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
-  const W=210; const M=18;
-  pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,30,"F");
-  if(officeLogo){try{pdoc.addImage(officeLogo,"PNG",M,3,22,22);}catch(e){}}
-  pdoc.setTextColor(255,255,255); pdoc.setFontSize(14); pdoc.setFont("helvetica","bold");
-  pdoc.text("Recibo de Pago",W/2,11,{align:"center"});
-  pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
-  pdoc.text(officeData?.name||"ImmigPath",W/2,18,{align:"center"});
-  pdoc.text("Ref: "+(pago.refNum||"—"),W/2,24,{align:"center"});
-  pdoc.setTextColor(203,216,232); pdoc.setFontSize(8);
-  pdoc.text(new Date(pago.fecha).toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),W-M,20,{align:"right"});
-  let y=42;
-  const addSec=(t2)=>{
-    pdoc.setFillColor(241,245,249); pdoc.rect(M,y,W-M*2,7,"F");
-    pdoc.setTextColor(30,58,95); pdoc.setFontSize(8); pdoc.setFont("helvetica","bold");
-    pdoc.text(t2,M+3,y+5); y+=10;
+  const W=210; const M=16; const CW=W-M*2;
+  const oficina=officeData?.name||"ImmigPath";
+  const fechaDoc=pago.fecha?new Date(pago.fecha):new Date();
+  const fecha=fechaDoc.toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"});
+  const fechaCorta=fechaDoc.toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"});
+  const montoFmt=fmtMoney(parseMoney(pago.monto));
+  const metodoLabel=pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta";
+  const sistemaLabel=(pago.concepto||"").toLowerCase().includes("foia")?"FOIA":(pago.concepto||"").toLowerCase().includes("eoir")?"EOIR":"USCIS";
+  // ── HEADER ─────────────────────────────────────────────────────────────
+  pdoc.setFillColor(248,250,252); pdoc.rect(0,0,W,38,"F");
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.4); pdoc.line(0,38,W,38);
+  if(officeLogo){try{pdoc.addImage(officeLogo,"PNG",M,5,18,18);}catch(e){}}
+  const logoOff=officeLogo?20:0;
+  pdoc.setTextColor(15,23,42); pdoc.setFontSize(13); pdoc.setFont("helvetica","bold");
+  pdoc.text(oficina,M+logoOff,13);
+  pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(100,116,139);
+  pdoc.text("Immigration Services",M+logoOff,19);
+  pdoc.text("immigpath.com",M+logoOff,29);
+  pdoc.setTextColor(15,23,42); pdoc.setFontSize(18); pdoc.setFont("helvetica","bold");
+  pdoc.text("Recibo",W-M,13,{align:"right"});
+  pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(24,95,165);
+  pdoc.text("# "+(pago.refNum||"—"),W-M,20,{align:"right"});
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5);
+  pdoc.text(fecha,W-M,26,{align:"right"});
+  pdoc.setFillColor(234,243,222); pdoc.roundedRect(W-M-28,29,28,6,2,2,"F");
+  pdoc.setDrawColor(192,221,151); pdoc.setLineWidth(0.3); pdoc.roundedRect(W-M-28,29,28,6,2,2,"S");
+  pdoc.setTextColor(39,80,10); pdoc.setFontSize(7); pdoc.setFont("helvetica","bold");
+  pdoc.text("✓ PAGADO",W-M-14,33.5,{align:"center"});
+  // ── BARRA ──────────────────────────────────────────────────────────────
+  pdoc.setFillColor(12,68,124); pdoc.rect(M,40,CW,2,"F");
+  // ── 3 CELDAS ───────────────────────────────────────────────────────────
+  let y=46;
+  const col1=M,col2=M+CW/3,col3=M+CW*2/3,colW=CW/3-2;
+  const drawCell=(x,cw,label,val1,val2)=>{
+    pdoc.setFillColor(248,250,252); pdoc.roundedRect(x,y,cw,20,2,2,"F");
+    pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.roundedRect(x,y,cw,20,2,2,"S");
+    pdoc.setTextColor(148,163,184); pdoc.setFontSize(6.5); pdoc.setFont("helvetica","normal");
+    pdoc.text(label,x+4,y+5.5);
+    pdoc.setTextColor(15,23,42); pdoc.setFontSize(9); pdoc.setFont("helvetica","bold");
+    pdoc.text(val1,x+4,y+11.5);
+    if(val2){pdoc.setTextColor(100,116,139); pdoc.setFontSize(7); pdoc.setFont("helvetica","normal"); pdoc.text(val2,x+4,y+16);}
   };
-  const addRow2=(label,val)=>{
-    pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(M,y+6,W-M,y+6);
-    pdoc.setTextColor(100,116,139); pdoc.setFontSize(8); pdoc.setFont("helvetica","normal");
-    pdoc.text(label,M+2,y+4);
-    pdoc.setTextColor(30,41,59); pdoc.setFont("helvetica","bold");
-    pdoc.text(String(val||"—"),W-M-2,y+4,{align:"right"});
-    pdoc.setFont("helvetica","normal"); y+=8;
+  drawCell(col1,colW-1,"CLIENTE",pago.nombreCliente||"—",pago.alienNum?"A# "+pago.alienNum:"");
+  drawCell(col2,colW-1,"REGISTRADO POR",pago.registradoPor||"—","");
+  drawCell(col3,colW,"MÉTODO DE PAGO",metodoLabel,fechaCorta);
+  y+=26;
+  // ── TABLA ──────────────────────────────────────────────────────────────
+  pdoc.setTextColor(148,163,184); pdoc.setFontSize(6.5); pdoc.setFont("helvetica","normal");
+  pdoc.text("DETALLE DE SERVICIOS",M,y+1); y+=5;
+  pdoc.setFillColor(248,250,252); pdoc.roundedRect(M,y,CW,7,1,1,"F");
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.roundedRect(M,y,CW,7,1,1,"S");
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(6.5); pdoc.setFont("helvetica","normal");
+  pdoc.text("SERVICIO",M+3,y+4.5);
+  pdoc.text("SISTEMA",M+CW*0.62,y+4.5,{align:"center"});
+  pdoc.text("ESTE PAGO",W-M-2,y+4.5,{align:"right"});
+  y+=9;
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(M,y,W-M,y);
+  pdoc.setTextColor(15,23,42); pdoc.setFontSize(9); pdoc.setFont("helvetica","bold");
+  pdoc.text(pago.concepto||"—",M+3,y+7);
+  pdoc.setFillColor(230,241,251); pdoc.roundedRect(M+CW*0.55,y+3,16,6,1,1,"F");
+  pdoc.setTextColor(12,68,124); pdoc.setFontSize(6.5); pdoc.setFont("helvetica","bold");
+  pdoc.text(sistemaLabel,M+CW*0.55+8,y+7,{align:"center"});
+  pdoc.setTextColor(15,23,42); pdoc.setFont("helvetica","bold"); pdoc.setFontSize(8.5);
+  pdoc.text(montoFmt,W-M-2,y+7,{align:"right"});
+  y+=16;
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(W-M-52,y,W-M,y);
+  const addSub=(label,val,bold=false,color=[100,116,139])=>{
+    pdoc.setTextColor(...color); pdoc.setFontSize(7.5); pdoc.setFont("helvetica",bold?"bold":"normal");
+    pdoc.text(label,W-M-54,y+5); pdoc.text(val,W-M-2,y+5,{align:"right"}); y+=6;
   };
-  addSec("INFORMACION DEL CLIENTE");
-  addRow2("Nombre",pago.nombreCliente||"—");
-  addSec("DETALLE DEL PAGO");
-  addRow2("Concepto",pago.concepto||"—");
-  addRow2("Metodo de pago",pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta");
-  addRow2("Fecha",new Date(pago.fecha).toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}));
-  addRow2("Registrado por",pago.registradoPor||"—");
+  addSub("Este pago",montoFmt,true,[39,80,10]);
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(W-M-52,y,W-M,y); y+=2;
+  addSub("Saldo pendiente","$0.00",true,[39,80,10]);
   y+=4;
-  pdoc.setFillColor(30,58,95); pdoc.roundedRect(M,y,W-M*2,16,3,3,"F");
-  pdoc.setTextColor(168,196,224); pdoc.setFontSize(9); pdoc.setFont("helvetica","normal");
-  pdoc.text("TOTAL PAGADO",M+6,y+7);
-  pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
-  pdoc.text(fmtMoney(parseMoney(pago.monto)),W-M-4,y+11,{align:"right"});
+  // ── TOTAL ──────────────────────────────────────────────────────────────
+  pdoc.setFillColor(12,68,124); pdoc.roundedRect(M,y,CW,18,3,3,"F");
+  pdoc.setTextColor(133,183,235); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal");
+  pdoc.text("TOTAL RECIBIDO",M+6,y+6.5);
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(20); pdoc.setFont("helvetica","bold");
+  pdoc.text(montoFmt,M+6,y+14.5);
+  pdoc.setTextColor(133,183,235); pdoc.setFontSize(7); pdoc.setFont("helvetica","normal");
+  pdoc.text("Ref: "+(pago.refNum||"—"),W-M-2,y+7,{align:"right"});
+  pdoc.text(fecha,W-M-2,y+12.5,{align:"right"});
   y+=24;
-  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","italic");
-  pdoc.text("Este recibo es comprobante oficial de pago. Guardelo para sus registros.",M,y);
+  // ── NOTA ───────────────────────────────────────────────────────────────
+  pdoc.setFillColor(248,250,252); pdoc.roundedRect(M,y,CW,14,2,2,"F");
+  pdoc.setDrawColor(181,212,244); pdoc.setLineWidth(0.6); pdoc.line(M,y,M,y+14);
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.roundedRect(M,y,CW,14,2,2,"S");
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal");
+  pdoc.text("Este recibo es comprobante oficial de pago. Consérvelo para sus registros.",M+4,y+5.5);
+  pdoc.setFontSize(7); pdoc.setTextColor(148,163,184);
+  pdoc.text("This receipt is official proof of payment. Please keep it for your records.",M+4,y+10.5);
+  // ── FOOTER ─────────────────────────────────────────────────────────────
   const pH=pdoc.internal.pageSize.height;
-  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(M,pH-10,W-M,pH-10);
-  pdoc.setFontSize(7); pdoc.setTextColor(148,163,184); pdoc.setFont("helvetica","normal");
-  pdoc.text("CONFIDENCIAL | "+(officeData?.name||"ImmigPath")+" | "+(pago.refNum||"—"),M,pH-5);
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(M,pH-12,W-M,pH-12);
+  pdoc.setFontSize(6.5); pdoc.setTextColor(148,163,184); pdoc.setFont("helvetica","normal");
+  pdoc.text("CONFIDENCIAL · "+oficina,M,pH-6);
+  pdoc.text((pago.refNum||"—")+" · immigpath.com",W-M,pH-6,{align:"right"});
   pdoc.save("recibo-"+(pago.refNum||"pago")+".pdf");
-  showToastFn("Recibo descargado ✓");
+  showToastFn("📥 Recibo descargado ✓","success");
 };
 
 const loadPagosConfig=async()=>{
@@ -743,58 +797,131 @@ const generarReciboPDF=async(pago)=>{
   const jsPDF2=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
   if(!jsPDF2){showToastFn("Error cargando PDF","error");return;}
   const pdoc=new jsPDF2({orientation:"portrait",unit:"mm",format:"a4"});
-  const W=210; const M=18;
-  // Header
-  pdoc.setFillColor(30,58,95); pdoc.rect(0,0,W,30,"F");
-  // Logo izquierda, texto centrado
-  if(officeLogo){try{pdoc.addImage(officeLogo,"PNG",M,3,22,22);}catch(e){}}
-  pdoc.setTextColor(255,255,255); pdoc.setFontSize(14); pdoc.setFont("helvetica","bold");
-  pdoc.text("Recibo de Pago",W/2,11,{align:"center"});
-  pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(168,196,224);
-  pdoc.text(officeData?.name||"ImmigPath",W/2,18,{align:"center"});
-  pdoc.text("Ref: "+pago.refNum,W/2,24,{align:"center"});
-  // Fecha derecha
-  pdoc.setTextColor(203,216,232); pdoc.setFontSize(8);
-  pdoc.text(new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"}),W-M,20,{align:"right"});
-  // Cuerpo
-  let y=42;
-  const addSec=(title)=>{
-    pdoc.setFillColor(241,245,249); pdoc.rect(M,y,W-M*2,7,"F");
-    pdoc.setTextColor(30,58,95); pdoc.setFontSize(8); pdoc.setFont("helvetica","bold");
-    pdoc.text(title,M+3,y+5); y+=10;
+  const W=210; const M=16; const CW=W-M*2;
+  const oficina=pago.oficinaNombre||officeData?.name||"ImmigPath";
+  const fecha=new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"});
+  const fechaCorta=new Date().toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"});
+  const montoFmt=fmtMoney(parseMoney(pago.monto));
+  const metodoLabel=pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta";
+  const sistemaLabel=(pago.concepto||"").toLowerCase().includes("foia")?"FOIA":(pago.concepto||"").toLowerCase().includes("eoir")?"EOIR":"USCIS";
+
+  // ── HEADER DIVIDIDO ─────────────────────────────────────────────────────
+  // Bloque izquierdo oficina
+  pdoc.setFillColor(248,250,252); pdoc.rect(0,0,W,38,"F");
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.4); pdoc.line(0,38,W,38);
+  if(officeLogo){try{pdoc.addImage(officeLogo,"PNG",M,5,18,18);}catch(e){}}
+  const logoOff=officeLogo?20:0;
+  pdoc.setTextColor(15,23,42); pdoc.setFontSize(13); pdoc.setFont("helvetica","bold");
+  pdoc.text(oficina,M+logoOff,13);
+  pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(100,116,139);
+  pdoc.text("Immigration Services",M+logoOff,19);
+  if(pago.oficinaTel) pdoc.text(pago.oficinaTel,M+logoOff,24);
+  if(pago.oficinaEmail) pdoc.text(pago.oficinaEmail,M+logoOff,29);
+  // Bloque derecho recibo
+  pdoc.setTextColor(15,23,42); pdoc.setFontSize(18); pdoc.setFont("helvetica","bold");
+  pdoc.text("Recibo",W-M,13,{align:"right"});
+  pdoc.setFontSize(8); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(24,95,165);
+  pdoc.text("# "+pago.refNum,W-M,20,{align:"right"});
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5);
+  pdoc.text(fecha,W-M,26,{align:"right"});
+  // Badge PAGADO
+  pdoc.setFillColor(234,243,222); pdoc.roundedRect(W-M-28,29,28,6,2,2,"F");
+  pdoc.setDrawColor(192,221,151); pdoc.setLineWidth(0.3); pdoc.roundedRect(W-M-28,29,28,6,2,2,"S");
+  pdoc.setTextColor(39,80,10); pdoc.setFontSize(7); pdoc.setFont("helvetica","bold");
+  pdoc.text("✓ PAGADO",W-M-14,33.5,{align:"center"});
+
+  // ── BARRA AZUL ─────────────────────────────────────────────────────────
+  pdoc.setFillColor(12,68,124); pdoc.rect(M,40,CW,2,"F");
+
+  // ── FILA DE 3 DATOS ────────────────────────────────────────────────────
+  let y=46;
+  const col1=M, col2=M+CW/3, col3=M+CW*2/3, colW=CW/3-2;
+  const drawCell=(x,cw,label,val1,val2)=>{
+    pdoc.setFillColor(248,250,252); pdoc.roundedRect(x,y,cw,20,2,2,"F");
+    pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.roundedRect(x,y,cw,20,2,2,"S");
+    pdoc.setTextColor(148,163,184); pdoc.setFontSize(6.5); pdoc.setFont("helvetica","normal");
+    pdoc.text(label,x+4,y+5.5);
+    pdoc.setTextColor(15,23,42); pdoc.setFontSize(9); pdoc.setFont("helvetica","bold");
+    pdoc.text(val1,x+4,y+11.5);
+    if(val2){pdoc.setTextColor(100,116,139); pdoc.setFontSize(7); pdoc.setFont("helvetica","normal"); pdoc.text(val2,x+4,y+16);}
   };
-  const addRow=(label,val,bold=false)=>{
-    pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(M,y+6,W-M,y+6);
-    pdoc.setTextColor(100,116,139); pdoc.setFontSize(8); pdoc.setFont("helvetica","normal");
-    pdoc.text(label,M+2,y+4);
-    pdoc.setTextColor(30,41,59); if(bold)pdoc.setFont("helvetica","bold");
-    pdoc.text(String(val),W-M-2,y+4,{align:"right"});
-    pdoc.setFont("helvetica","normal"); y+=8;
+  drawCell(col1,colW-1,"CLIENTE",pago.nombreCliente,pago.alienNum?"A# "+pago.alienNum:"");
+  drawCell(col2,colW-1,"EXPEDIENTE",pago.expediente||"—",pago.encargada?"Enc: "+pago.encargada:"");
+  drawCell(col3,colW,"MÉTODO DE PAGO",metodoLabel,fechaCorta);
+  y+=26;
+
+  // ── TABLA DE SERVICIOS ─────────────────────────────────────────────────
+  pdoc.setTextColor(148,163,184); pdoc.setFontSize(6.5); pdoc.setFont("helvetica","normal");
+  pdoc.text("DETALLE DE SERVICIOS",M,y+1); y+=5;
+  // Encabezado tabla
+  pdoc.setFillColor(248,250,252); pdoc.roundedRect(M,y,CW,7,1,1,"F");
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.roundedRect(M,y,CW,7,1,1,"S");
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(6.5); pdoc.setFont("helvetica","normal");
+  pdoc.text("SERVICIO",M+3,y+4.5);
+  pdoc.text("SISTEMA",M+CW*0.62,y+4.5,{align:"center"});
+  pdoc.text("TOTAL",W-M-20,y+4.5);
+  pdoc.text("ESTE PAGO",W-M-2,y+4.5,{align:"right"});
+  y+=9;
+  // Fila servicio
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(M,y,W-M,y);
+  pdoc.setTextColor(15,23,42); pdoc.setFontSize(9); pdoc.setFont("helvetica","bold");
+  pdoc.text(pago.concepto||"—",M+3,y+7);
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7); pdoc.setFont("helvetica","normal");
+  pdoc.text("Servicio de inmigración",M+3,y+12);
+  // Badge sistema
+  pdoc.setFillColor(230,241,251); pdoc.roundedRect(M+CW*0.55,y+3,16,6,1,1,"F");
+  pdoc.setTextColor(12,68,124); pdoc.setFontSize(6.5); pdoc.setFont("helvetica","bold");
+  pdoc.text(sistemaLabel,M+CW*0.55+8,y+7,{align:"center"});
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(8.5); pdoc.setFont("helvetica","normal");
+  pdoc.text(montoFmt,W-M-20,y+7);
+  pdoc.setTextColor(15,23,42); pdoc.setFont("helvetica","bold");
+  pdoc.text(montoFmt,W-M-2,y+7,{align:"right"});
+  y+=20;
+  // Sub-totales
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.2); pdoc.line(W-M-52,y,W-M,y);
+  const addSubRow=(label,val,bold=false,color=[100,116,139])=>{
+    pdoc.setTextColor(...color); pdoc.setFontSize(7.5); pdoc.setFont("helvetica",bold?"bold":"normal");
+    pdoc.text(label,W-M-54,y+5);
+    pdoc.text(val,W-M-2,y+5,{align:"right"});
+    y+=6;
   };
-  addSec("INFORMACION DEL CLIENTE");
-  addRow("Nombre",pago.nombreCliente);
-  addSec("DETALLE DEL PAGO");
-  addRow("Concepto",pago.concepto);
-  addRow("Metodo de pago",pago.metodo==="zelle"?"Zelle":"Stripe / Tarjeta");
-  addRow("Fecha",new Date().toLocaleDateString("es-US",{day:"2-digit",month:"2-digit",year:"numeric"}));
+  addSubRow("Subtotal del servicio",montoFmt);
+  addSubRow("Pagos anteriores","$0.00");
+  addSubRow("Este pago",montoFmt,true,[39,80,10]);
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(W-M-52,y,W-M,y);
+  y+=2;
+  addSubRow("Saldo pendiente","$0.00",true,[39,80,10]);
   y+=4;
-  // Total box
-  pdoc.setFillColor(30,58,95); pdoc.roundedRect(M,y,W-M*2,16,3,3,"F");
-  pdoc.setTextColor(168,196,224); pdoc.setFontSize(9); pdoc.setFont("helvetica","normal");
-  pdoc.text("TOTAL PAGADO",M+6,y+7);
-  pdoc.setTextColor(255,255,255); pdoc.setFontSize(16); pdoc.setFont("helvetica","bold");
-  pdoc.text(fmtMoney(parseMoney(pago.monto)),W-M-4,y+11,{align:"right"});
+
+  // ── TOTAL BOX ──────────────────────────────────────────────────────────
+  pdoc.setFillColor(12,68,124); pdoc.roundedRect(M,y,CW,18,3,3,"F");
+  pdoc.setTextColor(133,183,235); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal");
+  pdoc.text("TOTAL RECIBIDO",M+6,y+6.5);
+  pdoc.setTextColor(255,255,255); pdoc.setFontSize(20); pdoc.setFont("helvetica","bold");
+  pdoc.text(montoFmt,M+6,y+14.5);
+  pdoc.setTextColor(133,183,235); pdoc.setFontSize(7); pdoc.setFont("helvetica","normal");
+  pdoc.text("Ref: "+pago.refNum,W-M-2,y+7,{align:"right"});
+  pdoc.text(fecha,W-M-2,y+12.5,{align:"right"});
   y+=24;
-  // Nota
-  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","italic");
-  pdoc.text("Este recibo es comprobante oficial de pago. Guardelo para sus registros.",M,y);
-  // Footer
+
+  // ── NOTA BILINGÜE ──────────────────────────────────────────────────────
+  pdoc.setFillColor(248,250,252); pdoc.roundedRect(M,y,CW,14,2,2,"F");
+  pdoc.setDrawColor(181,212,244); pdoc.setLineWidth(0.6); pdoc.line(M,y,M,y+14);
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.roundedRect(M,y,CW,14,2,2,"S");
+  pdoc.setTextColor(100,116,139); pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal");
+  pdoc.text("Este recibo es comprobante oficial de pago. Consérvelo para sus registros.",M+4,y+5.5);
+  pdoc.setFontSize(7); pdoc.setTextColor(148,163,184);
+  pdoc.text("This receipt is official proof of payment. Please keep it for your records.",M+4,y+10.5);
+  y+=20;
+
+  // ── FOOTER ─────────────────────────────────────────────────────────────
   const pH=pdoc.internal.pageSize.height;
-  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(M,pH-10,W-M,pH-10);
-  pdoc.setFontSize(7); pdoc.setTextColor(148,163,184); pdoc.setFont("helvetica","normal");
-  pdoc.text("CONFIDENCIAL | "+(officeData?.name||"ImmigPath")+" | "+pago.refNum,M,pH-5);
+  pdoc.setDrawColor(226,232,240); pdoc.setLineWidth(0.3); pdoc.line(M,pH-12,W-M,pH-12);
+  pdoc.setFontSize(6.5); pdoc.setTextColor(148,163,184); pdoc.setFont("helvetica","normal");
+  pdoc.text("CONFIDENCIAL · "+oficina,M,pH-6);
+  pdoc.text(pago.refNum+" · immigpath.com",W-M,pH-6,{align:"right"});
   pdoc.save("recibo-"+pago.refNum+".pdf");
-  showToastFn("Recibo descargado ✓");
+  showToastFn("📥 Recibo descargado ✓","success");
 };
 
 
@@ -3630,7 +3757,7 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
               if(!cobrarMonto||!cobrarConcepto){showToastFn("Completa monto y concepto","error");return;}
               setCobrarSaving(true);
               const refNum="REC-"+Date.now().toString(36).toUpperCase();
-              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum};
+              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum,alienNum:cobrarCliente.alienNum||"",expediente:cobrarCliente.expediente||"",encargada:cobrarCliente.encargada||"",oficinaNombre:officeData?.name||"ImmigPath",oficinaEmail:officeData?.email||"",oficinaTel:officeData?.telefono||""};
               await registrarPago(cobrarCliente.id,pago);
               await generarReciboPDF(pago);
               // Log payment in historial
