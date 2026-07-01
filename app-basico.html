@@ -491,6 +491,10 @@ function App(){
   });
   const[nominaPeriodoFin,setNóminaPeriodoFin]=useState(()=>new Date().toISOString().split("T")[0]);
   const[showPagosReporte,setShowPagosReporte]=useState(false);
+  const[reporteBusq,setReporteBusq]=useState("");
+  const[reporteEmp,setReporteEmp]=useState("");
+  const[reporteEst,setReporteEst]=useState("");
+  const[reportePag,setReportePag]=useState(1);
   const[borradores,setBorradores]=useState([]);const[showBorradores,setShowBorradores]=useState(false);const[borradorExpanded,setBorradorExpanded]=useState({});
   const[borradoresLoading,setBorradoresLoading]=useState(false);const[borradoresPendientes,setBorradoresPendientes]=useState(0);
 
@@ -3086,33 +3090,29 @@ const loadTeam=async()=>{
                 ...(clientesPendientes||[]).map(c=>({...c,_estado:"pendiente"})),
                 ...(clientesPagados||[]).map(c=>({...c,_estado:"completo"}))
               ];
-              const [_busq,_setBusq]=React.useState("");
-              const [_emp,_setEmp]=React.useState("");
-              const [_est,_setEst]=React.useState("");
-              const [_pag,_setPag]=React.useState(1);
               const POR_PAG=10;
               const empleadas=[...new Set(todosClientes.map(c=>c.encargada).filter(Boolean))].sort();
               const filtrados=todosClientes.filter(c=>{
-                const qOk=!_busq||c.nombre.toLowerCase().includes(_busq.toLowerCase());
-                const eOk=!_emp||c.encargada===_emp;
-                const stOk=!_est||c._estado===_est;
+                const qOk=!reporteBusq||c.nombre.toLowerCase().includes(reporteBusq.toLowerCase());
+                const eOk=!reporteEmp||c.encargada===reporteEmp;
+                const stOk=!reporteEst||c._estado===reporteEst;
                 return qOk&&eOk&&stOk;
               });
               const totalPags=Math.max(1,Math.ceil(filtrados.length/POR_PAG));
-              const pagActual=Math.min(_pag,totalPags);
+              const pagActual=Math.min(reportePag,totalPags);
               const paginados=filtrados.slice((pagActual-1)*POR_PAG,pagActual*POR_PAG);
               return(
                 <div style={{background:"#fff",borderRadius:12,padding:"16px",border:"1px solid #E2E8F0"}}>
                   <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
                     <div style={{position:"relative",flex:1,minWidth:160}}>
                       <span style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",fontSize:14,color:"#94A3B8"}}>🔍</span>
-                      <input value={_busq} onChange={e=>{_setBusq(e.target.value);_setPag(1);}} placeholder={t("Buscar cliente...","Search client...")} style={{paddingLeft:30,width:"100%",boxSizing:"border-box",padding:"7px 10px 7px 30px",border:"1px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none"}}/>
+                      <input value={reporteBusq} onChange={e=>{setReporteBusq(e.target.value);setReportePag(1);}} placeholder={t("Buscar cliente...","Search client...")} style={{width:"100%",boxSizing:"border-box",padding:"7px 10px 7px 30px",border:"1px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none"}}/>
                     </div>
-                    <select value={_emp} onChange={e=>{_setEmp(e.target.value);_setPag(1);}} style={{fontSize:13,padding:"7px 10px",border:"1px solid #E2E8F0",borderRadius:8,background:"#fff",cursor:"pointer"}}>
+                    <select value={reporteEmp} onChange={e=>{setReporteEmp(e.target.value);setReportePag(1);}} style={{fontSize:13,padding:"7px 10px",border:"1px solid #E2E8F0",borderRadius:8,background:"#fff",cursor:"pointer"}}>
                       <option value="">{t("Todas las empleadas","All staff")}</option>
                       {empleadas.map(e=><option key={e} value={e}>{e}</option>)}
                     </select>
-                    <select value={_est} onChange={e=>{_setEst(e.target.value);_setPag(1);}} style={{fontSize:13,padding:"7px 10px",border:"1px solid #E2E8F0",borderRadius:8,background:"#fff",cursor:"pointer"}}>
+                    <select value={reporteEst} onChange={e=>{setReporteEst(e.target.value);setReportePag(1);}} style={{fontSize:13,padding:"7px 10px",border:"1px solid #E2E8F0",borderRadius:8,background:"#fff",cursor:"pointer"}}>
                       <option value="">{t("Todos","All")}</option>
                       <option value="completo">✅ {t("Completo","Complete")}</option>
                       <option value="pendiente">⏳ {t("Pendiente","Pending")}</option>
@@ -3156,9 +3156,9 @@ const loadTeam=async()=>{
                     </table>
                   </div>
                   {totalPags>1&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10}}>
-                    <button onClick={()=>_setPag(p=>Math.max(1,p-1))} disabled={pagActual<=1} style={{fontSize:12,padding:"6px 12px",border:"1px solid #E2E8F0",borderRadius:7,background:"#fff",cursor:pagActual<=1?"not-allowed":"pointer",color:pagActual<=1?"#CBD5E1":"#374151"}}>← {t("Anterior","Previous")}</button>
+                    <button onClick={()=>setReportePag(p=>Math.max(1,p-1))} disabled={pagActual<=1} style={{fontSize:12,padding:"6px 12px",border:"1px solid #E2E8F0",borderRadius:7,background:"#fff",cursor:pagActual<=1?"not-allowed":"pointer",color:pagActual<=1?"#CBD5E1":"#374151"}}>← {t("Anterior","Previous")}</button>
                     <span style={{fontSize:12,color:"#64748B"}}>{t("Página","Page")} {pagActual} {t("de","of")} {totalPags}</span>
-                    <button onClick={()=>_setPag(p=>Math.min(totalPags,p+1))} disabled={pagActual>=totalPags} style={{fontSize:12,padding:"6px 12px",border:"1px solid #E2E8F0",borderRadius:7,background:"#fff",cursor:pagActual>=totalPags?"not-allowed":"pointer",color:pagActual>=totalPags?"#CBD5E1":"#374151"}}>{t("Siguiente","Next")} →</button>
+                    <button onClick={()=>setReportePag(p=>Math.min(totalPags,p+1))} disabled={pagActual>=totalPags} style={{fontSize:12,padding:"6px 12px",border:"1px solid #E2E8F0",borderRadius:7,background:"#fff",cursor:pagActual>=totalPags?"not-allowed":"pointer",color:pagActual>=totalPags?"#CBD5E1":"#374151"}}>{t("Siguiente","Next")} →</button>
                   </div>}
                 </div>
               );
