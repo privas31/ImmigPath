@@ -395,19 +395,45 @@ function DocPanel({clienteId, clienteNombre, officeData, userData, docsCliente, 
                   <a href={d.url} target="_blank" rel="noopener noreferrer" style={{padding:"5px 10px",background:"#EFF6FF",color:"#1D4ED8",borderRadius:6,fontSize:11,fontWeight:600,textDecoration:"none",border:"1px solid #BFDBFE"}}>👁️ Ver</a>
                   <button onClick={async()=>{
                       try{
-                        const {storage,ref:sref,getDownloadURL}=window._firebase;
+                        showToastFn("⏳ Preparando descarga...","info");
+                        const {storage,ref:sref,getDownloadURL,auth}=window._firebase;
                         const freshUrl=d.path?await getDownloadURL(sref(storage,d.path)):d.url;
+                        const token=await auth.currentUser?.getIdToken();
+                        const resp=await fetch(freshUrl,token?{headers:{Authorization:"Firebase "+token}}:{});
+                        if(!resp.ok)throw new Error("fetch failed");
+                        const blob=await resp.blob();
+                        const burl=URL.createObjectURL(blob);
                         const a=document.createElement("a");
-                        a.href=freshUrl;
+                        a.href=burl;
                         a.download=d.nombre||"documento";
-                        a.target="_blank";
-                        a.rel="noopener noreferrer";
                         document.body.appendChild(a);
                         a.click();
-                        document.body.removeChild(a);
+                        setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(burl);},2000);
+                        showToastFn("✅ Descarga iniciada","success");
                       }catch(e){
-                        window.open(d.url,"_blank");
-                        showToastFn("Abriendo en nueva pestaña — usa Ctrl+S para guardar","info");
+                        // Fallback: XMLHttpRequest con blob
+                        try{
+                          const {storage,ref:sref,getDownloadURL}=window._firebase;
+                          const freshUrl=d.path?await getDownloadURL(sref(storage,d.path)):d.url;
+                          const xhr=new XMLHttpRequest();
+                          xhr.responseType="blob";
+                          xhr.onload=()=>{
+                            const burl=URL.createObjectURL(xhr.response);
+                            const a=document.createElement("a");
+                            a.href=burl;
+                            a.download=d.nombre||"documento";
+                            document.body.appendChild(a);
+                            a.click();
+                            setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(burl);},2000);
+                            showToastFn("✅ Descarga iniciada","success");
+                          };
+                          xhr.onerror=()=>{window.open(d.url,"_blank");showToastFn("Abriendo en nueva pestaña — Ctrl+S para guardar","info");};
+                          xhr.open("GET",freshUrl);
+                          xhr.send();
+                        }catch(e2){
+                          window.open(d.url,"_blank");
+                          showToastFn("Abriendo en nueva pestaña — Ctrl+S para guardar","info");
+                        }
                       }
                     }} style={{padding:"5px 10px",background:"#F0FDF4",color:"#16A34A",borderRadius:6,fontSize:11,fontWeight:600,border:"1px solid #BBF7D0",cursor:"pointer"}}>⬇️ Descargar</button>
                   <button onClick={()=>setConfirmEliminar(d)} style={{padding:"5px 10px",background:"#FEF2F2",color:"#DC2626",borderRadius:6,fontSize:11,fontWeight:600,border:"1px solid #FECACA",cursor:"pointer"}}>🗑️</button>
