@@ -455,6 +455,21 @@ function App(){
   const[toast,setToast]=useState(null);const[sortBy,setSortBy]=useState("fecha");
   const[confirmDelete,setConfirmDelete]=useState(null);const[expandedId,setExpandedId]=useState(null);const[activeCasoTab,setActiveCasoTab]=useState({});
   const[docsCliente,setDocsCliente]=useState({});const[activeDocTab,setActiveDocTab]=useState({});const[uploadingDoc,setUploadingDoc]=useState({});const[uploadProgress,setUploadProgress]=useState({});
+  // Auto-cargar documentos del cliente al expandir la ficha
+  useEffect(()=>{
+    if(!expandedId||docsCliente[expandedId])return;
+    (async()=>{
+      try{
+        const{db,collection,query,where,getDocs}=window._firebase;
+        const officeId=officeData?.id||userData?.officeId;
+        if(!officeId)return;
+        const q=query(collection(db,"documentos_clientes"),where("clienteId","==",expandedId),where("officeId","==",officeId));
+        const snap=await getDocs(q);
+        const lista=snap.docs.map(d=>({id:d.id,...d.data()}));
+        setDocsCliente(prev=>({...prev,[expandedId]:lista}));
+      }catch(e){console.error("autoload docs:",e.message);}
+    })();
+  },[expandedId]);
   const[showPDF,setShowPDF]=useState(false);
   const[showHistorial,setShowHistorial]=useState(false);
   const[showAlertas,setShowAlertas]=useState(false);
@@ -1867,6 +1882,7 @@ const loadTeam=async()=>{
                         <button onClick={()=>setExpandedId(null)} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"0.5px solid #E2E8F0",background:"#fff",color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>← Volver</button>
                         <button onClick={e=>{e.stopPropagation();const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}window.open("https://wa.me/1"+tel,"_blank");}} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"0.5px solid #BBF7D0",background:"#F0FDF4",color:"#16A34A",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>💬 WhatsApp</button>
                         <button onClick={e=>{e.stopPropagation();const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>prompt("Link:",link));}} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"0.5px solid #E2E8F0",background:"#fff",color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>🔗 Portal</button>
+                        <button onClick={e=>{e.stopPropagation();openHistorial(c);}} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"0.5px solid #E2E8F0",background:"#fff",color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>📊 Actividad</button>
                         <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",background:"#0C447C",color:"#E6F1FB",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>✏️ Editar ficha</button>
                       </div>
                     </div>
@@ -1953,7 +1969,29 @@ const loadTeam=async()=>{
                                   );
                                 })}
                               </div>
-                            </div>:<div/>}
+                            </div>:((ca.tipoCaso||"").includes("I-765")&&ca.eadVence)?(()=>{
+                              const diasEAD=getDias(ca.eadVence);
+                              const esAplicar=ca.tieneEAD==="no";
+                              const vencido=!esAplicar&&diasEAD<0;
+                              const colorD=esAplicar?(diasEAD<=0?"#4ADE80":"#93C5FD"):vencido?"#F87171":diasEAD<=30?"#F87171":diasEAD<=90?"#FBBF24":"#4ADE80";
+                              const estadoTxt=esAplicar?(diasEAD<=0?"✅ YA PUEDE APLICAR":"⏳ PENDIENTE APLICAR"):vencido?"🔴 VENCIDO":diasEAD<=90?"🟡 POR VENCER":"🟢 VIGENTE";
+                              const pctEAD=esAplicar?null:Math.max(0,Math.min(100,Math.round((diasEAD/365)*100)));
+                              return(<div style={{background:"#052E16",borderRadius:12,padding:"14px 16px"}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                                  <span style={{fontSize:13,fontWeight:500,color:"#86EFAC"}}>🪪 Permiso de Trabajo (EAD)</span>
+                                  <span style={{fontSize:11,fontWeight:600,color:colorD}}>{estadoTxt}</span>
+                                </div>
+                                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                                  <span style={{fontSize:24,fontWeight:500,color:colorD,whiteSpace:"nowrap"}}>{vencido?`${Math.abs(diasEAD)} días vencido`:`${Math.max(0,diasEAD)} días`}</span>
+                                  {pctEAD!==null&&<div style={{flex:1,background:"rgba(255,255,255,0.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:colorD,width:`${pctEAD}%`}}/></div>}
+                                </div>
+                                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#86EFAC"}}>
+                                  <span>{esAplicar?"Puede aplicar al EAD":"Vencimiento del EAD"}: {fmt(ca.eadVence)}</span>
+                                  {!esAplicar&&!vencido&&diasEAD<=90&&<span style={{color:"#FBBF24"}}>⚠️ Renovar pronto</span>}
+                                </div>
+                                {!esAplicar&&ca.eadRenovado&&<div style={{borderTop:"0.5px solid rgba(255,255,255,0.06)",paddingTop:8,marginTop:8,fontSize:11,color:ca.eadRenovado==="si"?"#4ADE80":"#FBBF24"}}>{ca.eadRenovado==="si"?"✅ Renovación presentada":"⏳ Renovación pendiente de presentar"}</div>}
+                              </div>);
+                            })():<div/>}
                             {isAdmin&&(ca.procesos||[]).length>0?<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                                 <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>💳 Resumen de pagos</span>
@@ -1981,19 +2019,18 @@ const loadTeam=async()=>{
                             <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                                 <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📄 Documentos del caso</span>
-                                <button onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver todos</button>
                               </div>
                               {(docsCliente[c.id]||[]).length===0?
                                 <div style={{textAlign:"center",padding:"16px",color:"#94A3B8",fontSize:12,border:"0.5px dashed #E2E8F0",borderRadius:8}}>Sin documentos</div>:
-                                <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                                  {(docsCliente[c.id]||[]).slice(0,3).map((d,di)=>(
+                                <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:220,overflowY:"auto"}}>
+                                  {(docsCliente[c.id]||[]).map((d,di)=>(
                                     <div key={di} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",background:"#F8FAFC",borderRadius:8}}>
                                       <span style={{fontSize:12,color:"#374151"}}>📄 {d.tipo||d.nombre||"Documento"}</span>
                                       <div style={{display:"flex",alignItems:"center",gap:6}}>
                                         <span style={{fontSize:10,background:"#EAF3DE",color:"#3B6D11",padding:"1px 7px",borderRadius:10}}>Verificado</span>
                                         <button onClick={()=>window.open(d.url,"_blank")} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#64748B"}}>👁</button>
                                         <button onClick={()=>{const{storage,ref:sref,getDownloadURL}=window._firebase;const doD=(url)=>{const x=new XMLHttpRequest();x.responseType="blob";x.onload=()=>{const b=URL.createObjectURL(x.response);const a=document.createElement("a");a.href=b;a.download=d.nombre||"doc";document.body.appendChild(a);a.click();setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(b);},2000);};x.onerror=()=>window.open(url,"_blank");x.open("GET",url);x.send();};d.path?getDownloadURL(sref(storage,d.path)).then(doD).catch(()=>doD(d.url)):doD(d.url);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#64748B"}}>⬇️</button>
-                                        <button onClick={async e=>{e.stopPropagation();if(!window.confirm("¿Eliminar este documento?"))return;try{const{storage,ref:sref,deleteObject,db,doc,updateDoc}=window._firebase;if(d.path){await deleteObject(sref(storage,d.path));}const nuevos=(docsCliente[c.id]||[]).filter((_,i)=>i!==di);setDocsCliente(prev=>({...prev,[c.id]:nuevos}));showToastFn("Documento eliminado","success");}catch(e){showToastFn("Error al eliminar","error");}}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#FDA4AF"}}>🗑</button>
+                                        <button onClick={async e=>{e.stopPropagation();if(!window.confirm("¿Eliminar este documento?"))return;try{const{storage,ref:sref,deleteObject,db,doc,deleteDoc}=window._firebase;if(d.path){await deleteObject(sref(storage,d.path)).catch(()=>{});}if(d.id){await deleteDoc(doc(db,"documentos_clientes",d.id));}const nuevos=(docsCliente[c.id]||[]).filter((_,i)=>i!==di);setDocsCliente(prev=>({...prev,[c.id]:nuevos}));showToastFn("Documento eliminado","success");}catch(e){showToastFn("Error al eliminar","error");}}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#FDA4AF"}}>🗑</button>
                                       </div>
                                     </div>
                                   ))}
@@ -2025,25 +2062,6 @@ const loadTeam=async()=>{
                                 ))}
                               </div>
                             </div>
-                          </div>
-
-                          {/* Actividad reciente */}
-                          <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                              <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📊 Actividad reciente</span>
-                              <button onClick={e=>{e.stopPropagation();openHistorial(c);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver toda</button>
-                            </div>
-                            {(c.historial||[]).length===0?
-                              <div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"16px"}}>Sin actividad registrada</div>:
-                              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                                {(c.historial||[]).slice(0,3).map((h,hi)=>(
-                                  <div key={hi} style={{display:"flex",alignItems:"flex-start",gap:8}}>
-                                    <div style={{width:26,height:26,borderRadius:"50%",background:"#E6F1FB",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:500,color:"#0C447C",flexShrink:0}}>{(h.usuario||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)}</div>
-                                    <div><div style={{fontSize:12,color:"#374151"}}>{h.icono} {h.texto}</div><div style={{fontSize:10,color:"#94A3B8"}}>{h.fecha?new Date(h.fecha).toLocaleDateString("es-US"):""} · {h.fecha?new Date(h.fecha).toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"}):""}</div></div>
-                                  </div>
-                                ))}
-                              </div>
-                            }
                           </div>
 
                           {/* Links externos */}
