@@ -1852,7 +1852,7 @@ const loadTeam=async()=>{
                       // Reloj de asilo
                       const tieneReloj=(ca.sistema==="uscis"&&(ca.tipoCaso||"").includes("I-589")||ca.sistema==="eoir"&&(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&ca.fechaAsilo;
                       const relojDet2=ca.relojDetenido===true;
-                      const diasR2=tieneReloj?(relojDet2?ca.diasPausados||0:Math.max(0,Math.floor((()=>{const h=new Date();h.setHours(0,0,0,0);return h;})()-(new Date(ca.fechaAsilo+"T00:00:00")))/86400000-(ca.diasDescontados||0))):0;
+                      const diasR2=tieneReloj?(relojDet2?ca.diasPausados||0:Math.max(0,Math.floor(((()=>{const h=new Date();h.setHours(0,0,0,0);return h;})()-(new Date(ca.fechaAsilo+"T00:00:00")))/86400000)-(ca.diasDescontados||0))):0;
                       const pctR2=Math.min(100,Math.round((diasR2/180)*100));
                       const colorR2=relojDet2?"#DC2626":diasR2>=180?"#16A34A":diasR2>=120?"#D97706":"#2563EB";
                       const toggleReloj2=async()=>{try{const{db,doc,updateDoc}=window._firebase;const casosAct=(c.casos||[]).map(caso=>{if(caso.id!==ca.id)return caso;if(relojDet2){const h=new Date();h.setHours(0,0,0,0);const p=ca.fechaPausa?new Date(ca.fechaPausa+"T00:00:00"):h;const dd=Math.floor((h-p)/86400000);return{...caso,relojDetenido:false,diasPausados:0,fechaPausa:null,diasDescontados:(caso.diasDescontados||0)+dd};}else{const t2=new Date();t2.setHours(0,0,0,0);return{...caso,relojDetenido:true,diasPausados:diasR2,fechaPausa:t2.toISOString().split("T")[0]};}});await updateDoc(doc(db,"clientes",c.id),{casos:casosAct});if(typeof loadCases==="function")loadCases();}catch(e){console.error(e);}};
@@ -1860,8 +1860,7 @@ const loadTeam=async()=>{
                       const citaEADFecha=(()=>{if(!ca.fechaAsilo)return null;const d=new Date(ca.fechaAsilo+"T00:00:00");d.setDate(d.getDate()+180);return d.toISOString().split("T")[0];})();
                       const citas=[
                         {label:"Biométricos",icon:"🫆",fecha:ca.fechaHuellas||null},
-                        {label:"Entrevista USCIS",icon:"🎤",fecha:ca.sistema!=="eoir"?(ca.fechaCorte||null):null},
-                        {label:"Corte (EOIR)",icon:"⚖️",fecha:ca.sistema==="eoir"?(ca.fechaCorte||null):null},
+                        {label:ca.sistema==="eoir"?"Corte (EOIR)":"Entrevista USCIS",icon:ca.sistema==="eoir"?"⚖️":"🎤",fecha:ca.fechaCorte||null},
                         {label:"Elegible EAD",icon:"🪪",fecha:citaEADFecha},
                       ];
                       return(
@@ -1885,65 +1884,47 @@ const loadTeam=async()=>{
                           </div>
 
                           {/* Reloj de Asilo */}
-                          {/* Reloj (3fr) + Resumen de pagos (2fr) */}
-                          <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:12,alignItems:"start"}}>
-                            {tieneReloj?<div style={{background:"#0F172A",borderRadius:12,padding:"14px 16px"}}>
-                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                                <span style={{fontSize:13,fontWeight:500,color:relojDet2?"#FCA5A5":"#A5B4FC"}}>{relojDet2?"🔴 Reloj de Asilo — DETENIDO":"🟢 Reloj de Asilo — ACTIVO"}</span>
-                                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                                  <span style={{fontSize:11,color:"#64748B"}}>Meta: 180 días</span>
-                                  <button onClick={toggleReloj2} style={{fontSize:11,fontWeight:500,padding:"3px 10px",borderRadius:6,border:"none",background:relojDet2?"#16A34A":"#DC2626",color:"#fff",cursor:"pointer"}}>{relojDet2?"▶ Activar":"⏸ Detener"}</button>
-                                </div>
-                              </div>
-                              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
-                                <span style={{fontSize:24,fontWeight:500,color:colorR2,whiteSpace:"nowrap"}}>{diasR2} días</span>
-                                <div style={{flex:1,background:"rgba(255,255,255,0.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:colorR2,width:`${pctR2}%`}}/></div>
-                              </div>
-                              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748B",marginBottom:12}}>
-                                <span>Presentado: {fmt(ca.fechaAsilo)}</span>
-                                {diasR2<180&&<span style={{color:"#FBBF24"}}>⏳ Faltan {180-diasR2} días para aplicar al EAD</span>}
-                              </div>
-                              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,borderTop:"0.5px solid rgba(255,255,255,0.06)",paddingTop:10}}>
-                                {citas.map((cita,ci)=>{
-                                  const dc=cita.fecha?getDias(cita.fecha):null;
-                                  const hoyPasado=dc!==null&&dc<0;
-                                  const badge=!cita.fecha?"N/A":hoyPasado?"Completado ✓":dc===0?"HOY":dc!==null&&dc<=7?"Pendiente confirmar":`En ${dc} días`;
-                                  const badgeColor=!cita.fecha?"#475569":hoyPasado?"#4ADE80":dc===0?"#DC2626":dc!==null&&dc<=7?"#D97706":"#93C5FD";
-                                  const badgeBg=!cita.fecha?"rgba(71,85,105,0.15)":hoyPasado?"rgba(22,163,74,0.2)":dc===0?"rgba(220,38,38,0.15)":dc!==null&&dc<=7?"rgba(215,119,6,0.15)":"rgba(147,197,253,0.15)";
-                                  return(
-                                    <div key={ci} style={{textAlign:"center"}}>
-                                      <div style={{fontSize:10,color:"#64748B",marginBottom:3}}>{cita.icon} {cita.label}</div>
-                                      <div style={{fontSize:12,fontWeight:500,color:cita.fecha?"#fff":"#475569",marginBottom:4}}>{cita.fecha?fmt(cita.fecha):"—"}</div>
-                                      <span style={{fontSize:10,background:badgeBg,color:badgeColor,padding:"2px 6px",borderRadius:10}}>{badge}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>:<div/>}
-                            {isAdmin&&(ca.procesos||[]).length>0?<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
-                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                                <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>💳 Resumen de pagos</span>
-                                <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver detalle</button>
-                              </div>
-                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
-                                {[{l:"Contratado",v:fmtMoney(totalC),c:"#374151"},{l:"Cobrado",v:fmtMoney(pagadoC),c:"#16A34A"},{l:"Saldo",v:fmtMoney(totalC-pagadoC),c:totalC-pagadoC>0?"#DC2626":"#16A34A"}].map(m=>(
-                                  <div key={m.l} style={{background:"#F8FAFC",borderRadius:8,padding:"8px",textAlign:"center"}}>
-                                    <div style={{fontSize:10,color:"#94A3B8",marginBottom:2}}>{m.l}</div>
-                                    <div style={{fontSize:13,fontWeight:500,color:m.c}}>{m.v}</div>
+                          {tieneReloj&&<div style={{background:"#0F172A",borderRadius:12,padding:"14px 16px"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                              <div style={{width:32,height:32,borderRadius:"50%",background:"rgba(99,102,241,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:16}}>🕐</span></div>
+                              <div style={{flex:1}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                                  <span style={{fontSize:13,fontWeight:500,color:relojDet2?"#FCA5A5":"#A5B4FC"}}>{relojDet2?"🔴 Reloj de Asilo — DETENIDO":"🟢 Reloj de Asilo — ACTIVO"}</span>
+                                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                    <span style={{fontSize:11,color:"#64748B"}}>Meta: 180 días</span>
+                                    <button onClick={toggleReloj2} style={{fontSize:11,fontWeight:500,padding:"3px 10px",borderRadius:6,border:"none",background:relojDet2?"#16A34A":"#DC2626",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:3}}>{relojDet2?"▶ Activar":"⏸ Detener"}</button>
                                   </div>
-                                ))}
-                              </div>
-                              {(ca.procesos||[]).map((p,pi)=>(
-                                <div key={pi} style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748B",padding:"4px 0",borderTop:"0.5px solid #F1F5F9"}}>
-                                  <span>{p.nombre||"Proceso"}</span>
-                                  <span style={{color:"#16A34A",fontWeight:500}}>{fmtMoney(p.pagado)} / {fmtMoney(p.precio)} {getPct(parseMoney(p.precio),parseMoney(p.pagado))===100?"✓":""}</span>
                                 </div>
-                              ))}
-                            </div>:<div/>}
-                          </div>
+                                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                                  <span style={{fontSize:24,fontWeight:500,color:colorR2,whiteSpace:"nowrap"}}>{diasR2} días</span>
+                                  <div style={{flex:1,background:"rgba(255,255,255,0.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:colorR2,width:`${pctR2}%`}}/></div>
+                                </div>
+                                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748B"}}>
+                                  <span>Presentado: {fmt(ca.fechaAsilo)}</span>
+                                  {diasR2<180&&<span style={{color:"#FBBF24"}}>⏳ Faltan {180-diasR2} días para aplicar al EAD</span>}
+                                </div>
+                              </div>
+                            </div>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,borderTop:"0.5px solid rgba(255,255,255,0.06)",paddingTop:10}}>
+                              {citas.map((cita,ci)=>{
+                                const dc=cita.fecha?getDias(cita.fecha):null;
+                                const hoyPasado=dc!==null&&dc<0;
+                                const badge=!cita.fecha?"N/A":hoyPasado?"Completado ✓":dc===0?"HOY":dc!==null&&dc<=7?"Pendiente confirmar":`En ${dc} días`;
+                                const badgeColor=!cita.fecha?"#475569":hoyPasado?"#4ADE80":dc===0?"#DC2626":dc!==null&&dc<=7?"#D97706":"#93C5FD";
+                                const badgeBg=!cita.fecha?"rgba(71,85,105,0.15)":hoyPasado?"rgba(22,163,74,0.2)":dc===0?"rgba(220,38,38,0.15)":dc!==null&&dc<=7?"rgba(215,119,6,0.15)":"rgba(147,197,253,0.15)";
+                                return(
+                                  <div key={ci} style={{textAlign:"center"}}>
+                                    <div style={{fontSize:10,color:"#64748B",marginBottom:3}}>{cita.icon} {cita.label}</div>
+                                    <div style={{fontSize:13,fontWeight:500,color:cita.fecha?"#fff":"#475569",marginBottom:4}}>{cita.fecha?fmt(cita.fecha):"—"}</div>
+                                    <span style={{fontSize:10,background:badgeBg,color:badgeColor,padding:"2px 8px",borderRadius:10}}>{badge}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>}
 
-                          {/* Grid: Documentos | Notas | Acciones rápidas */}
-                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                          {/* Grid: Documentos | Pagos + Acciones */}
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                             <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                                 <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📄 Documentos del caso</span>
@@ -1966,6 +1947,49 @@ const loadTeam=async()=>{
                               }
                               <button onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))} style={{width:"100%",marginTop:8,padding:"7px",fontSize:12,border:"0.5px dashed #E2E8F0",borderRadius:8,background:"none",color:"#64748B",cursor:"pointer"}}>+ Subir documento</button>
                             </div>
+                            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                              {isAdmin&&(ca.procesos||[]).length>0&&<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                                  <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>💳 Resumen de pagos</span>
+                                  <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver detalle</button>
+                                </div>
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
+                                  {[{l:"Contratado",v:fmtMoney(totalC),c:"#374151"},{l:"Cobrado",v:fmtMoney(pagadoC),c:"#16A34A"},{l:"Saldo",v:fmtMoney(totalC-pagadoC),c:totalC-pagadoC>0?"#DC2626":"#16A34A"}].map(m=>(
+                                    <div key={m.l} style={{background:"#F8FAFC",borderRadius:8,padding:"8px",textAlign:"center"}}>
+                                      <div style={{fontSize:10,color:"#94A3B8",marginBottom:2}}>{m.l}</div>
+                                      <div style={{fontSize:13,fontWeight:500,color:m.c}}>{m.v}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {(ca.procesos||[]).map((p,pi)=>(
+                                  <div key={pi} style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748B",padding:"4px 0",borderTop:"0.5px solid #F1F5F9"}}>
+                                    <span>{p.nombre||"Proceso"}</span>
+                                    <span style={{color:"#16A34A",fontWeight:500}}>{fmtMoney(p.pagado)} / {fmtMoney(p.precio)} {getPct(parseMoney(p.precio),parseMoney(p.pagado))===100?"✓":""}</span>
+                                  </div>
+                                ))}
+                              </div>}
+                              <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                                <div style={{fontSize:13,fontWeight:500,color:"#0F172A",marginBottom:10}}>⚡ Acciones rápidas</div>
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                                  {[
+                                    {icon:"💬",label:"WhatsApp",fn:()=>{const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}window.open("https://wa.me/1"+tel,"_blank");}},
+                                    {icon:"🔗",label:"Portal",fn:()=>{const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>prompt("Link:",link));}},
+                                    {icon:"💳",label:"Registrar pago",fn:()=>{setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}},
+                                    {icon:"📄",label:"Revisar Form Asilo",fn:()=>{setI589Cliente(c);setI589Comentario("");setShowI589Review(true);}},
+                                    {icon:"📅",label:"Programar fecha",fn:()=>openEdit(c)},
+                                    ...((c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("765"))?[{icon:"📋",label:"Revisar Form WP",fn:()=>showToastFn("Revisión I-765 próximamente","info")}]:[]),
+                                  ].map(a=>(
+                                    <button key={a.label} onClick={e=>{e.stopPropagation();a.fn();}} style={{fontSize:12,padding:"7px 10px",borderRadius:8,display:"flex",alignItems:"center",gap:6,color:"#374151",border:"0.5px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
+                                      <span>{a.icon}</span>{a.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Grid: Notas | Actividad */}
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                             <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                                 <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📝 Notas / Observaciones</span>
@@ -1974,41 +1998,22 @@ const loadTeam=async()=>{
                               <div style={{fontSize:12,color:"#475569",lineHeight:1.7,background:"#F8FAFC",borderRadius:8,padding:"10px",minHeight:60}}>{ca.nota||c.nota||<span style={{color:"#CBD5E1",fontStyle:"italic"}}>Sin notas</span>}</div>
                             </div>
                             <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
-                              <div style={{fontSize:13,fontWeight:500,color:"#0F172A",marginBottom:10}}>⚡ Acciones rápidas</div>
-                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                                {[
-                                  {icon:"💬",label:"WhatsApp",fn:()=>{const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}window.open("https://wa.me/1"+tel,"_blank");}},
-                                  {icon:"🔗",label:"Portal",fn:()=>{const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>prompt("Link:",link));}},
-                                  {icon:"💳",label:"Registrar pago",fn:()=>{setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}},
-                                  {icon:"📄",label:"Revisar Form Asilo",fn:()=>{setI589Cliente(c);setI589Comentario("");setShowI589Review(true);}},
-                                  {icon:"📅",label:"Programar fecha",fn:()=>openEdit(c)},
-                                  ...((c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("765"))?[{icon:"📋",label:"Revisar Form WP",fn:()=>showToastFn("Revisión I-765 próximamente","info")}]:[]),
-                                ].map(a=>(
-                                  <button key={a.label} onClick={e=>{e.stopPropagation();a.fn();}} style={{fontSize:12,padding:"7px 10px",borderRadius:8,display:"flex",alignItems:"center",gap:6,color:"#374151",border:"0.5px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
-                                    <span>{a.icon}</span>{a.label}
-                                  </button>
-                                ))}
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                                <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📊 Actividad reciente</span>
+                                <button onClick={e=>{e.stopPropagation();openHistorial(c);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver toda</button>
                               </div>
+                              {(c.historial||[]).length===0?
+                                <div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"16px"}}>Sin actividad registrada</div>:
+                                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                                  {(c.historial||[]).slice(0,3).map((h,hi)=>(
+                                    <div key={hi} style={{display:"flex",alignItems:"flex-start",gap:8}}>
+                                      <div style={{width:26,height:26,borderRadius:"50%",background:"#E6F1FB",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:500,color:"#0C447C",flexShrink:0}}>{(h.usuario||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)}</div>
+                                      <div><div style={{fontSize:12,color:"#374151"}}>{h.icono} {h.texto}</div><div style={{fontSize:10,color:"#94A3B8"}}>{h.fecha?new Date(h.fecha).toLocaleDateString("es-US"):""}</div></div>
+                                    </div>
+                                  ))}
+                                </div>
+                              }
                             </div>
-                          </div>
-
-                          {/* Actividad reciente */}
-                          <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                              <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📊 Actividad reciente</span>
-                              <button onClick={e=>{e.stopPropagation();openHistorial(c);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver toda</button>
-                            </div>
-                            {(c.historial||[]).length===0?
-                              <div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"16px"}}>Sin actividad registrada</div>:
-                              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                                {(c.historial||[]).slice(0,3).map((h,hi)=>(
-                                  <div key={hi} style={{display:"flex",alignItems:"flex-start",gap:8}}>
-                                    <div style={{width:26,height:26,borderRadius:"50%",background:"#E6F1FB",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:500,color:"#0C447C",flexShrink:0}}>{(h.usuario||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)}</div>
-                                    <div><div style={{fontSize:12,color:"#374151"}}>{h.icono} {h.texto}</div><div style={{fontSize:10,color:"#94A3B8"}}>{h.fecha?new Date(h.fecha).toLocaleDateString("es-US"):""} · {h.fecha?new Date(h.fecha).toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"}):""}</div></div>
-                                  </div>
-                                ))}
-                              </div>
-                            }
                           </div>
 
                           {/* Links externos */}
