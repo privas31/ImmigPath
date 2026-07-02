@@ -1367,7 +1367,7 @@ const loadTeam=async()=>{
         }catch(ex){console.error(ex);}
         const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,expediente:nextExp,createdAt:new Date().toISOString(),createdBy:user.email});
         try{await addDoc(collection(db,"historial"),{clienteId:ref.id,officeId,accion:"Cliente registrado",usuario:user.email,fecha:new Date().toISOString()});}catch(he){console.error(he);}
-        setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,expediente:nextExp,createdAt:new Date().toISOString()},...prev]);
+        setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,expediente:nextExp,createdAt:new Date().toISOString()},...prev].sort((a,b)=>(a.expediente||"zzz").localeCompare(b.expediente||"zzz")));
         showToastFn("Cliente agregado ✓");
       }
     }catch(e){console.error("Error al guardar:",e);showToastFn("Error al guardar: "+e.message,"error");}
@@ -1745,8 +1745,8 @@ const loadTeam=async()=>{
             return(
               <div key={c.id} style={{background:"#fff",borderRadius:14,border:"0.5px solid #E2E8F0",boxShadow:"0 1px 4px rgba(0,0,0,0.04)",overflow:"hidden",transition:"box-shadow 0.15s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.08)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.04)"}>
                 <div style={{padding:"14px 16px 10px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,cursor:"pointer"}} onClick={()=>{const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>{const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}}>
                       <div style={{width:44,height:44,borderRadius:"50%",background:"#E6F1FB",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,fontSize:14,color:"#0C447C",flexShrink:0}}>
                         {c.nombre.split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
                       </div>
@@ -1779,14 +1779,16 @@ const loadTeam=async()=>{
                         </div>
                       </div>
                     </div>
+                    {!exp&&<div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                      <button onClick={e=>{e.stopPropagation();const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}} style={{background:"#0C447C",color:"#E6F1FB",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:500,cursor:"pointer",whiteSpace:"nowrap"}}>📂 Ver ficha completa</button>
+                      <button onClick={e=>{e.stopPropagation();const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}const nombre=c.nombre||"cliente";const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigración";const oficina=officeData?.name||"nuestra oficina";const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualización. — "+oficina;window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{border:"0.5px solid #BBF7D0",background:"#F0FDF4",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#16A34A",whiteSpace:"nowrap"}}>💬 WhatsApp</button>
+                      <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{border:"0.5px solid #BFDBFE",background:"#EFF6FF",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#0C447C",whiteSpace:"nowrap"}}>💳 Cobrar</button>
+                    </div>}
                     <div style={{flexShrink:0,background:pf?`${scfg.color}11`:"#F8FAFC",border:`0.5px solid ${pf?scfg.color+"44":"#E2E8F0"}`,borderRadius:10,padding:"8px 14px",textAlign:"right",minWidth:130}}>
                       <div style={{fontSize:10,color:pf?scfg.color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:2,fontWeight:500}}>{t("Próxima Fecha","Next Date")}</div>
                       <div style={{fontWeight:500,color:pf?scfg.color:"#CBD5E1",fontSize:16,lineHeight:1.2}}>{pf?fmt(pf):"—"}</div>
                       {dias!==null&&<div style={{fontSize:11,color:scfg.color,fontWeight:500,marginTop:2}}>{dias<0?(lang==="es"?`Hace ${Math.abs(dias)} días`:`${Math.abs(dias)}d ago`):dias===0?t("HOY!","TODAY!"):(lang==="es"?`En ${dias} días`:`In ${dias}d`)}</div>}
-                      <div style={{display:"flex",gap:4,justifyContent:"flex-end",marginTop:6}}>
-                        <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"none",border:"0.5px solid #E2E8F0",borderRadius:6,padding:"3px 7px",fontSize:11,cursor:"pointer",color:"#64748B"}}>✏️</button>
-                        <button onClick={e=>{e.stopPropagation();setOpenMenuId(openMenuId===c.id?null:c.id);}} style={{background:"none",border:"0.5px solid #E2E8F0",borderRadius:6,padding:"3px 7px",fontSize:11,cursor:"pointer",color:"#64748B"}}>...</button>
-                      </div>
+
                     </div>
                   </div>
                   {isAdmin&&totalP>0&&<div style={{marginTop:8}}>
@@ -1797,58 +1799,10 @@ const loadTeam=async()=>{
                     <div style={{background:"#F1F5F9",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`,transition:"width 0.3s"}}/></div>
                   </div>}
                 </div>
-                {(()=>{
-                  const casoReloj=(c.casos||[]).find(ca=>(ca.sistema==="uscis"&&(ca.tipoCaso||"").includes("I-589")||ca.sistema==="eoir"&&(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&ca.fechaAsilo);
-                  const casoHuellas=(c.casos||[]).find(ca=>ca.fechaHuellas);
-                  if(!casoReloj&&!casoHuellas) return null;
-                  if(!casoReloj) return(
-                    <div style={{padding:"8px 16px",borderTop:"0.5px solid #F1F5F9",background:"#F8FAFC",display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#374151"}}>
-                      <span style={{color:"#94A3B8"}}>🫆</span>
-                      <span style={{fontWeight:500}}>Biométricos: {fmt(casoHuellas.fechaHuellas)}</span>
-                      {(()=>{const d=getDias(casoHuellas.fechaHuellas);return d!==null&&<span style={{fontSize:10,background:d<0?"#FEF9C3":"#E6F1FB",color:d<0?"#854D0E":"#0C447C",padding:"1px 7px",borderRadius:10}}>{d<0?`Hace ${Math.abs(d)} días`:`En ${d} días`}</span>;})()}
-                    </div>
-                  );
-                  const inicio=new Date(casoReloj.fechaAsilo+"T00:00:00");const hoy2=new Date();hoy2.setHours(0,0,0,0);
-                  const relojDet=casoReloj.relojDetenido===true;
-                  const diasR=relojDet?casoReloj.diasPausados||0:Math.max(0,Math.floor((hoy2-inicio)/86400000)-(casoReloj.diasDescontados||0));
-                  const pctR=Math.min(100,Math.round((diasR/180)*100));
-                  const colorR=relojDet?"#DC2626":diasR>=180?"#16A34A":diasR>=120?"#D97706":"#2563EB";
-                  const toggleRelojCard=async()=>{
-                    try{const{db,doc,updateDoc}=window._firebase;const casosAct=(c.casos||[]).map(ca=>{if(ca.id!==casoReloj.id)return ca;if(relojDet){const h=new Date();h.setHours(0,0,0,0);const p=casoReloj.fechaPausa?new Date(casoReloj.fechaPausa+"T00:00:00"):h;const dd=Math.floor((h-p)/86400000);return{...ca,relojDetenido:false,diasPausados:0,fechaPausa:null,diasDescontados:(ca.diasDescontados||0)+dd};}else{const t2=new Date();t2.setHours(0,0,0,0);return{...ca,relojDetenido:true,diasPausados:diasR,fechaPausa:t2.toISOString().split("T")[0]};}});await updateDoc(doc(db,"clientes",c.id),{casos:casosAct});if(typeof loadCases==="function")loadCases();}catch(e){console.error(e);}
-                  };
-                  return(
-                    <div style={{background:"#0F172A",padding:"10px 16px",borderTop:"0.5px solid #1E293B"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:10}}>
-                        <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(99,102,241,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                          <span style={{fontSize:14}}>🕐</span>
-                        </div>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                            <span style={{fontSize:11,fontWeight:500,color:relojDet?"#FCA5A5":"#A5B4FC"}}>{relojDet?"🔴 Reloj de Asilo — DETENIDO":"🟢 Reloj de Asilo — ACTIVO"}</span>
-                            <div style={{display:"flex",alignItems:"center",gap:6}}>
-                              <span style={{fontSize:10,color:"#64748B"}}>Meta: 180 días</span>
-                              <button onClick={e=>{e.stopPropagation();toggleRelojCard();}} style={{fontSize:10,fontWeight:500,padding:"2px 8px",borderRadius:5,border:"none",background:relojDet?"#16A34A":"#DC2626",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:3}}>{relojDet?"▶ Activar":"⏸ Detener"}</button>
-                            </div>
-                          </div>
-                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
-                            <span style={{fontSize:18,fontWeight:500,color:colorR,whiteSpace:"nowrap"}}>{diasR} días</span>
-                            <div style={{flex:1,background:"rgba(255,255,255,0.08)",borderRadius:20,height:4,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:colorR,width:`${pctR}%`}}/></div>
-                          </div>
-                          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#64748B"}}>
-                            <span>Presentado: {fmt(casoReloj.fechaAsilo)}</span>
-                            {diasR<180&&<span style={{color:"#FBBF24"}}>⏳ Faltan {180-diasR} días para aplicar al EAD</span>}
-                          </div>
-                        </div>
-                      </div>
-                      {casoHuellas?.fechaHuellas&&<div style={{marginTop:8,paddingTop:8,borderTop:"0.5px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",gap:8,fontSize:11,color:"#94A3B8"}}>
-                        <span>🫆 Biométricos: <span style={{color:"#E2E8F0",fontWeight:500}}>{fmt(casoHuellas.fechaHuellas)}</span></span>
-                        {(()=>{const d=getDias(casoHuellas.fechaHuellas);return d!==null&&<span style={{fontSize:10,background:d<0?"rgba(254,249,195,0.15)":"rgba(230,241,251,0.15)",color:d<0?"#FDE68A":"#93C5FD",padding:"1px 7px",borderRadius:10}}>{d<0?`Hace ${Math.abs(d)} días`:`En ${d} días`}</span>;})()}
-                      </div>}
-                    </div>
-                  );
-                })()}
-                <div style={{padding:"8px 16px 10px",display:"flex",gap:6,borderTop:"0.5px solid #F1F5F9"}}>
-                  <button onClick={e=>{e.stopPropagation();const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}} style={{flex:2,background:"#0C447C",color:"#E6F1FB",border:"none",borderRadius:8,padding:"7px 10px",fontSize:12,fontWeight:500,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>📂 {exp?t("Ocultar ficha","Hide file"):t("Ver ficha completa","View full file")}</button>
+
+                {!exp&&<>
+                <div style={{padding:"8px 16px 10px",display:"flex",gap:6,borderTop:"0.5px solid #F1F5F9",alignItems:"center"}}>
+                  <button onClick={e=>{e.stopPropagation();const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}} style={{flex:2,background:"#0C447C",color:"#E6F1FB",border:"none",borderRadius:8,padding:"7px 10px",fontSize:12,fontWeight:500,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>📂 Ver ficha completa</button>
                   <button onClick={e=>{e.stopPropagation();const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono registrado","error");return;}const nombre=c.nombre||"cliente";const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigración";const oficina=officeData?.name||"nuestra oficina";const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualización de su proceso. Para más información contáctenos. — "+oficina;window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{flex:1,borderRadius:8,padding:"7px 8px",fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4,color:"#16A34A",border:"0.5px solid #BBF7D0",background:"#F0FDF4"}}>💬 WhatsApp</button>
                   <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{flex:1,borderRadius:8,padding:"7px 8px",fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4,color:"#0C447C",border:"0.5px solid #BFDBFE",background:"#EFF6FF"}}>💳 Cobrar</button>
                   <div style={{position:"relative"}}>
@@ -1867,8 +1821,24 @@ const loadTeam=async()=>{
                     )}
                   </div>
                 </div>
+                </>}
                 {exp&&(c.casos||[]).length>0&&(
                   <div style={{borderTop:"1px solid #F1F5F9",background:"#FAFBFC"}}>
+                    <div style={{background:"#fff",borderBottom:"0.5px solid #E2E8F0",padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                      <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12,color:"#64748B"}}>
+                        <span style={{cursor:"pointer",color:"#185FA5"}} onClick={()=>setExpandedId(null)}>Clientes</span>
+                        <span>›</span>
+                        <span style={{cursor:"pointer",color:"#185FA5"}} onClick={()=>setExpandedId(null)}>{c.nombre}</span>
+                        <span>›</span>
+                        <span>Ficha completa</span>
+                      </div>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        <button onClick={()=>setExpandedId(null)} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"0.5px solid #E2E8F0",background:"#fff",color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>← Volver</button>
+                        <button onClick={e=>{e.stopPropagation();const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}window.open("https://wa.me/1"+tel,"_blank");}} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"0.5px solid #BBF7D0",background:"#F0FDF4",color:"#16A34A",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>💬 WhatsApp</button>
+                        <button onClick={e=>{e.stopPropagation();const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>prompt("Link:",link));}} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"0.5px solid #E2E8F0",background:"#fff",color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>🔗 Portal</button>
+                        <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",background:"#0C447C",color:"#E6F1FB",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>✏️ Editar ficha</button>
+                      </div>
+                    </div>
                     <div style={{display:"flex",gap:0,padding:"0 16px",borderBottom:"1px solid #E2E8F0",overflowX:"auto"}}>
                       {(c.casos||[]).map((ca,i)=>{const sys=SISTEMAS[ca.sistema]||SISTEMAS.uscis;return(
                         <button key={i} onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:i}))} style={{background:"transparent",border:"none",borderBottom:casoTab===i?`2px solid ${sys.color}`:"2px solid transparent",color:casoTab===i?sys.color:"#64748B",fontWeight:casoTab===i?700:400,fontSize:12,padding:"10px 14px",cursor:"pointer",whiteSpace:"nowrap",marginBottom:"-1px"}}>
@@ -1887,12 +1857,13 @@ const loadTeam=async()=>{
                       const colorR2=relojDet2?"#DC2626":diasR2>=180?"#16A34A":diasR2>=120?"#D97706":"#2563EB";
                       const toggleReloj2=async()=>{try{const{db,doc,updateDoc}=window._firebase;const casosAct=(c.casos||[]).map(caso=>{if(caso.id!==ca.id)return caso;if(relojDet2){const h=new Date();h.setHours(0,0,0,0);const p=ca.fechaPausa?new Date(ca.fechaPausa+"T00:00:00"):h;const dd=Math.floor((h-p)/86400000);return{...caso,relojDetenido:false,diasPausados:0,fechaPausa:null,diasDescontados:(caso.diasDescontados||0)+dd};}else{const t2=new Date();t2.setHours(0,0,0,0);return{...caso,relojDetenido:true,diasPausados:diasR2,fechaPausa:t2.toISOString().split("T")[0]};}});await updateDoc(doc(db,"clientes",c.id),{casos:casosAct});if(typeof loadCases==="function")loadCases();}catch(e){console.error(e);}};
                       // Fechas de citas
+                      const citaEADFecha=(()=>{if(!ca.fechaAsilo)return null;const d=new Date(ca.fechaAsilo+"T00:00:00");d.setDate(d.getDate()+180);return d.toISOString().split("T")[0];})();
                       const citas=[
-                        ca.fechaHuellas&&{label:"Biométricos",icon:"🫆",fecha:ca.fechaHuellas},
-                        ca.tipoCita==="entrevista"&&ca.fechaCorte&&{label:"Entrevista USCIS",icon:"🎤",fecha:ca.fechaCorte},
-                        ca.sistema==="eoir"&&ca.fechaCorte&&{label:"Corte (EOIR)",icon:"⚖️",fecha:ca.fechaCorte},
-                        diasR2>=180&&{label:"Elegible EAD",icon:"🪪",fecha:(()=>{const d=new Date(ca.fechaAsilo+"T00:00:00");d.setDate(d.getDate()+180);return d.toISOString().split("T")[0];})()},
-                      ].filter(Boolean);
+                        {label:"Biométricos",icon:"🫆",fecha:ca.fechaHuellas||null},
+                        {label:"Entrevista USCIS",icon:"🎤",fecha:ca.sistema!=="eoir"?(ca.fechaCorte||null):null},
+                        {label:"Corte (EOIR)",icon:"⚖️",fecha:ca.sistema==="eoir"?(ca.fechaCorte||null):null},
+                        {label:"Elegible EAD",icon:"🪪",fecha:citaEADFecha},
+                      ];
                       return(
                         <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
 
@@ -1914,47 +1885,65 @@ const loadTeam=async()=>{
                           </div>
 
                           {/* Reloj de Asilo */}
-                          {tieneReloj&&<div style={{background:"#0F172A",borderRadius:12,padding:"14px 16px"}}>
-                            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                              <div style={{width:32,height:32,borderRadius:"50%",background:"rgba(99,102,241,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:16}}>🕐</span></div>
-                              <div style={{flex:1}}>
-                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                                  <span style={{fontSize:13,fontWeight:500,color:relojDet2?"#FCA5A5":"#A5B4FC"}}>{relojDet2?"🔴 Reloj de Asilo — DETENIDO":"🟢 Reloj de Asilo — ACTIVO"}</span>
-                                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                                    <span style={{fontSize:11,color:"#64748B"}}>Meta: 180 días</span>
-                                    <button onClick={toggleReloj2} style={{fontSize:11,fontWeight:500,padding:"3px 10px",borderRadius:6,border:"none",background:relojDet2?"#16A34A":"#DC2626",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:3}}>{relojDet2?"▶ Activar":"⏸ Detener"}</button>
-                                  </div>
-                                </div>
-                                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
-                                  <span style={{fontSize:24,fontWeight:500,color:colorR2,whiteSpace:"nowrap"}}>{diasR2} días</span>
-                                  <div style={{flex:1,background:"rgba(255,255,255,0.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:colorR2,width:`${pctR2}%`}}/></div>
-                                </div>
-                                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748B"}}>
-                                  <span>Presentado: {fmt(ca.fechaAsilo)}</span>
-                                  {diasR2<180&&<span style={{color:"#FBBF24"}}>⏳ Faltan {180-diasR2} días para aplicar al EAD</span>}
+                          {/* Reloj (3fr) + Resumen de pagos (2fr) */}
+                          <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:12,alignItems:"start"}}>
+                            {tieneReloj?<div style={{background:"#0F172A",borderRadius:12,padding:"14px 16px"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                                <span style={{fontSize:13,fontWeight:500,color:relojDet2?"#FCA5A5":"#A5B4FC"}}>{relojDet2?"🔴 Reloj de Asilo — DETENIDO":"🟢 Reloj de Asilo — ACTIVO"}</span>
+                                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                  <span style={{fontSize:11,color:"#64748B"}}>Meta: 180 días</span>
+                                  <button onClick={toggleReloj2} style={{fontSize:11,fontWeight:500,padding:"3px 10px",borderRadius:6,border:"none",background:relojDet2?"#16A34A":"#DC2626",color:"#fff",cursor:"pointer"}}>{relojDet2?"▶ Activar":"⏸ Detener"}</button>
                                 </div>
                               </div>
-                            </div>
-                            {citas.length>0&&<div style={{display:"grid",gridTemplateColumns:`repeat(${citas.length},1fr)`,gap:8,borderTop:"0.5px solid rgba(255,255,255,0.06)",paddingTop:10}}>
-                              {citas.map((cita,ci)=>{
-                                const dc=getDias(cita.fecha);
-                                const hoyPasado=dc!==null&&dc<0;
-                                const badge=hoyPasado?"Completado ✓":dc===0?"HOY":dc!==null&&dc<=7?"Pendiente confirmar":`En ${dc} días`;
-                                const badgeColor=hoyPasado?"#16A34A":dc===0?"#DC2626":dc!==null&&dc<=7?"#D97706":"#185FA5";
-                                const badgeBg=hoyPasado?"rgba(22,163,74,0.15)":dc===0?"rgba(220,38,38,0.15)":dc!==null&&dc<=7?"rgba(215,119,6,0.15)":"rgba(24,95,165,0.15)";
-                                return(
-                                  <div key={ci} style={{textAlign:"center"}}>
-                                    <div style={{fontSize:10,color:"#64748B",marginBottom:3}}>{cita.icon} {cita.label}</div>
-                                    <div style={{fontSize:13,fontWeight:500,color:"#fff",marginBottom:4}}>{fmt(cita.fecha)}</div>
-                                    <span style={{fontSize:10,background:badgeBg,color:badgeColor,padding:"2px 8px",borderRadius:10}}>{badge}</span>
+                              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                                <span style={{fontSize:24,fontWeight:500,color:colorR2,whiteSpace:"nowrap"}}>{diasR2} días</span>
+                                <div style={{flex:1,background:"rgba(255,255,255,0.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:colorR2,width:`${pctR2}%`}}/></div>
+                              </div>
+                              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748B",marginBottom:12}}>
+                                <span>Presentado: {fmt(ca.fechaAsilo)}</span>
+                                {diasR2<180&&<span style={{color:"#FBBF24"}}>⏳ Faltan {180-diasR2} días para aplicar al EAD</span>}
+                              </div>
+                              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,borderTop:"0.5px solid rgba(255,255,255,0.06)",paddingTop:10}}>
+                                {citas.map((cita,ci)=>{
+                                  const dc=cita.fecha?getDias(cita.fecha):null;
+                                  const hoyPasado=dc!==null&&dc<0;
+                                  const badge=!cita.fecha?"N/A":hoyPasado?"Completado ✓":dc===0?"HOY":dc!==null&&dc<=7?"Pendiente confirmar":`En ${dc} días`;
+                                  const badgeColor=!cita.fecha?"#475569":hoyPasado?"#4ADE80":dc===0?"#DC2626":dc!==null&&dc<=7?"#D97706":"#93C5FD";
+                                  const badgeBg=!cita.fecha?"rgba(71,85,105,0.15)":hoyPasado?"rgba(22,163,74,0.2)":dc===0?"rgba(220,38,38,0.15)":dc!==null&&dc<=7?"rgba(215,119,6,0.15)":"rgba(147,197,253,0.15)";
+                                  return(
+                                    <div key={ci} style={{textAlign:"center"}}>
+                                      <div style={{fontSize:10,color:"#64748B",marginBottom:3}}>{cita.icon} {cita.label}</div>
+                                      <div style={{fontSize:12,fontWeight:500,color:cita.fecha?"#fff":"#475569",marginBottom:4}}>{cita.fecha?fmt(cita.fecha):"—"}</div>
+                                      <span style={{fontSize:10,background:badgeBg,color:badgeColor,padding:"2px 6px",borderRadius:10}}>{badge}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>:<div/>}
+                            {isAdmin&&(ca.procesos||[]).length>0?<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                                <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>💳 Resumen de pagos</span>
+                                <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver detalle</button>
+                              </div>
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
+                                {[{l:"Contratado",v:fmtMoney(totalC),c:"#374151"},{l:"Cobrado",v:fmtMoney(pagadoC),c:"#16A34A"},{l:"Saldo",v:fmtMoney(totalC-pagadoC),c:totalC-pagadoC>0?"#DC2626":"#16A34A"}].map(m=>(
+                                  <div key={m.l} style={{background:"#F8FAFC",borderRadius:8,padding:"8px",textAlign:"center"}}>
+                                    <div style={{fontSize:10,color:"#94A3B8",marginBottom:2}}>{m.l}</div>
+                                    <div style={{fontSize:13,fontWeight:500,color:m.c}}>{m.v}</div>
                                   </div>
-                                );
-                              })}
-                            </div>}
-                          </div>}
+                                ))}
+                              </div>
+                              {(ca.procesos||[]).map((p,pi)=>(
+                                <div key={pi} style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748B",padding:"4px 0",borderTop:"0.5px solid #F1F5F9"}}>
+                                  <span>{p.nombre||"Proceso"}</span>
+                                  <span style={{color:"#16A34A",fontWeight:500}}>{fmtMoney(p.pagado)} / {fmtMoney(p.precio)} {getPct(parseMoney(p.precio),parseMoney(p.pagado))===100?"✓":""}</span>
+                                </div>
+                              ))}
+                            </div>:<div/>}
+                          </div>
 
-                          {/* Grid: Documentos | Pagos + Acciones */}
-                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                          {/* Grid: Documentos | Notas | Acciones rápidas */}
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                             <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                                 <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📄 Documentos del caso</span>
@@ -1977,49 +1966,6 @@ const loadTeam=async()=>{
                               }
                               <button onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))} style={{width:"100%",marginTop:8,padding:"7px",fontSize:12,border:"0.5px dashed #E2E8F0",borderRadius:8,background:"none",color:"#64748B",cursor:"pointer"}}>+ Subir documento</button>
                             </div>
-                            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                              {isAdmin&&(ca.procesos||[]).length>0&&<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
-                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                                  <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>💳 Resumen de pagos</span>
-                                  <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver detalle</button>
-                                </div>
-                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
-                                  {[{l:"Contratado",v:fmtMoney(totalC),c:"#374151"},{l:"Cobrado",v:fmtMoney(pagadoC),c:"#16A34A"},{l:"Saldo",v:fmtMoney(totalC-pagadoC),c:totalC-pagadoC>0?"#DC2626":"#16A34A"}].map(m=>(
-                                    <div key={m.l} style={{background:"#F8FAFC",borderRadius:8,padding:"8px",textAlign:"center"}}>
-                                      <div style={{fontSize:10,color:"#94A3B8",marginBottom:2}}>{m.l}</div>
-                                      <div style={{fontSize:13,fontWeight:500,color:m.c}}>{m.v}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                                {(ca.procesos||[]).map((p,pi)=>(
-                                  <div key={pi} style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748B",padding:"4px 0",borderTop:"0.5px solid #F1F5F9"}}>
-                                    <span>{p.nombre||"Proceso"}</span>
-                                    <span style={{color:"#16A34A",fontWeight:500}}>{fmtMoney(p.pagado)} / {fmtMoney(p.precio)} {getPct(parseMoney(p.precio),parseMoney(p.pagado))===100?"✓":""}</span>
-                                  </div>
-                                ))}
-                              </div>}
-                              <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
-                                <div style={{fontSize:13,fontWeight:500,color:"#0F172A",marginBottom:10}}>⚡ Acciones rápidas</div>
-                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                                  {[
-                                    {icon:"💬",label:"WhatsApp",fn:()=>{const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}window.open("https://wa.me/1"+tel,"_blank");}},
-                                    {icon:"🔗",label:"Portal",fn:()=>{const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>prompt("Link:",link));}},
-                                    {icon:"💳",label:"Registrar pago",fn:()=>{setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}},
-                                    {icon:"📤",label:"Subir doc.",fn:()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))},
-                                    {icon:"📅",label:"Programar fecha",fn:()=>openEdit(c)},
-                                    {icon:"📄",label:"Generar carta",fn:()=>showToastFn("Próximamente","info")},
-                                  ].map(a=>(
-                                    <button key={a.label} onClick={e=>{e.stopPropagation();a.fn();}} style={{fontSize:12,padding:"7px 10px",borderRadius:8,display:"flex",alignItems:"center",gap:6,color:"#374151",border:"0.5px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
-                                      <span>{a.icon}</span>{a.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Grid: Notas | Actividad */}
-                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                             <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                                 <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📝 Notas / Observaciones</span>
@@ -2028,22 +1974,41 @@ const loadTeam=async()=>{
                               <div style={{fontSize:12,color:"#475569",lineHeight:1.7,background:"#F8FAFC",borderRadius:8,padding:"10px",minHeight:60}}>{ca.nota||c.nota||<span style={{color:"#CBD5E1",fontStyle:"italic"}}>Sin notas</span>}</div>
                             </div>
                             <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
-                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                                <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📊 Actividad reciente</span>
-                                <button onClick={e=>{e.stopPropagation();openHistorial(c);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver toda</button>
+                              <div style={{fontSize:13,fontWeight:500,color:"#0F172A",marginBottom:10}}>⚡ Acciones rápidas</div>
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                                {[
+                                  {icon:"💬",label:"WhatsApp",fn:()=>{const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}window.open("https://wa.me/1"+tel,"_blank");}},
+                                  {icon:"🔗",label:"Portal",fn:()=>{const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>prompt("Link:",link));}},
+                                  {icon:"💳",label:"Registrar pago",fn:()=>{setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}},
+                                  {icon:"📄",label:"Revisar Form Asilo",fn:()=>{setI589Cliente(c);setI589Comentario("");setShowI589Review(true);}},
+                                  {icon:"📅",label:"Programar fecha",fn:()=>openEdit(c)},
+                                  ...((c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("765"))?[{icon:"📋",label:"Revisar Form WP",fn:()=>showToastFn("Revisión I-765 próximamente","info")}]:[]),
+                                ].map(a=>(
+                                  <button key={a.label} onClick={e=>{e.stopPropagation();a.fn();}} style={{fontSize:12,padding:"7px 10px",borderRadius:8,display:"flex",alignItems:"center",gap:6,color:"#374151",border:"0.5px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
+                                    <span>{a.icon}</span>{a.label}
+                                  </button>
+                                ))}
                               </div>
-                              {(c.historial||[]).length===0?
-                                <div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"16px"}}>Sin actividad registrada</div>:
-                                <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                                  {(c.historial||[]).slice(0,3).map((h,hi)=>(
-                                    <div key={hi} style={{display:"flex",alignItems:"flex-start",gap:8}}>
-                                      <div style={{width:26,height:26,borderRadius:"50%",background:"#E6F1FB",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:500,color:"#0C447C",flexShrink:0}}>{(h.usuario||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)}</div>
-                                      <div><div style={{fontSize:12,color:"#374151"}}>{h.icono} {h.texto}</div><div style={{fontSize:10,color:"#94A3B8"}}>{h.fecha?new Date(h.fecha).toLocaleDateString("es-US"):""}</div></div>
-                                    </div>
-                                  ))}
-                                </div>
-                              }
                             </div>
+                          </div>
+
+                          {/* Actividad reciente */}
+                          <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                              <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📊 Actividad reciente</span>
+                              <button onClick={e=>{e.stopPropagation();openHistorial(c);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver toda</button>
+                            </div>
+                            {(c.historial||[]).length===0?
+                              <div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"16px"}}>Sin actividad registrada</div>:
+                              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                                {(c.historial||[]).slice(0,3).map((h,hi)=>(
+                                  <div key={hi} style={{display:"flex",alignItems:"flex-start",gap:8}}>
+                                    <div style={{width:26,height:26,borderRadius:"50%",background:"#E6F1FB",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:500,color:"#0C447C",flexShrink:0}}>{(h.usuario||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)}</div>
+                                    <div><div style={{fontSize:12,color:"#374151"}}>{h.icono} {h.texto}</div><div style={{fontSize:10,color:"#94A3B8"}}>{h.fecha?new Date(h.fecha).toLocaleDateString("es-US"):""} · {h.fecha?new Date(h.fecha).toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"}):""}</div></div>
+                                  </div>
+                                ))}
+                              </div>
+                            }
                           </div>
 
                           {/* Links externos */}
