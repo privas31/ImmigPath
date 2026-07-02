@@ -1826,12 +1826,20 @@ const loadTeam=async()=>{
                           {c.email&&<><span style={{color:"#E2E8F0"}}>·</span><span>✉️ {c.email}</span></>}
                           {c.encargada&&<><span style={{color:"#E2E8F0"}}>·</span><span style={{color:"#7C3AED",fontWeight:500}}>👤 {c.encargada}</span></>}
                         </div>
+                        <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                          {(c.casos||[]).map((ca,i)=><span key={i} style={{fontSize:11,background:"#F1F5F9",color:"#374151",padding:"2px 8px",borderRadius:20}}>{ca.tipoCaso||""}</span>).filter((_,i)=>(c.casos||[])[i]?.tipoCaso)}
+                          {(c.casos||[]).some(ca=>(ca.tipoCaso||"").toLowerCase().includes("589")||(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&c.i589Draft?.status!=="aprobado"&&<span style={{fontSize:11,background:"#FEF9C3",color:"#854D0E",padding:"2px 8px",borderRadius:20}}>⚠️ Revisar Form Asilo — sin llenar</span>}
+                        </div>
                       </div>
                     </div>
                     <div style={{flexShrink:0,background:pf?`${scfg.color}11`:"#F8FAFC",border:`0.5px solid ${pf?scfg.color+"44":"#E2E8F0"}`,borderRadius:10,padding:"8px 14px",textAlign:"right",minWidth:130}}>
                       <div style={{fontSize:10,color:pf?scfg.color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:2,fontWeight:500}}>{t("Próxima Fecha","Next Date")}</div>
                       <div style={{fontWeight:500,color:pf?scfg.color:"#CBD5E1",fontSize:16,lineHeight:1.2}}>{pf?fmt(pf):"—"}</div>
                       {dias!==null&&<div style={{fontSize:11,color:scfg.color,fontWeight:500,marginTop:2}}>{dias<0?(lang==="es"?`Hace ${Math.abs(dias)} días`:`${Math.abs(dias)}d ago`):dias===0?t("HOY!","TODAY!"):(lang==="es"?`En ${dias} días`:`In ${dias}d`)}</div>}
+                      <div style={{display:"flex",gap:4,justifyContent:"flex-end",marginTop:6}}>
+                        <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{background:"none",border:"0.5px solid #E2E8F0",borderRadius:6,padding:"3px 7px",fontSize:11,cursor:"pointer",color:"#64748B"}}>✏️</button>
+                        <button onClick={e=>{e.stopPropagation();setOpenMenuId(openMenuId===c.id?null:c.id);}} style={{background:"none",border:"0.5px solid #E2E8F0",borderRadius:6,padding:"3px 7px",fontSize:11,cursor:"pointer",color:"#64748B"}}>...</button>
+                      </div>
                     </div>
                   </div>
                   {isAdmin&&totalP>0&&<div style={{marginTop:8}}>
@@ -1842,6 +1850,56 @@ const loadTeam=async()=>{
                     <div style={{background:"#F1F5F9",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pc,width:`${pct||0}%`,transition:"width 0.3s"}}/></div>
                   </div>}
                 </div>
+                {(()=>{
+                  const casoReloj=(c.casos||[]).find(ca=>(ca.sistema==="uscis"&&(ca.tipoCaso||"").includes("I-589")||ca.sistema==="eoir"&&(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&ca.fechaAsilo);
+                  const casoHuellas=(c.casos||[]).find(ca=>ca.fechaHuellas);
+                  if(!casoReloj&&!casoHuellas) return null;
+                  if(!casoReloj) return(
+                    <div style={{padding:"8px 16px",borderTop:"0.5px solid #F1F5F9",background:"#F8FAFC",display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#374151"}}>
+                      <span style={{color:"#94A3B8"}}>🫆</span>
+                      <span style={{fontWeight:500}}>Biométricos: {fmt(casoHuellas.fechaHuellas)}</span>
+                      {(()=>{const d=getDias(casoHuellas.fechaHuellas);return d!==null&&<span style={{fontSize:10,background:d<0?"#FEF9C3":"#E6F1FB",color:d<0?"#854D0E":"#0C447C",padding:"1px 7px",borderRadius:10}}>{d<0?`Hace ${Math.abs(d)} días`:`En ${d} días`}</span>;})()}
+                    </div>
+                  );
+                  const inicio=new Date(casoReloj.fechaAsilo+"T00:00:00");const hoy2=new Date();hoy2.setHours(0,0,0,0);
+                  const relojDet=casoReloj.relojDetenido===true;
+                  const diasR=relojDet?casoReloj.diasPausados||0:Math.max(0,Math.floor((hoy2-inicio)/86400000)-(casoReloj.diasDescontados||0));
+                  const pctR=Math.min(100,Math.round((diasR/180)*100));
+                  const colorR=relojDet?"#DC2626":diasR>=180?"#16A34A":diasR>=120?"#D97706":"#2563EB";
+                  const toggleRelojCard=async()=>{
+                    try{const{db,doc,updateDoc}=window._firebase;const casosAct=(c.casos||[]).map(ca=>{if(ca.id!==casoReloj.id)return ca;if(relojDet){const h=new Date();h.setHours(0,0,0,0);const p=casoReloj.fechaPausa?new Date(casoReloj.fechaPausa+"T00:00:00"):h;const dd=Math.floor((h-p)/86400000);return{...ca,relojDetenido:false,diasPausados:0,fechaPausa:null,diasDescontados:(ca.diasDescontados||0)+dd};}else{const t2=new Date();t2.setHours(0,0,0,0);return{...ca,relojDetenido:true,diasPausados:diasR,fechaPausa:t2.toISOString().split("T")[0]};}});await updateDoc(doc(db,"clientes",c.id),{casos:casosAct});if(typeof loadCases==="function")loadCases();}catch(e){console.error(e);}
+                  };
+                  return(
+                    <div style={{background:"#0F172A",padding:"10px 16px",borderTop:"0.5px solid #1E293B"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(99,102,241,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                          <span style={{fontSize:14}}>🕐</span>
+                        </div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                            <span style={{fontSize:11,fontWeight:500,color:relojDet?"#FCA5A5":"#A5B4FC"}}>{relojDet?"🔴 Reloj de Asilo — DETENIDO":"🟢 Reloj de Asilo — ACTIVO"}</span>
+                            <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              <span style={{fontSize:10,color:"#64748B"}}>Meta: 180 días</span>
+                              <button onClick={e=>{e.stopPropagation();toggleRelojCard();}} style={{fontSize:10,fontWeight:500,padding:"2px 8px",borderRadius:5,border:"none",background:relojDet?"#16A34A":"#DC2626",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:3}}>{relojDet?"▶ Activar":"⏸ Detener"}</button>
+                            </div>
+                          </div>
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                            <span style={{fontSize:18,fontWeight:500,color:colorR,whiteSpace:"nowrap"}}>{diasR} días</span>
+                            <div style={{flex:1,background:"rgba(255,255,255,0.08)",borderRadius:20,height:4,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:colorR,width:`${pctR}%`}}/></div>
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#64748B"}}>
+                            <span>Presentado: {fmt(casoReloj.fechaAsilo)}</span>
+                            {diasR<180&&<span style={{color:"#FBBF24"}}>⏳ Faltan {180-diasR} días para aplicar al EAD</span>}
+                          </div>
+                        </div>
+                      </div>
+                      {casoHuellas?.fechaHuellas&&<div style={{marginTop:8,paddingTop:8,borderTop:"0.5px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",gap:8,fontSize:11,color:"#94A3B8"}}>
+                        <span>🫆 Biométricos: <span style={{color:"#E2E8F0",fontWeight:500}}>{fmt(casoHuellas.fechaHuellas)}</span></span>
+                        {(()=>{const d=getDias(casoHuellas.fechaHuellas);return d!==null&&<span style={{fontSize:10,background:d<0?"rgba(254,249,195,0.15)":"rgba(230,241,251,0.15)",color:d<0?"#FDE68A":"#93C5FD",padding:"1px 7px",borderRadius:10}}>{d<0?`Hace ${Math.abs(d)} días`:`En ${d} días`}</span>;})()}
+                      </div>}
+                    </div>
+                  );
+                })()}
                 <div style={{padding:"8px 16px 10px",display:"flex",gap:6,borderTop:"0.5px solid #F1F5F9"}}>
                   <button onClick={e=>{e.stopPropagation();const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}} style={{flex:2,background:"#0C447C",color:"#E6F1FB",border:"none",borderRadius:8,padding:"7px 10px",fontSize:12,fontWeight:500,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>📂 {exp?t("Ocultar ficha","Hide file"):t("Ver ficha completa","View full file")}</button>
                   <button onClick={e=>{e.stopPropagation();const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono registrado","error");return;}const nombre=c.nombre||"cliente";const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigración";const oficina=officeData?.name||"nuestra oficina";const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualización de su proceso. Para más información contáctenos. — "+oficina;window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{flex:1,borderRadius:8,padding:"7px 8px",fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4,color:"#16A34A",border:"0.5px solid #BBF7D0",background:"#F0FDF4"}}>💬 WhatsApp</button>
@@ -1925,282 +1983,180 @@ const loadTeam=async()=>{
                     ):(c.casos||[])[casoTab]&&(()=>{
                       const ca=(c.casos||[])[casoTab];const sys=SISTEMAS[ca.sistema]||SISTEMAS.uscis;
                       const diasFecha=getDias(ca.fechaCorte);const scfgCaso=STATUS_CONFIG[getStatus(ca.fechaCorte)];
+                      const totalC=getTotalProcesos(ca.procesos||[]);const pagadoC=getTotalPagado(ca.procesos||[]);const pctC=getPct(totalC,pagadoC);const pcC=pagoColor(pctC);
+                      // Reloj de asilo
+                      const tieneReloj=(ca.sistema==="uscis"&&(ca.tipoCaso||"").includes("I-589")||ca.sistema==="eoir"&&(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&ca.fechaAsilo;
+                      const relojDet2=ca.relojDetenido===true;
+                      const diasR2=tieneReloj?(relojDet2?ca.diasPausados||0:Math.max(0,Math.floor((()=>{const h=new Date();h.setHours(0,0,0,0);return h;})()-(new Date(ca.fechaAsilo+"T00:00:00")))/86400000-(ca.diasDescontados||0))):0;
+                      const pctR2=Math.min(100,Math.round((diasR2/180)*100));
+                      const colorR2=relojDet2?"#DC2626":diasR2>=180?"#16A34A":diasR2>=120?"#D97706":"#2563EB";
+                      const toggleReloj2=async()=>{try{const{db,doc,updateDoc}=window._firebase;const casosAct=(c.casos||[]).map(caso=>{if(caso.id!==ca.id)return caso;if(relojDet2){const h=new Date();h.setHours(0,0,0,0);const p=ca.fechaPausa?new Date(ca.fechaPausa+"T00:00:00"):h;const dd=Math.floor((h-p)/86400000);return{...caso,relojDetenido:false,diasPausados:0,fechaPausa:null,diasDescontados:(caso.diasDescontados||0)+dd};}else{const t2=new Date();t2.setHours(0,0,0,0);return{...caso,relojDetenido:true,diasPausados:diasR2,fechaPausa:t2.toISOString().split("T")[0]};}});await updateDoc(doc(db,"clientes",c.id),{casos:casosAct});if(typeof loadCases==="function")loadCases();}catch(e){console.error(e);}};
+                      // Fechas de citas
+                      const citas=[
+                        ca.fechaHuellas&&{label:"Biométricos",icon:"🫆",fecha:ca.fechaHuellas},
+                        ca.tipoCita==="entrevista"&&ca.fechaCorte&&{label:"Entrevista USCIS",icon:"🎤",fecha:ca.fechaCorte},
+                        ca.sistema==="eoir"&&ca.fechaCorte&&{label:"Corte (EOIR)",icon:"⚖️",fecha:ca.fechaCorte},
+                        diasR2>=180&&{label:"Elegible EAD",icon:"🪪",fecha:(()=>{const d=new Date(ca.fechaAsilo+"T00:00:00");d.setDate(d.getDate()+180);return d.toISOString().split("T")[0];})()},
+                      ].filter(Boolean);
                       return(
-                        <div style={{padding:"16px 20px",display:"grid",gridTemplateColumns:"1fr 300px",gap:20,alignItems:"start"}}>
-                          <div>
-                          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"14px 16px",marginBottom:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-                            <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:12}}>
-                              <span style={{fontSize:14}}>📋</span>
-                              <span style={{fontSize:13,fontWeight:700,color:"#0F172A"}}>{t("Resumen del caso","Case Summary")}</span>
+                        <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
+
+                          {/* Barra de métricas */}
+                          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
+                            {[
+                              {label:"A-Number",val:fmtA(ca.alienNum)||fmtA(c.alienNum)||"—",mono:true,color:"#0F172A"},
+                              {label:"N° Recibo",val:ca.receiptNum||ca.foiaTracking||"—",mono:true,color:"#185FA5"},
+                              {label:"Pago",val:isAdmin?(()=>{const t=getTotalProcesos(ca.procesos||[]);const p=getTotalPagado(ca.procesos||[]);return t>0?`${fmtMoney(p)} / ${fmtMoney(t)}`:"—";})():"—",extra:isAdmin&&pctC!==null?`${pctC}% pagado`:null,color:pcC},
+                              {label:"Estado",val:ca.estatusCaso==="activo"?"Caso Activo":ca.estatusCaso==="referido_eoir"?"Referido EOIR":ca.estatusCaso==="aprobado"?"Aprobado":ca.estatusCaso==="denegado"?"Denegado":ca.foiaEstado||"—",color:ca.estatusCaso==="activo"?"#16A34A":ca.estatusCaso==="aprobado"?"#0369A1":ca.estatusCaso==="denegado"?"#DC2626":"#374151"},
+                              {label:"Prioridad",val:scfg.label||"—",icon:scfg.icon,color:scfg.color},
+                            ].map(m=>(
+                              <div key={m.label} style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:10,padding:"10px 14px"}}>
+                                <div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:4,fontWeight:500}}>{m.label}</div>
+                                <div style={{fontSize:12,fontWeight:500,color:m.color,fontFamily:m.mono?"monospace":"inherit"}}>{m.icon&&<span style={{marginRight:4}}>{m.icon}</span>}{m.val}</div>
+                                {m.extra&&<div style={{fontSize:10,color:pcC,marginTop:2}}>{m.extra}</div>}
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Reloj de Asilo */}
+                          {tieneReloj&&<div style={{background:"#0F172A",borderRadius:12,padding:"14px 16px"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                              <div style={{width:32,height:32,borderRadius:"50%",background:"rgba(99,102,241,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:16}}>🕐</span></div>
+                              <div style={{flex:1}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                                  <span style={{fontSize:13,fontWeight:500,color:relojDet2?"#FCA5A5":"#A5B4FC"}}>{relojDet2?"🔴 Reloj de Asilo — DETENIDO":"🟢 Reloj de Asilo — ACTIVO"}</span>
+                                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                    <span style={{fontSize:11,color:"#64748B"}}>Meta: 180 días</span>
+                                    <button onClick={toggleReloj2} style={{fontSize:11,fontWeight:500,padding:"3px 10px",borderRadius:6,border:"none",background:relojDet2?"#16A34A":"#DC2626",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:3}}>{relojDet2?"▶ Activar":"⏸ Detener"}</button>
+                                  </div>
+                                </div>
+                                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                                  <span style={{fontSize:24,fontWeight:500,color:colorR2,whiteSpace:"nowrap"}}>{diasR2} días</span>
+                                  <div style={{flex:1,background:"rgba(255,255,255,0.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:colorR2,width:`${pctR2}%`}}/></div>
+                                </div>
+                                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748B"}}>
+                                  <span>Presentado: {fmt(ca.fechaAsilo)}</span>
+                                  {diasR2<180&&<span style={{color:"#FBBF24"}}>⏳ Faltan {180-diasR2} días para aplicar al EAD</span>}
+                                </div>
+                              </div>
                             </div>
-                            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:14}}>
-                            {ca.sistema==="uscis"&&ca.receiptNum&&<div><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("N° Recibo","Receipt #")}</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:700,color:"#0369A1"}}>{ca.receiptNum}</div></div>}
-                            {ca.alienNum&&<div><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("Número Alien","Alien Number")}</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:700,color:"#0F172A"}}>{fmtA(ca.alienNum)}</div></div>}
-                            {ca.sistema==="eoir"&&ca.corte&&<div><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("Corte","Court")}</div><div style={{fontSize:13,fontWeight:500}}>🏛️ {ca.corte}</div></div>}
-                            {ca.sistema==="eoir"&&ca.juez&&<div><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("Juez","Judge")}</div><div style={{fontSize:13,fontWeight:500}}>👨‍⚖️ {ca.juez}</div></div>}
-                            {ca.sistema==="uscis"&&ca.estatusCaso&&<div><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("Estado","Status")}</div><div style={{display:"inline-block",padding:"4px 12px",borderRadius:20,fontSize:12,fontWeight:700,background:ca.estatusCaso==="activo"?"#F0FDF4":ca.estatusCaso==="referido_eoir"?"#F5F3FF":ca.estatusCaso==="aprobado"?"#F0F9FF":"#FEF2F2",color:ca.estatusCaso==="activo"?"#16A34A":ca.estatusCaso==="referido_eoir"?"#7C3AED":ca.estatusCaso==="aprobado"?"#0369A1":"#DC2626",border:`1px solid ${ca.estatusCaso==="activo"?"#BBF7D0":ca.estatusCaso==="referido_eoir"?"#DDD6FE":ca.estatusCaso==="aprobado"?"#BAE6FD":"#FECACA"}`}}>{ca.estatusCaso==="activo"?"✅ Caso Activo":ca.estatusCaso==="referido_eoir"?"🔒 Cerrado — Referido a EOIR":ca.estatusCaso==="aprobado"?"🔒 Cerrado — Aprobado":"🔒 Cerrado — Denegado"}</div></div>}
+                            {citas.length>0&&<div style={{display:"grid",gridTemplateColumns:`repeat(${citas.length},1fr)`,gap:8,borderTop:"0.5px solid rgba(255,255,255,0.06)",paddingTop:10}}>
+                              {citas.map((cita,ci)=>{
+                                const dc=getDias(cita.fecha);
+                                const hoyPasado=dc!==null&&dc<0;
+                                const badge=hoyPasado?"Completado ✓":dc===0?"HOY":dc!==null&&dc<=7?"Pendiente confirmar":`En ${dc} días`;
+                                const badgeColor=hoyPasado?"#16A34A":dc===0?"#DC2626":dc!==null&&dc<=7?"#D97706":"#185FA5";
+                                const badgeBg=hoyPasado?"rgba(22,163,74,0.15)":dc===0?"rgba(220,38,38,0.15)":dc!==null&&dc<=7?"rgba(215,119,6,0.15)":"rgba(24,95,165,0.15)";
+                                return(
+                                  <div key={ci} style={{textAlign:"center"}}>
+                                    <div style={{fontSize:10,color:"#64748B",marginBottom:3}}>{cita.icon} {cita.label}</div>
+                                    <div style={{fontSize:13,fontWeight:500,color:"#fff",marginBottom:4}}>{fmt(cita.fecha)}</div>
+                                    <span style={{fontSize:10,background:badgeBg,color:badgeColor,padding:"2px 8px",borderRadius:10}}>{badge}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>}
+                          </div>}
 
-                            
-                            {(ca.sistema==="uscis"&&(ca.tipoCaso||"").includes("I-589")||ca.sistema==="eoir"&&(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&ca.fechaAsilo&&(()=>{
-                              const inicio=new Date(ca.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);
-                              // Clock pause logic
-                              const relojDetenido = ca.relojDetenido === true;
-                              const diasPausados = ca.diasPausados || 0;
-                              const fechaPausa = ca.fechaPausa || null;
-
-                              // If paused: use frozen days. If active: days since start minus paused days
-                              const diasReloj = relojDetenido
-                                ? diasPausados
-                                : Math.max(0, Math.floor((hoy-inicio)/86400000) - (ca.diasDescontados||0));
-
-                              const pctReloj=Math.min(100,Math.round((diasReloj/180)*100));
-                              const colorReloj=relojDetenido?"#DC2626":diasReloj>=180?"#16A34A":diasReloj>=120?"#D97706":"#2563EB";
-
-                              const toggleReloj = async () => {
-                                try {
-                                  const {db, doc, updateDoc} = window._firebase;
-                                  const clienteRef = doc(db, "clientes", c.id);
-                                  const casosActualizados = (c.casos||[]).map(caso => {
-                                    if(caso.id !== ca.id) return caso;
-                                    if(relojDetenido){
-                                      const hoyMs = new Date(); hoyMs.setHours(0,0,0,0);
-                                      const pausaMs = fechaPausa ? new Date(fechaPausa+"T00:00:00") : hoyMs;
-                                      const diasDetenido = Math.floor((hoyMs - pausaMs)/86400000);
-                                      return {...caso, relojDetenido:false, diasPausados:0, fechaPausa:null, diasDescontados:(caso.diasDescontados||0)+diasDetenido};
-                                    } else {
-                                      const today = new Date(); today.setHours(0,0,0,0);
-                                      return {...caso, relojDetenido:true, diasPausados:diasReloj, fechaPausa:today.toISOString().split("T")[0]};
-                                    }
-                                  });
-                                  await updateDoc(clienteRef, {casos: casosActualizados});
-                                  if(typeof loadCases === "function") loadCases();
-                                } catch(err) { console.error("toggleReloj error:", err); }
+                          {/* Grid: Documentos | Pagos + Acciones */}
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                            <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                                <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📄 Documentos del caso</span>
+                                <button onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver todos</button>
+                              </div>
+                              {(docsCliente[c.id]||[]).length===0?
+                                <div style={{textAlign:"center",padding:"16px",color:"#94A3B8",fontSize:12,border:"0.5px dashed #E2E8F0",borderRadius:8}}>Sin documentos</div>:
+                                <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                                  {(docsCliente[c.id]||[]).slice(0,3).map((d,di)=>(
+                                    <div key={di} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",background:"#F8FAFC",borderRadius:8}}>
+                                      <span style={{fontSize:12,color:"#374151"}}>📄 {d.tipo||d.nombre||"Documento"}</span>
+                                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                        <span style={{fontSize:10,background:"#EAF3DE",color:"#3B6D11",padding:"1px 7px",borderRadius:10}}>Verificado</span>
+                                        <button onClick={()=>window.open(d.url,"_blank")} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#64748B"}}>👁</button>
+                                        <button onClick={()=>{const{storage,ref:sref,getDownloadURL}=window._firebase;const doD=(url)=>{const x=new XMLHttpRequest();x.responseType="blob";x.onload=()=>{const b=URL.createObjectURL(x.response);const a=document.createElement("a");a.href=b;a.download=d.nombre||"doc";document.body.appendChild(a);a.click();setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(b);},2000);};x.onerror=()=>window.open(url,"_blank");x.open("GET",url);x.send();};d.path?getDownloadURL(sref(storage,d.path)).then(doD).catch(()=>doD(d.url)):doD(d.url);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#64748B"}}>⬇️</button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               }
-
-                              return(
-                                <div style={{gridColumn:"1/-1",background:relojDetenido?"#2D1515":"#1E1B4B",border:`1px solid ${relojDetenido?"#DC2626":"#4338CA"}`,borderRadius:10,padding:"12px 14px"}}>
-                                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-                                    <div style={{fontSize:12,fontWeight:700,color:relojDetenido?"#FCA5A5":"#A5B4FC"}}>
-                                      {relojDetenido?"🔴 Reloj de Asilo — DETENIDO":"🟢 Reloj de Asilo — ACTIVO"}
-                                    </div>
-                                    <button
-                                      onClick={toggleReloj}
-                                      style={{
-                                        padding:"4px 12px",
-                                        borderRadius:6,
-                                        border:"none",
-                                        fontSize:11,
-                                        fontWeight:700,
-                                        cursor:"pointer",
-                                        background:relojDetenido?"#16A34A":"#DC2626",
-                                        color:"#fff"
-                                      }}
-                                    >
-                                      {relojDetenido?"▶ Activar":"⏸ Detener"}
-                                    </button>
-                                  </div>
-                                  <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:8}}>
-                                    <div style={{textAlign:"center"}}>
-                                      <div style={{fontSize:32,fontWeight:800,color:colorReloj,lineHeight:1}}>{diasReloj}</div>
-                                      <div style={{fontSize:11,color:relojDetenido?"#FCA5A5":"#A5B4FC"}}>dias transcurridos</div>
-                                    </div>
-                                    <div style={{flex:1}}>
-                                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                                        <span style={{fontSize:11,color:relojDetenido?"#FCA5A5":"#A5B4FC"}}>Presentado: {fmt(ca.fechaAsilo)}</span>
-                                        <span style={{fontSize:11,color:relojDetenido?"#FCA5A5":"#A5B4FC"}}>Meta: 180 dias</span>
-                                      </div>
-                                      <div style={{background:"#312E81",borderRadius:20,height:10,overflow:"hidden"}}>
-                                        <div style={{height:"100%",borderRadius:20,background:colorReloj,width:`${pctReloj}%`}}/>
-                                      </div>
-                                      <div style={{fontSize:11,color:colorReloj,fontWeight:700,marginTop:4}}>
-                                        {relojDetenido
-                                          ? `⏸ Reloj detenido desde ${fechaPausa||"hoy"} — ${diasReloj} días congelados`
-                                          : diasReloj>=180
-                                            ? (lang==="es"?`✅ Elegible para EAD — ${diasReloj} días`:`✅ Eligible for EAD — ${diasReloj} days`)
-                                            : `⏳ Faltan ${180-diasReloj} dias para aplicar al EAD`
-                                        }
-                                      </div>
-                                    </div>
-                                  </div>
+                              <button onClick={()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))} style={{width:"100%",marginTop:8,padding:"7px",fontSize:12,border:"0.5px dashed #E2E8F0",borderRadius:8,background:"none",color:"#64748B",cursor:"pointer"}}>+ Subir documento</button>
+                            </div>
+                            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                              {isAdmin&&(ca.procesos||[]).length>0&&<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                                  <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>💳 Resumen de pagos</span>
+                                  <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver detalle</button>
                                 </div>
-                              );
-                            })()}
-
-                            {ca.esFamiliar&&(ca.dependientes||[]).length>0&&(
-                              <div style={{gridColumn:"1/-1",display:"flex",flexDirection:"column",gap:10}}>
-                                <div style={{fontSize:12,fontWeight:700,color:"#7C3AED"}}>👨‍👩‍👧‍👦 {t("Dependientes del caso","Case dependents")} ({(ca.dependientes||[]).length})</div>
-                                {(ca.dependientes||[]).map((dep,di)=>{
-                                  const hoy2=new Date();hoy2.setHours(0,0,0,0);
-                                  const depRelojDetenido = dep.relojDetenido === true;
-                                  const depDiasPausados = dep.diasPausados || 0;
-                                  const depFechaPausa = dep.fechaPausa || null;
-                                  let depDiasReloj = 0;
-                                  if(dep.fechaAsilo){
-                                    const depInicio = new Date(dep.fechaAsilo+"T00:00:00");
-                                    depDiasReloj = depRelojDetenido
-                                      ? depDiasPausados
-                                      : Math.max(0, Math.floor((hoy2-depInicio)/86400000) - (dep.diasDescontados||0));
-                                  }
-                                  const depPct = Math.min(100,Math.round((depDiasReloj/180)*100));
-                                  const depColor = depRelojDetenido?"#DC2626":depDiasReloj>=180?"#16A34A":depDiasReloj>=120?"#D97706":"#2563EB";
-                                  const depDiasFecha = dep.fechaCorte?getDias(dep.fechaCorte):null;
-                                  const depScfg = dep.fechaCorte?STATUS_CONFIG[getStatus(dep.fechaCorte)]:null;
-
-                                  const toggleDepReloj = async () => {
-                                    try {
-                                      const {db, doc, updateDoc} = window._firebase;
-                                      const clienteRef = doc(db, "clientes", c.id);
-                                      const casosActualizados = (c.casos||[]).map(caso => {
-                                        if(caso.id !== ca.id) return caso;
-                                        const depsActualizados = (caso.dependientes||[]).map((d,idx)=>{
-                                          if(idx !== di) return d;
-                                          if(depRelojDetenido){
-                                            const hoyMs = new Date(); hoyMs.setHours(0,0,0,0);
-                                            const pausaMs = depFechaPausa ? new Date(depFechaPausa+"T00:00:00") : hoyMs;
-                                            const diasDetenido = Math.floor((hoyMs - pausaMs)/86400000);
-                                            return {...d, relojDetenido:false, diasPausados:0, fechaPausa:null, diasDescontados:(d.diasDescontados||0)+diasDetenido};
-                                          } else {
-                                            const today = new Date(); today.setHours(0,0,0,0);
-                                            return {...d, relojDetenido:true, diasPausados:depDiasReloj, fechaPausa:today.toISOString().split("T")[0]};
-                                          }
-                                        });
-                                        return {...caso, dependientes:depsActualizados};
-                                      });
-                                      await updateDoc(clienteRef, {casos: casosActualizados});
-                                      if(typeof loadCases === "function") loadCases();
-                                    } catch(err) { console.error("toggleDepReloj error:", err); }
-                                  };
-
-                                  return(
-                                    <div key={dep.id||di} style={{background:"#fff",border:"1px solid #E9D5FF",borderRadius:10,padding:"12px 14px"}}>
-                                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-                                        <span style={{fontSize:14,fontWeight:700,color:"#0F172A"}}>👤 {dep.nombre||t("Sin nombre","No name")}</span>
-                                        {dep.alienNum&&<span style={{fontSize:13,fontWeight:700,fontFamily:"monospace",color:"#1E40AF",background:"#EFF6FF",borderRadius:6,padding:"2px 8px",border:"1px solid #BFDBFE"}}>A# {fmtA(dep.alienNum)}</span>}
-                                        {dep.relacion&&<span style={{fontSize:11,color:"#7C3AED",background:"#F5F3FF",borderRadius:10,padding:"2px 8px"}}>{dep.relacion}</span>}
-                                      </div>
-
-                                      {dep.fechaAsilo&&(
-                                        <div style={{background:depRelojDetenido?"#2D1515":"#1E1B4B",border:`1px solid ${depRelojDetenido?"#DC2626":"#4338CA"}`,borderRadius:8,padding:"10px 12px",marginBottom:8}}>
-                                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-                                            <div style={{fontSize:10,fontWeight:700,color:depRelojDetenido?"#FCA5A5":"#A5B4FC"}}>
-                                              {depRelojDetenido?"🔴 Reloj — DETENIDO":"🟢 Reloj — ACTIVO"}
-                                            </div>
-                                            <button onClick={toggleDepReloj} style={{padding:"3px 9px",borderRadius:5,border:"none",fontSize:10,fontWeight:700,cursor:"pointer",background:depRelojDetenido?"#16A34A":"#DC2626",color:"#fff"}}>
-                                              {depRelojDetenido?"▶ Activar":"⏸ Detener"}
-                                            </button>
-                                          </div>
-                                          <div style={{display:"flex",alignItems:"center",gap:12}}>
-                                            <div style={{textAlign:"center",minWidth:40}}>
-                                              <div style={{fontSize:22,fontWeight:800,color:depColor,lineHeight:1}}>{depDiasReloj}</div>
-                                              <div style={{fontSize:9,color:depRelojDetenido?"#FCA5A5":"#A5B4FC"}}>días</div>
-                                            </div>
-                                            <div style={{flex:1}}>
-                                              <div style={{background:"#312E81",borderRadius:20,height:6,overflow:"hidden",marginBottom:3}}>
-                                                <div style={{height:"100%",borderRadius:20,background:depColor,width:`${depPct}%`}}/>
-                                              </div>
-                                              <div style={{fontSize:10,color:depColor,fontWeight:600}}>
-                                                {depRelojDetenido?`Detenido — ${depDiasReloj} días congelados`:depDiasReloj>=180?`✅ Elegible EAD — ${depDiasReloj} días`:`⏳ Faltan ${180-depDiasReloj} días`}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      )}
-
-                                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                                        {dep.fechaHuellas&&<div><div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",fontWeight:600}}>📅 {t("Biométricos","Biometrics")}</div><div style={{fontSize:12,fontWeight:600}}>{fmt(dep.fechaHuellas)}</div></div>}
-                                        {dep.estatusCaso&&<div><div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",fontWeight:600}}>{t("Estatus","Status")}</div><div style={{fontSize:11,fontWeight:700,color:dep.estatusCaso==="activo"?"#16A34A":dep.estatusCaso==="referido_eoir"?"#7C3AED":dep.estatusCaso==="aprobado"?"#0369A1":"#DC2626"}}>{dep.estatusCaso==="activo"?"✅ Activo":dep.estatusCaso==="referido_eoir"?"🔒 Referido EOIR":dep.estatusCaso==="aprobado"?"🔒 Aprobado":dep.estatusCaso==="denegado"?"🔒 Denegado":"-"}</div></div>}
-                                      </div>
-
-                                      {dep.fechaCorte&&depScfg&&(
-                                        <div style={{marginTop:8,background:depScfg.bg,border:`1px solid ${depScfg.border}`,borderRadius:7,padding:"8px 10px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                                          <div>
-                                            <div style={{fontSize:9,color:"#64748B",textTransform:"uppercase",fontWeight:600}}>{t("Fecha de corte","Court date")}</div>
-                                            <div style={{fontSize:14,fontWeight:700,color:depScfg.color}}>{fmt(dep.fechaCorte)}</div>
-                                          </div>
-                                          <div style={{background:depScfg.color,color:"#fff",borderRadius:14,padding:"3px 10px",fontSize:11,fontWeight:700}}>
-                                            {depDiasFecha===null?"-":depDiasFecha<0?"Hace "+Math.abs(depDiasFecha)+" dias":depDiasFecha===0?"HOY!":"En "+depDiasFecha+" dias"}
-                                          </div>
-                                        </div>
-                                      )}
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
+                                  {[{l:"Contratado",v:fmtMoney(totalC),c:"#374151"},{l:"Cobrado",v:fmtMoney(pagadoC),c:"#16A34A"},{l:"Saldo",v:fmtMoney(totalC-pagadoC),c:totalC-pagadoC>0?"#DC2626":"#16A34A"}].map(m=>(
+                                    <div key={m.l} style={{background:"#F8FAFC",borderRadius:8,padding:"8px",textAlign:"center"}}>
+                                      <div style={{fontSize:10,color:"#94A3B8",marginBottom:2}}>{m.l}</div>
+                                      <div style={{fontSize:13,fontWeight:500,color:m.c}}>{m.v}</div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-
-                            
-                            {ca.fechaCorte&&ca.sistema!=="foia"&&<div style={{gridColumn:"1/-1",background:scfgCaso.bg,border:"2px solid "+scfgCaso.border,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-                              <div>
-                                <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600,marginBottom:4}}>{ca.sistema==="eoir"?"Fecha de corte":(ca.tipoCaso||"").includes("I-589")?(ca.tipoCita==="huellas"?"🫆 Biométricos":"Fecha de entrevista"):"Fecha de cita"}</div>
-                                <div style={{fontSize:28,fontWeight:800,color:scfgCaso.color,lineHeight:1}}>{fmt(ca.fechaCorte)}</div>
-                              </div>
-                              <div style={{textAlign:"center"}}>
-                                <div style={{background:scfgCaso.color,color:"#fff",borderRadius:20,padding:"6px 16px",fontSize:13,fontWeight:700}}>
-                                  {diasFecha===null?"-":diasFecha<0?"Hace "+Math.abs(diasFecha)+" dias":diasFecha===0?"HOY!":"En "+diasFecha+" dias"}
+                                  ))}
                                 </div>
-                                <div style={{fontSize:11,color:"#94A3B8",marginTop:4}}>{scfgCaso.icon} {scfgCaso.label}</div>
-                              </div>
-                            </div>}
-                            
-                            {ca.fechaHuellas&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>🫆 Biométricos</div><div style={{fontSize:13,fontWeight:600}}>{fmt(ca.fechaHuellas)}</div></div>}
-
-                            
-                            {ca.sistema==="foia"&&ca.foiaTracking&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Tracking #</div><div style={{fontSize:13,fontFamily:"monospace",fontWeight:600,color:"#0891B2"}}>{ca.foiaTracking}</div></div>}
-                            {ca.sistema==="foia"&&ca.foiaEstado&&<div><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Estado FOIA</div><div style={{fontSize:13,fontWeight:600,color:ca.foiaEstado==="Respuesta recibida"?"#16A34A":"#D97706"}}>{ca.foiaEstado==="Respuesta recibida"?"✅":ca.foiaEstado==="En proceso"?"⏳":"📤"} {ca.foiaEstado}</div></div>}
-                            {ca.sistema==="foia"&&ca.foiaRespuesta&&<div style={{gridColumn:"1/-1"}}><div style={{fontSize:11,color:"#94A3B8",textTransform:"uppercase"}}>Respuesta FOIA</div><div style={{fontSize:13,color:"#475569",fontStyle:"italic"}}>📝 {ca.foiaRespuesta}</div></div>}
-
-                            
-                            {(ca.tipoCaso||"").includes("I-765")&&ca.tieneEAD&&<div style={{gridColumn:"1/-1",background:ca.tieneEAD==="si"?"#F0FDF4":"#FEF2F2",border:`1px solid ${ca.tieneEAD==="si"?"#BBF7D0":"#FECACA"}`,borderRadius:8,padding:"9px 12px"}}>
-                              <div style={{fontSize:12,fontWeight:700,color:ca.tieneEAD==="si"?"#15803D":"#DC2626",marginBottom:ca.eadVence?6:0}}>{ca.tieneEAD==="si"?"✅ Tiene EAD":"❌ Sin EAD — Puede aplicar"}</div>
-                              {ca.eadVence&&<div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
-                                <div><div style={{fontSize:10,color:"#6B7280",textTransform:"uppercase"}}>{ca.tieneEAD==="si"?"Vence":"Puede aplicar el"}</div><div style={{fontSize:13,fontWeight:700,color:ca.tieneEAD==="si"&&getDias(ca.eadVence)!==null&&getDias(ca.eadVence)<=30?"#DC2626":"#15803D"}}>{fmt(ca.eadVence)}{ca.tieneEAD==="si"&&getDias(ca.eadVence)!==null&&getDias(ca.eadVence)<=30&&" ⚠️"}</div></div>
-                                {ca.tieneEAD==="si"&&ca.eadRenovado&&<div><div style={{fontSize:10,color:"#6B7280",textTransform:"uppercase"}}>Renovacion</div><div style={{fontSize:12,fontWeight:600,color:ca.eadRenovado==="si"?"#15803D":"#D97706"}}>{ca.eadRenovado==="si"?"✅ Renovado":"⏳ Pendiente renovar"}</div></div>}
+                                {(ca.procesos||[]).map((p,pi)=>(
+                                  <div key={pi} style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748B",padding:"4px 0",borderTop:"0.5px solid #F1F5F9"}}>
+                                    <span>{p.nombre||"Proceso"}</span>
+                                    <span style={{color:"#16A34A",fontWeight:500}}>{fmtMoney(p.pagado)} / {fmtMoney(p.precio)} {getPct(parseMoney(p.precio),parseMoney(p.pagado))===100?"✓":""}</span>
+                                  </div>
+                                ))}
                               </div>}
-                            </div>}
-
-                            {ca.nota&&<div style={{gridColumn:"1/-1"}}><div style={{fontSize:10,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3,fontWeight:600}}>{t("Notas","Notes")}</div><div style={{fontSize:13,color:"#475569",fontStyle:"italic"}}>📝 {ca.nota}</div></div>}
-                          </div>
-                          </div>
-
-                          
-                          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
-                            {ca.sistema==="uscis"&&ca.receiptNum&&<a href={uscisUrl(ca.receiptNum)} target="_blank" rel="noreferrer" style={{background:"#0369A1",color:"#fff",borderRadius:7,padding:"6px 12px",fontSize:12,textDecoration:"none",fontWeight:600}}>🏛 Ver en USCIS →</a>}
-                            {ca.sistema==="eoir"&&ca.alienNum&&<a href={eoirUrl(ca.alienNum)} target="_blank" rel="noreferrer" style={{background:"#7C3AED",color:"#fff",borderRadius:7,padding:"6px 12px",fontSize:12,textDecoration:"none",fontWeight:600}}>⚖️ Ver en EOIR →</a>}
-                          </div>
-
-                          
-                          </div>
-                          <div style={{position:"sticky",top:80}}>
-                          {isAdmin&&(ca.procesos||[]).length>0&&(()=>{
-                            const totalC=getTotalProcesos(ca.procesos||[]);const pagadoC=getTotalPagado(ca.procesos||[]);const pctC=getPct(totalC,pagadoC);const pcC=pagoColor(pctC);
-                            return(
-                              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-                                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                                  <div style={{width:30,height:30,borderRadius:"50%",background:"#DCFCE7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>💵</div>
-                                  <span style={{fontSize:15,fontWeight:700,color:"#0F172A"}}>💵 {t("Pagos","Payments")}</span>
-                                </div>
-                                {(ca.procesos||[]).map((p,pi)=>{const pp=getPct(parseMoney(p.precio),parseMoney(p.pagado));return(
-                                  <div key={pi} style={{marginBottom:12,paddingBottom:12,borderBottom:pi<(ca.procesos||[]).length-1?"1px solid #F1F5F9":"none"}}>
-                                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                                      <span style={{fontSize:13,fontWeight:600,color:"#374151"}}>{p.nombre||"—"}</span>
-                                      <span style={{fontSize:12,fontWeight:600,color:"#0F172A"}}>{fmtMoney(p.pagado)||"$0"} / {fmtMoney(p.precio)||"—"}</span>
-                                    </div>
-                                    {p.precio&&<><div style={{background:"#F1F5F9",borderRadius:20,height:5}}><div style={{height:"100%",borderRadius:20,background:pagoColor(pp),width:`${pp||0}%`}}/></div><div style={{fontSize:11,color:pagoColor(pp),fontWeight:700,marginTop:3}}>{pp!==null?`${pp}%`:"Sin pago"}</div></>}
-                                    {p.notas&&<div style={{fontSize:11,color:"#6B7280",fontStyle:"italic",marginTop:4}}>📝 {p.notas}</div>}
-                                  </div>
-                                );})}
-                                <div style={{background:"#F0FDF4",borderRadius:8,padding:"10px 12px",marginTop:4,border:"1px solid #BBF7D0"}}>
-                                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                                    <span style={{fontSize:12,fontWeight:700,color:"#374151"}}>Total</span>
-                                    <span style={{fontSize:14,fontWeight:800,color:"#0F172A"}}>{fmtMoney(pagadoC)} / {fmtMoney(totalC)}</span>
-                                  </div>
-                                  <div style={{background:"#D1FAE5",borderRadius:20,height:5}}><div style={{height:"100%",borderRadius:20,background:pcC,width:`${pctC||0}%`}}/></div>
-                                  <div style={{fontSize:11,color:pcC,fontWeight:700,marginTop:4}}>{pctC!==null?`${pctC}% — ${t("Saldo","Balance")}: ${fmtMoney(totalC-pagadoC)}`:"Sin info"}</div>
+                              <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                                <div style={{fontSize:13,fontWeight:500,color:"#0F172A",marginBottom:10}}>⚡ Acciones rápidas</div>
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                                  {[
+                                    {icon:"💬",label:"WhatsApp",fn:()=>{const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}window.open("https://wa.me/1"+tel,"_blank");}},
+                                    {icon:"🔗",label:"Portal",fn:()=>{const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>prompt("Link:",link));}},
+                                    {icon:"💳",label:"Registrar pago",fn:()=>{setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}},
+                                    {icon:"📤",label:"Subir doc.",fn:()=>setActiveCasoTab(p=>({...p,[c.id]:"docs"}))},
+                                    {icon:"📅",label:"Programar fecha",fn:()=>openEdit(c)},
+                                    {icon:"📄",label:"Generar carta",fn:()=>showToastFn("Próximamente","info")},
+                                  ].map(a=>(
+                                    <button key={a.label} onClick={e=>{e.stopPropagation();a.fn();}} style={{fontSize:12,padding:"7px 10px",borderRadius:8,display:"flex",alignItems:"center",gap:6,color:"#374151",border:"0.5px solid #E2E8F0",background:"#F8FAFC",cursor:"pointer",textAlign:"left"}}>
+                                      <span>{a.icon}</span>{a.label}
+                                    </button>
+                                  ))}
                                 </div>
                               </div>
-                            );
-                          })()}
+                            </div>
                           </div>
+
+                          {/* Grid: Notas | Actividad */}
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                            <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                                <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📝 Notas / Observaciones</span>
+                                <button onClick={e=>{e.stopPropagation();openEdit(c);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Editar</button>
+                              </div>
+                              <div style={{fontSize:12,color:"#475569",lineHeight:1.7,background:"#F8FAFC",borderRadius:8,padding:"10px",minHeight:60}}>{ca.nota||c.nota||<span style={{color:"#CBD5E1",fontStyle:"italic"}}>Sin notas</span>}</div>
+                            </div>
+                            <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                                <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>📊 Actividad reciente</span>
+                                <button onClick={e=>{e.stopPropagation();openHistorial(c);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver toda</button>
+                              </div>
+                              {(c.historial||[]).length===0?
+                                <div style={{fontSize:12,color:"#94A3B8",textAlign:"center",padding:"16px"}}>Sin actividad registrada</div>:
+                                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                                  {(c.historial||[]).slice(0,3).map((h,hi)=>(
+                                    <div key={hi} style={{display:"flex",alignItems:"flex-start",gap:8}}>
+                                      <div style={{width:26,height:26,borderRadius:"50%",background:"#E6F1FB",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:500,color:"#0C447C",flexShrink:0}}>{(h.usuario||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)}</div>
+                                      <div><div style={{fontSize:12,color:"#374151"}}>{h.icono} {h.texto}</div><div style={{fontSize:10,color:"#94A3B8"}}>{h.fecha?new Date(h.fecha).toLocaleDateString("es-US"):""}</div></div>
+                                    </div>
+                                  ))}
+                                </div>
+                              }
+                            </div>
+                          </div>
+
+                          {/* Links externos */}
+                          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                            {ca.sistema==="uscis"&&ca.receiptNum&&<a href={uscisUrl(ca.receiptNum)} target="_blank" rel="noreferrer" style={{background:"#0369A1",color:"#fff",borderRadius:7,padding:"6px 12px",fontSize:12,textDecoration:"none",fontWeight:500}}>🏛 Ver en USCIS →</a>}
+                            {ca.sistema==="eoir"&&ca.alienNum&&<a href={eoirUrl(ca.alienNum)} target="_blank" rel="noreferrer" style={{background:"#7C3AED",color:"#fff",borderRadius:7,padding:"6px 12px",fontSize:12,textDecoration:"none",fontWeight:500}}>⚖️ Ver en EOIR →</a>}
+                          </div>
+
                         </div>
                       );
                     })()}
