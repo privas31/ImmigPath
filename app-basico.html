@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Básico — versión 2026-07-03-B","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Básico — versión 2026-07-03-C","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -524,6 +524,8 @@ function App(){
             const officeDoc=await getDoc(doc(db,"offices",ud.officeId));
             if(officeDoc.exists()){
               const od=officeDoc.data();
+              //  PLAN PROFESIONAL/PREMIUM: esta app es solo del plan Básico 
+              if(od.plan&&od.plan!=="basic"){window.location.replace("app.html"+window.location.search);return;}
               setOfficeData({id:officeDoc.id,...od});
               if(od.logoUrl){setOfficeLogo(od.logoUrl);window._officeLogo=od.logoUrl;}
               if(od.enabledModules&&od.enabledModules.length>0)setEnabledModules(od.enabledModules);
