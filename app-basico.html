@@ -1596,7 +1596,6 @@ const loadTeam=async()=>{
   const navItems = [
     {id:"monitor",    label:t("Monitor Oficina","Office Monitor"),  icon:"🖥"},
     {id:"dashboard",  label:t("Dashboard","Dashboard"),             icon:"📊", badge:isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
-    {id:"clientes",   label:t("Clientes","Clients"),                icon:"👥", onClick:()=>{setActiveNav("monitor");window.scrollTo(0,160);}},
     {id:"formularios",label:t("Formularios","Forms"),               icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
     {id:"nomina",     label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNómina(true)},
     {id:"pagos",      label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
@@ -1803,28 +1802,7 @@ const loadTeam=async()=>{
                   </div>}
                 </div>
 
-                {!exp&&<>
-                <div style={{padding:"8px 16px 10px",display:"flex",gap:6,borderTop:"0.5px solid #F1F5F9",alignItems:"center"}}>
-                  <button onClick={e=>{e.stopPropagation();const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}} style={{flex:2,background:"#0C447C",color:"#E6F1FB",border:"none",borderRadius:8,padding:"7px 10px",fontSize:12,fontWeight:500,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>📂 Ver ficha completa</button>
-                  <button onClick={e=>{e.stopPropagation();const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono registrado","error");return;}const nombre=c.nombre||"cliente";const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigración";const oficina=officeData?.name||"nuestra oficina";const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualización de su proceso. Para más información contáctenos. — "+oficina;window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{flex:1,borderRadius:8,padding:"7px 8px",fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4,color:"#16A34A",border:"0.5px solid #BBF7D0",background:"#F0FDF4"}}>💬 WhatsApp</button>
-                  <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{flex:1,borderRadius:8,padding:"7px 8px",fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4,color:"#0C447C",border:"0.5px solid #BFDBFE",background:"#EFF6FF"}}>💳 Cobrar</button>
-                  <div style={{position:"relative"}}>
-                    <button onClick={e=>{e.stopPropagation();setOpenMenuId(openMenuId===c.id?null:c.id);}} style={{borderRadius:8,padding:"7px 10px",fontSize:13,cursor:"pointer",color:"#64748B",border:"0.5px solid #E2E8F0",background:"#F8FAFC"}} title="Más acciones">⋯</button>
-                    {openMenuId===c.id&&(
-                      <div onClick={e=>e.stopPropagation()} style={{position:"absolute",right:0,top:"110%",background:"#fff",borderRadius:10,boxShadow:"0 8px 32px rgba(0,0,0,0.15)",border:"1px solid #E2E8F0",zIndex:50,minWidth:200,overflow:"hidden"}}>
-                        <div style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",borderBottom:"1px solid #F1F5F9"}}>{ t("Acciones","Actions") }</div>
-                        <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#16A34A",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#F0FDF4"} onMouseLeave={e=>e.target.style.background="none"}>
-                          <span>💳</span> Cobrar cliente
-                        </button>
-                        <div style={{height:"1px",background:"#F1F5F9"}}></div>
-                        <button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);setOpenMenuId(null);}} style={{width:"100%",padding:"10px 14px",background:"none",border:"none",textAlign:"left",fontSize:13,color:"#EF4444",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.target.style.background="#FEF2F2"} onMouseLeave={e=>e.target.style.background="none"}>
-                          <span>🗑</span> Eliminar cliente
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                </>}
+                
                 {exp&&(c.casos||[]).length>0&&(
                   <div style={{borderTop:"1px solid #F1F5F9",background:"#FAFBFC"}}>
                     <div style={{background:"#fff",borderBottom:"0.5px solid #E2E8F0",padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
