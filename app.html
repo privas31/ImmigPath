@@ -536,6 +536,8 @@ function App(){
             const officeDoc=await getDoc(doc(db,"offices",ud.officeId));
             if(officeDoc.exists()){
               const od=officeDoc.data();
+              //  PLAN BÁSICO: esta app es solo del plan Profesional/Premium 
+              if(od.plan==="basic"){window.location.replace("app-basico.html"+window.location.search);return;}
               setOfficeData({id:officeDoc.id,...od});
               if(od.logoUrl){setOfficeLogo(od.logoUrl);window._officeLogo=od.logoUrl;}
               if(od.enabledModules&&od.enabledModules.length>0)setEnabledModules(od.enabledModules);
