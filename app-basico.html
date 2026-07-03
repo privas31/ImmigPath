@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Básico — versión 2026-07-03-C","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Básico — versión 2026-07-04-D","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -204,7 +204,7 @@ function LoginScreen({onLogin}){
       onLogin(cred.user,userData,officeInfo);
     }catch(e){setErr("Email o contraseña incorrectos");}setLoading(false);};
   return(<div onClick={()=>setOpenMenuId(null)} style={{minHeight:"100vh",background:"linear-gradient(135deg,#0F172A 0%,#1E40AF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-    <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:400,padding:36,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+    <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:400,padding:36,boxShadow:"0 20px 60px rgba(0,0,0,0.3)",maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{textAlign:"center",marginBottom:28}}>
         <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}>
           {loginLogo
@@ -2037,7 +2037,7 @@ const loadTeam=async()=>{
 
     
     {showAddUser&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-      <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:440,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+      <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:440,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
           <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>{ t("🔐 Agregar usuario","🔐 Add user") }</h2>
           <button onClick={()=>{setShowAddUser(false);setAddUserMsg("");setNewUserName("");setNewUserEmail("");setNewUserPass("");setNewUserRole("employee");}} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer"}}>✕</button>
@@ -2411,7 +2411,7 @@ const loadTeam=async()=>{
     {/* ── PANEL DE ACTIVIDAD DEL EQUIPO ── */}
     {showActividad&&isAdmin&&(
       <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:100,padding:"24px 16px",overflowY:"auto"}}>
-        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:680,boxShadow:"0 24px 64px rgba(0,0,0,0.2)"}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:680,boxShadow:"0 24px 64px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
 
           <div style={{padding:"16px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -2549,7 +2549,7 @@ const loadTeam=async()=>{
       });
       return(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-          <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+          <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
               <h2 style={{margin:0,fontSize:18,fontWeight:800,color:"#0F172A"}}>{ t("Descargar PDF","Download PDF") }</h2>
             </div>
@@ -2585,7 +2585,7 @@ const loadTeam=async()=>{
 
     {showI589Review&&i589Cliente&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:200,padding:16,overflowY:"auto"}}>
-        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:620,boxShadow:"0 20px 60px rgba(0,0,0,0.3)",marginTop:20,marginBottom:20}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:620,boxShadow:"0 20px 60px rgba(0,0,0,0.3)",marginTop:20,marginBottom:20,maxHeight:"90vh",overflowY:"auto"}}>
           <div style={{background:"linear-gradient(135deg,#0F172A,#1E3A5F)",borderRadius:"16px 16px 0 0",padding:22,color:"#fff"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div>
@@ -2805,7 +2805,7 @@ const loadTeam=async()=>{
 
         {showAlertas&&(
       <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:100,padding:"24px 16px",overflowY:"auto"}}>
-        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:700,boxShadow:"0 24px 64px rgba(0,0,0,0.2)"}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:700,boxShadow:"0 24px 64px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
 
           {/* Header */}
           <div style={{padding:"16px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -3401,7 +3401,7 @@ const loadTeam=async()=>{
 
     {showPagosConfig&&isAdmin&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:480,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:480,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
             <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>⚙️ Configuración de Oficina</h2>
             <button onClick={()=>setShowPagosConfig(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer"}}>✕</button>
@@ -3481,7 +3481,7 @@ const loadTeam=async()=>{
     
     {showCobrar&&cobrarCliente&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
-        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:460,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
             <h2 style={{margin:0,fontSize:17,fontWeight:700,color:"#0F172A"}}>{t("💳 Cobrar","💳 Charge")} cliente</h2>
             <button onClick={()=>setShowCobrar(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer"}}>✕</button>
