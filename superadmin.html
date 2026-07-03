@@ -105,6 +105,7 @@
   .branding-logo-prev{width:48px;height:48px;border-radius:8px;object-fit:contain;background:rgba(99,102,241,0.1);padding:3px;}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -159,9 +160,9 @@
         Branding
       </button>
       <div class="nav-label">Herramientas</div>
-      <button class="nav-item" onclick="window.open('/migracion.html','_blank')">
+      <button class="nav-item" onclick="showSection('importar',this);initImportar()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-        Migracion Excel
+        Importar Excel
       </button>
       <button class="nav-item" onclick="showSection('cotizador',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-3M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m-5 0h5"/></svg>
@@ -362,6 +363,64 @@
         </div>
       </div>
     </div>
+
+    <!-- IMPORTAR EXCEL -->
+    <div id="section-importar" class="hidden">
+      <div class="header">
+        <h2>Importar Clientes desde Excel</h2>
+        <button class="btn btn-ghost" onclick="descargarPlantillaImport()">⬇ Descargar plantilla</button>
+      </div>
+      <div class="content">
+        <div class="table-container" style="padding:20px;margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">1. Oficina destino *</label>
+              <select class="form-input" id="imp-office"><option value="">Cargando oficinas...</option></select>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">2. Archivo Excel (.xlsx)</label>
+              <input class="form-input" type="file" id="imp-file" accept=".xlsx,.xls,.csv" onchange="analizarExcelImport()">
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text2);margin-top:10px">Cada fila = un caso. Filas con el mismo A-Number (o mismo nombre + teléfono) se agrupan como un solo cliente con varios casos. Usa la plantilla para el formato correcto.</div>
+        </div>
+
+        <div id="imp-preview" class="hidden">
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px">
+            <div class="stat-card"><div class="stat-label">Filas leídas</div><div class="stat-value" id="imp-st-filas">—</div></div>
+            <div class="stat-card"><div class="stat-label">Clientes únicos</div><div class="stat-value" id="imp-st-clientes">—</div></div>
+            <div class="stat-card"><div class="stat-label">Casos</div><div class="stat-value" id="imp-st-casos">—</div></div>
+            <div class="stat-card"><div class="stat-label">Filas con error</div><div class="stat-value" id="imp-st-errores" style="color:#f87171">—</div></div>
+            <div class="stat-card"><div class="stat-label">Ya existen (A-Number)</div><div class="stat-value" id="imp-st-dups" style="color:#fbbf24">—</div></div>
+          </div>
+
+          <div id="imp-errores-box" class="table-container hidden" style="padding:16px;margin-bottom:16px;border-left:3px solid #f87171">
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#f87171">Filas rechazadas (corrígelas en el Excel y vuelve a subirlo, o continúa sin ellas)</div>
+            <div id="imp-errores-lista" style="font-size:12px;color:var(--text2);max-height:180px;overflow-y:auto;line-height:1.8"></div>
+          </div>
+
+          <div class="table-container" style="margin-bottom:16px">
+            <div class="table-header"><h3>Vista previa (primeros 8 clientes)</h3></div>
+            <table>
+              <thead><tr><th>Nombre</th><th>A-Number</th><th>Teléfono</th><th>País</th><th>Casos</th><th>Contratado</th><th>Pagado</th></tr></thead>
+              <tbody id="imp-preview-tabla"></tbody>
+            </table>
+          </div>
+
+          <div class="table-container" style="padding:20px">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:14px">
+              <input type="checkbox" id="imp-skip-dups" checked> Omitir clientes cuyo A-Number ya existe en esta oficina (recomendado para no duplicar)
+            </label>
+            <button class="btn btn-primary" id="imp-btn-ejecutar" onclick="ejecutarImportacion()" style="padding:11px 24px;font-size:14px">🚀 Importar clientes</button>
+            <div id="imp-progreso-box" class="hidden" style="margin-top:16px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:6px"><span id="imp-progreso-txt">Importando...</span><span id="imp-progreso-pct">0%</span></div>
+              <div style="background:var(--bg3);border-radius:20px;height:8px;overflow:hidden"><div id="imp-progreso-bar" style="height:100%;background:var(--accent);width:0%;transition:width .3s"></div></div>
+            </div>
+            <div id="imp-reporte" class="hidden" style="margin-top:16px;padding:14px;border-radius:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);font-size:13px;line-height:1.9"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -475,7 +534,7 @@
 <script type="module">
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, serverTimestamp, query, where, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
@@ -1599,6 +1658,203 @@ window.generarContratoPDF = function() {
 
   pdf.save('Contrato-ImmigPath-'+d.nombre.replace(/[^a-zA-Z0-9]/g,'-')+'.pdf');
   showToast('✓ Contrato bilingüe generado','success');
+};
+
+
+// ============================================================
+//  IMPORTAR CLIENTES DESDE EXCEL
+// ============================================================
+let impClientes = [];      // clientes agrupados listos para importar
+let impErrores = [];       // filas rechazadas
+let impDupSet = new Set(); // A-Numbers ya existentes en la oficina
+
+const IMP_HEADERS = ["NOMBRE COMPLETO","PAIS ORIGEN","A-NUMBER","TELEFONO","EMAIL","ENCARGADA","SISTEMA","TIPO DE CASO","NUMERO RECIBO","CORTE","JUEZ","FECHA CORTE","FECHA HUELLAS","TIENE EAD","VENCIMIENTO EAD","FECHA ASILO","ESTATUS CASO","FOIA TRACKING","MONTO CONTRATADO","MONTO PAGADO","NOTAS"];
+
+function impNorm(s){ return String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim(); }
+function impStr(v){ return v==null?"":String(v).trim(); }
+function impMoney(v){ if(v==null||v==="")return 0; const n=parseFloat(String(v).replace(/[$,\s]/g,"")); return isNaN(n)?0:Math.round(n*100)/100; }
+function impFecha(v){
+  if(v==null||v==="")return "";
+  if(typeof v==="number"&&v>20000&&v<80000){ // serial de Excel
+    const d=new Date(Math.round((v-25569)*86400*1000));
+    return d.toISOString().slice(0,10);
+  }
+  const s=String(v).trim();
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m)return `${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`;
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m){ let y=m[3].length===2?"20"+m[3]:m[3]; return `${y}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`; }
+  return null; // no reconocida
+}
+
+window.initImportar = async function(){
+  const sel=document.getElementById('imp-office');
+  if(!officesCache.length){
+    try{ const snap=await getDocs(collection(db,'offices')); officesCache=snap.docs.map(d=>({id:d.id,...d.data()})); }catch(e){}
+  }
+  sel.innerHTML='<option value="">— Selecciona la oficina —</option>'+officesCache.map(o=>`<option value="${o.id}">${o.name||o.id}${o.isActive===false?' (inactiva)':''}</option>`).join('');
+};
+
+window.descargarPlantillaImport = function(){
+  const wb=XLSX.utils.book_new();
+  const filas=[IMP_HEADERS,
+    ["Juan Perez Gomez","Guatemala","123-456-789","407-555-1234","juanperez@gmail.com","Maria","USCIS","I-589 Asilo","IOE1234567890","","","","03/15/2026","NO","","01/10/2026","Caso Activo","","3000","1500","Ejemplo — borrar esta fila"],
+    ["Juan Perez Gomez","Guatemala","123-456-789","407-555-1234","juanperez@gmail.com","Maria","USCIS","I-765 Permiso de trabajo","IOE0987654321","","","","","SI","09/20/2026","","Caso Activo","","500","500","Mismo cliente, 2do caso — borrar"],
+    ["Rosa Martinez Lopez","Honduras","987-654-321","321-555-9876","","Carla","EOIR","Asilo","","Orlando Immigration Court","Hon. Smith","08/22/2026","","NO","","11/05/2025","Caso Activo","","4500","2000","Ejemplo — borrar esta fila"]];
+  const ws=XLSX.utils.aoa_to_sheet(filas);
+  ws['!cols']=IMP_HEADERS.map(h=>({wch:Math.max(14,h.length+2)}));
+  XLSX.utils.book_append_sheet(wb,ws,"CLIENTES");
+  const inst=XLSX.utils.aoa_to_sheet([["Cada fila es un CASO. Filas con el mismo A-Number (o nombre+telefono) se agrupan en un solo cliente."],["Obligatorio: NOMBRE COMPLETO. SISTEMA: USCIS, EOIR o FOIA (vacio = USCIS)."],["Fechas: MM/DD/AAAA. TIENE EAD: SI o NO. Montos sin signo $."],["Borra las filas de ejemplo antes de importar."]]);
+  inst['!cols']=[{wch:110}];
+  XLSX.utils.book_append_sheet(wb,inst,"INSTRUCCIONES");
+  XLSX.writeFile(wb,"Plantilla-Migracion-Clientes-ImmigPath.xlsx");
+};
+
+window.analizarExcelImport = async function(){
+  const officeId=document.getElementById('imp-office').value;
+  if(!officeId){ showToast('Selecciona primero la oficina destino','error'); document.getElementById('imp-file').value=''; return; }
+  const file=document.getElementById('imp-file').files[0];
+  if(!file)return;
+  showToast('Leyendo archivo...','success');
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array'});
+  const ws=wb.Sheets[wb.SheetNames.includes('CLIENTES')?'CLIENTES':wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:""});
+  if(rows.length<2){ showToast('El archivo no tiene datos','error'); return; }
+
+  // mapear encabezados (tolerante a acentos/espacios)
+  const head=rows[0].map(impNorm);
+  const col={};
+  IMP_HEADERS.forEach(h=>{ const i=head.indexOf(impNorm(h)); if(i>=0)col[h]=i; });
+  if(col["NOMBRE COMPLETO"]===undefined){ showToast('No se encontró la columna NOMBRE COMPLETO — usa la plantilla','error'); return; }
+  const g=(row,h)=>col[h]===undefined?"":row[col[h]];
+
+  impErrores=[]; const grupos=new Map();
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r]; if(!row||row.every(c=>impStr(c)===""))continue;
+    const fila=r+1;
+    const nombre=impStr(g(row,"NOMBRE COMPLETO"));
+    if(!nombre){ impErrores.push(`Fila ${fila}: falta NOMBRE COMPLETO`); continue; }
+    let sistema=impNorm(g(row,"SISTEMA")).toLowerCase();
+    if(!sistema)sistema="uscis";
+    if(!["uscis","eoir","foia"].includes(sistema)){ impErrores.push(`Fila ${fila}: SISTEMA "${impStr(g(row,"SISTEMA"))}" inválido (usa USCIS, EOIR o FOIA)`); continue; }
+    const fechas={}; let fechaMala=null;
+    for(const[campo,hcol]of[["fechaCorte","FECHA CORTE"],["fechaHuellas","FECHA HUELLAS"],["eadVence","VENCIMIENTO EAD"],["fechaAsilo","FECHA ASILO"]]){
+      const f=impFecha(g(row,hcol));
+      if(f===null){ fechaMala=hcol; break; }
+      fechas[campo]=f;
+    }
+    if(fechaMala){ impErrores.push(`Fila ${fila}: fecha inválida en ${fechaMala} ("${impStr(g(row,fechaMala))}") — usa MM/DD/AAAA`); continue; }
+    const alien=impStr(g(row,"A-NUMBER"));
+    const alienKey=alien.replace(/\D/g,"");
+    const tel=impStr(g(row,"TELEFONO"));
+    const key=alienKey?("A:"+alienKey):("N:"+impNorm(nombre)+"|"+tel.replace(/\D/g,""));
+    let tieneEAD=impNorm(g(row,"TIENE EAD")); tieneEAD=tieneEAD.startsWith("S")||tieneEAD==="YES"?"si":tieneEAD==="NO"?"no":"";
+    const contratado=impMoney(g(row,"MONTO CONTRATADO"));
+    const pagado=impMoney(g(row,"MONTO PAGADO"));
+    const tipoCaso=impStr(g(row,"TIPO DE CASO"));
+    const caso={ id:Date.now()+r, sistema, tipoCaso, receiptNum:impStr(g(row,"NUMERO RECIBO")), alienNum:alien,
+      corte:impStr(g(row,"CORTE")), juez:impStr(g(row,"JUEZ")), fechaCorte:fechas.fechaCorte||"", fechaHuellas:fechas.fechaHuellas||"",
+      tipoCita:"", tieneEAD, eadReceipt:"", eadVence:fechas.eadVence||"", eadRenovado:"", fechaAsilo:fechas.fechaAsilo||"",
+      estatusReloj:"", estatusCaso:impStr(g(row,"ESTATUS CASO")), origenCaso:"", foiaTracking:impStr(g(row,"FOIA TRACKING")),
+      foiaEstado:"", foiaRespuesta:"", nota:impStr(g(row,"NOTAS")),
+      procesos:(contratado>0||pagado>0)?[{id:Date.now()+r,nombre:tipoCaso||"Servicio migrado",precio:contratado,pagado:pagado,encargadaProceso:"",notas:"Importado de Excel"}]:[] };
+    if(!grupos.has(key)){
+      grupos.set(key,{ nombre, paisOrigen:impStr(g(row,"PAIS ORIGEN")), alienNum:alien, telefono:tel,
+        email:impStr(g(row,"EMAIL")), encargada:impStr(g(row,"ENCARGADA")), nota:"", casos:[], _pagado:0 });
+    }
+    const cli=grupos.get(key);
+    cli.casos.push(caso); cli._pagado+=pagado;
+    if(!cli.alienNum&&alien)cli.alienNum=alien;
+    if(!cli.telefono&&tel)cli.telefono=tel;
+    if(!cli.email)cli.email=impStr(g(row,"EMAIL"));
+  }
+  impClientes=[...grupos.values()];
+
+  // duplicados contra la oficina destino
+  impDupSet=new Set();
+  try{
+    const snap=await getDocs(query(collection(db,'clientes'),where('officeId','==',officeId)));
+    const existentes=new Set(snap.docs.map(d=>String(d.data().alienNum||"").replace(/\D/g,"")).filter(a=>a));
+    impClientes.forEach(c=>{ const a=String(c.alienNum||"").replace(/\D/g,""); if(a&&existentes.has(a))impDupSet.add(a); });
+  }catch(e){ console.error('dup check',e); }
+
+  // render preview
+  document.getElementById('imp-st-filas').textContent=rows.length-1;
+  document.getElementById('imp-st-clientes').textContent=impClientes.length;
+  document.getElementById('imp-st-casos').textContent=impClientes.reduce((s,c)=>s+c.casos.length,0);
+  document.getElementById('imp-st-errores').textContent=impErrores.length;
+  document.getElementById('imp-st-dups').textContent=impDupSet.size;
+  const eb=document.getElementById('imp-errores-box');
+  if(impErrores.length){ eb.classList.remove('hidden'); document.getElementById('imp-errores-lista').innerHTML=impErrores.slice(0,100).map(e=>'• '+e).join('<br>')+(impErrores.length>100?`<br>...y ${impErrores.length-100} más`:''); }
+  else eb.classList.add('hidden');
+  document.getElementById('imp-preview-tabla').innerHTML=impClientes.slice(0,8).map(c=>{
+    const ct=c.casos.reduce((s,ca)=>s+(ca.procesos[0]?.precio||0),0), pg=c.casos.reduce((s,ca)=>s+(ca.procesos[0]?.pagado||0),0);
+    return `<tr><td>${c.nombre}</td><td>${c.alienNum||'—'}</td><td>${c.telefono||'—'}</td><td>${c.paisOrigen||'—'}</td><td>${c.casos.map(ca=>ca.tipoCaso||ca.sistema.toUpperCase()).join(', ')}</td><td>$${ct.toLocaleString()}</td><td>$${pg.toLocaleString()}</td></tr>`;
+  }).join('');
+  document.getElementById('imp-reporte').classList.add('hidden');
+  document.getElementById('imp-btn-ejecutar').disabled=false;
+  document.getElementById('imp-preview').classList.remove('hidden');
+  showToast(`✓ ${impClientes.length} clientes listos para revisar`,'success');
+};
+
+window.ejecutarImportacion = async function(){
+  const officeId=document.getElementById('imp-office').value;
+  if(!officeId||!impClientes.length)return;
+  const skipDups=document.getElementById('imp-skip-dups').checked;
+  let lista=impClientes;
+  if(skipDups)lista=impClientes.filter(c=>{ const a=String(c.alienNum||"").replace(/\D/g,""); return !(a&&impDupSet.has(a)); });
+  if(!lista.length){ showToast('No hay clientes nuevos para importar','error'); return; }
+  if(!confirm(`Se importarán ${lista.length} clientes a la oficina seleccionada. ¿Continuar?`))return;
+
+  const btn=document.getElementById('imp-btn-ejecutar'); btn.disabled=true;
+  const pbox=document.getElementById('imp-progreso-box'); pbox.classList.remove('hidden');
+  const bar=document.getElementById('imp-progreso-bar'), pct=document.getElementById('imp-progreso-pct'), ptxt=document.getElementById('imp-progreso-txt');
+
+  // siguiente número de expediente de la oficina
+  let nextN=1;
+  try{
+    const snap=await getDocs(query(collection(db,'clientes'),where('officeId','==',officeId)));
+    nextN=snap.docs.reduce((m,d)=>{ const n=parseInt((d.data().expediente||"").replace("EXP-",""))||0; return n>m?n:m; },0)+1;
+  }catch(e){}
+
+  const ahora=new Date().toISOString();
+  const quien=auth.currentUser?.email||'superadmin';
+  let creados=0, pagosCreados=0, fallidos=0;
+  const CHUNK=200; // 200 clientes + hasta 200 pagos = máx 400 ops por batch
+
+  for(let i=0;i<lista.length;i+=CHUNK){
+    const grupo=lista.slice(i,i+CHUNK);
+    try{
+      const batch=writeBatch(db);
+      for(const c of grupo){
+        const ref=doc(collection(db,'clientes'));
+        const {_pagado,...datos}=c;
+        batch.set(ref,{...datos,officeId,expediente:"EXP-"+String(nextN++).padStart(4,"0"),createdAt:ahora,createdBy:quien+" (importación Excel)"});
+        if(_pagado>0){
+          batch.set(doc(collection(db,'pagos')),{ clienteId:ref.id, officeId, monto:_pagado, concepto:"Migración de saldo inicial",
+            metodo:"otro", fecha:ahora, registradoPor:quien, refNum:"MIG-"+ref.id.slice(0,8).toUpperCase(), nombreCliente:c.nombre });
+          pagosCreados++;
+        }
+        creados++;
+      }
+      await batch.commit();
+    }catch(e){ console.error('batch',e); fallidos+=grupo.length; creados-=grupo.length; }
+    const p=Math.round(Math.min(100,((i+grupo.length)/lista.length)*100));
+    bar.style.width=p+"%"; pct.textContent=p+"%";
+    ptxt.textContent=`Importando... ${Math.min(i+grupo.length,lista.length)} de ${lista.length} clientes`;
+  }
+
+  ptxt.textContent="Importación finalizada";
+  const rep=document.getElementById('imp-reporte'); rep.classList.remove('hidden');
+  rep.innerHTML=`<b>✅ Importación completada</b><br>
+    • Clientes creados: <b>${creados}</b> (con ${lista.reduce((s,c)=>s+c.casos.length,0)} casos)<br>
+    • Pagos iniciales registrados: <b>${pagosCreados}</b><br>
+    ${skipDups&&impDupSet.size?`• Omitidos por A-Number duplicado: <b>${impClientes.length-lista.length}</b><br>`:''}
+    ${impErrores.length?`• Filas rechazadas por errores: <b>${impErrores.length}</b> (corrígelas y súbelas en otro archivo)<br>`:''}
+    ${fallidos?`• <span style="color:#f87171">Fallidos por error de conexión: <b>${fallidos}</b> — reintenta subiendo solo esos</span><br>`:''}
+    La oficina ya puede ver los clientes en su monitor.`;
+  showToast(`✓ ${creados} clientes importados`,'success');
 };
 
 window.showSection = function(section, btn) {
