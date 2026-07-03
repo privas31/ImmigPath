@@ -791,7 +791,7 @@ function renderOfficeCards(offices) {
   if (!container) return;
   if (!offices.length) { container.innerHTML = ''; return; }
   container.innerHTML = offices.map(o => `
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer" onclick="window.open('/app.html?o=${o.id}','_blank')">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer" onclick="window.open('${o.plan==='basic'?'/app-basico.html':'/app.html'}?o=${o.id}','_blank')">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         ${o.logoUrl?`<img src="${o.logoUrl}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:rgba(99,102,241,0.1);padding:3px" onerror="this.style.display='none'">`:'<div style="width:36px;height:36px;border-radius:8px;background:rgba(99,102,241,0.15);display:flex;align-items:center;justify-content:center;font-size:18px">🏢</div>'}
         <div style="flex:1;min-width:0">
