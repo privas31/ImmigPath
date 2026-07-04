@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-04-K","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-04-M","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -2009,6 +2009,52 @@ const loadTeam=async()=>{
                                 {!esAplicar&&ca.eadRenovado&&<div style={{borderTop:"0.5px solid rgba(255,255,255,0.06)",paddingTop:8,marginTop:8,fontSize:11,color:ca.eadRenovado==="si"?"#4ADE80":"#FBBF24"}}>{ca.eadRenovado==="si"?"✅ Renovación presentada":"⏳ Renovación pendiente de presentar"}</div>}
                               </div>);
                             })():<div/>}
+
+                            {/* WP de dependientes (I-765 familiar): reloj EAD + pago por dependiente */}
+                            {(ca.tipoCaso||"").includes("I-765")&&(ca.wpDependientes||[]).length>0&&<div style={{marginTop:14}}>
+                              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                                <span style={{fontSize:13,fontWeight:500,color:"#0F6E56"}}>👥 Permiso de trabajo de dependientes</span>
+                                <span style={{fontSize:11,fontWeight:600,background:"#E1F5EE",color:"#0F6E56",padding:"2px 8px",borderRadius:10}}>{(ca.wpDependientes||[]).length}</span>
+                              </div>
+                              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(250px,1fr))",gap:10}}>
+                                {(ca.wpDependientes||[]).map((wd,di)=>{
+                                  const tieneV=!!wd.eadVence;
+                                  const dEAD=tieneV?getDias(wd.eadVence):null;
+                                  const venc=dEAD!==null&&dEAD<0;
+                                  const col=!tieneV?"#94A3B8":venc?"#F87171":dEAD<=90?"#FBBF24":"#4ADE80";
+                                  const est=!tieneV?"Sin fecha EAD":venc?"🔴 Vencido":dEAD<=90?"🟡 Por vencer":"🟢 Vigente";
+                                  const bg=!tieneV?"#1E293B":venc?"#450A0A":dEAD<=90?"#412402":"#04342C";
+                                  const pctE=tieneV&&!venc?Math.max(0,Math.min(100,Math.round((dEAD/365)*100))):0;
+                                  const pr=parseMoney(wd.precio),pg=parseMoney(wd.pagado),saldo=pr-pg;
+                                  return(<div key={wd.id||di} style={{background:bg,borderRadius:10,padding:"11px 13px"}}>
+                                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                                      <span style={{fontSize:13,fontWeight:500,color:"#fff"}}>👤 {wd.nombre||"Dependiente"}{wd.relacion?<span style={{fontSize:10,color:"#9FE1CB"}}> · {wd.relacion}</span>:null}</span>
+                                      <span style={{fontSize:10,fontWeight:600,color:col}}>{est}</span>
+                                    </div>
+                                    {tieneV&&<><div style={{fontSize:20,fontWeight:500,color:"#fff"}}>{venc?`${Math.abs(dEAD)} días vencido`:`${Math.max(0,dEAD)} días`}</div>
+                                    <div style={{fontSize:11,color:col,marginTop:2}}>Vence: {fmt(wd.eadVence)}{!venc&&dEAD<=90?" · ⚠️ Renovar pronto":""}</div>
+                                    {!venc&&<div style={{background:"rgba(255,255,255,0.1)",borderRadius:20,height:4,marginTop:6,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:col,width:`${pctE}%`}}/></div>}</>}
+                                    {pr>0&&<div style={{borderTop:"0.5px solid rgba(255,255,255,0.1)",marginTop:8,paddingTop:8}}>
+                                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11}}>
+                                        <span style={{color:"#94A3B8"}}>💵 Pago WP</span>
+                                        <span style={{color:saldo<=0?"#4ADE80":"#FBBF24",fontWeight:600}}>{fmtMoney(pg)} / {fmtMoney(pr)}{saldo<=0?" ✓":""}</span>
+                                      </div>
+                                      {saldo>0&&<div style={{fontSize:10,color:"#F87171",textAlign:"right",marginTop:2}}>Saldo: {fmtMoney(saldo)}</div>}
+                                      {isAdmin&&saldo>0&&<button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto(String(saldo));setCobrarConcepto(`WP - ${wd.nombre||"Dependiente"}`);setCobrarMetodo("zelle");setCobrarProcesoSel("");setShowCobrar(true);}} style={{width:"100%",marginTop:6,background:"rgba(255,255,255,0.12)",color:"#fff",border:"none",borderRadius:6,padding:"5px",fontSize:11,fontWeight:600,cursor:"pointer"}}>💵 Cobrar WP</button>}
+                                    </div>}
+                                  </div>);
+                                })}
+                              </div>
+                              {(()=>{
+                                const totWD=(ca.wpDependientes||[]).reduce((s,w)=>s+parseMoney(w.precio),0);
+                                const pagWD=(ca.wpDependientes||[]).reduce((s,w)=>s+parseMoney(w.pagado),0);
+                                if(totWD<=0)return null;
+                                return(<div style={{background:"#F8FAFC",border:"0.5px solid #E2E8F0",borderRadius:8,padding:"8px 12px",marginTop:8,display:"flex",justifyContent:"space-between",fontSize:12}}>
+                                  <span style={{color:"#64748B"}}>Total WP dependientes</span>
+                                  <span style={{fontWeight:600,color:pagWD>=totWD?"#16A34A":"#0F172A"}}>{fmtMoney(pagWD)} / {fmtMoney(totWD)}</span>
+                                </div>);
+                              })()}
+                            </div>}
                             {isAdmin&&(ca.procesos||[]).length>0?<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                                 <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>💳 Resumen de pagos</span>
@@ -2244,7 +2290,7 @@ const loadTeam=async()=>{
             <button onClick={addCaso} style={{background:"#1E40AF",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,cursor:"pointer",fontWeight:600}}>{ t("+ Agregar caso","+ Add case") }</button>
           </div>
           {formCliente.casos.length===0&&<div style={{textAlign:"center",padding:"20px",color:"#94A3B8",fontSize:13,background:"#F8FAFC",borderRadius:10,border:"1px dashed #E2E8F0",marginBottom:14}}>Sin casos. Haz clic en "+ Agregar caso".</div>}
-          {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo} isAdmin={isAdmin} clienteId={editId} clienteNombre={formCliente.nombre} onIniciarServicio={(tipo)=>setShowServicioAdicional({tipo,clienteId:editId,clienteNombre:formCliente.nombre,casoAlien:formCliente.alienNum})}/>))}
+          {formCliente.casos.map((ca,i)=>(<CasoEditorSimple key={ca.id||i} caso={ca} onChange={v=>updateCaso(i,v)} onDelete={()=>deleteCaso(i)} equipo={equipo} isAdmin={isAdmin} clienteId={editId} clienteNombre={formCliente.nombre} todosCasos={formCliente.casos} onIniciarServicio={(tipo)=>setShowServicioAdicional({tipo,clienteId:editId,clienteNombre:formCliente.nombre,casoAlien:formCliente.alienNum})}/>))}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
             <button onClick={()=>setShowModal(false)} style={{padding:"9px 20px",borderRadius:8,border:"1px solid #D1D5DB",background:"#fff",color:"#374151",fontSize:14,cursor:"pointer"}}>Cancelar</button>
             <button onClick={handleSubmit} disabled={!formCliente.nombre||saving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:(!formCliente.nombre||saving)?"#E5E7EB":"#1E40AF",color:(!formCliente.nombre||saving)?"#9CA3AF":"#fff",fontSize:14,fontWeight:600,cursor:(!formCliente.nombre||saving)?"not-allowed":"pointer"}}>{ saving ? t("Guardando...","Saving...") : editId ? t("Guardar cambios","Save changes") : t("Agregar cliente","Add client") }</button>
@@ -4038,7 +4084,7 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
 }
 
 //  Editor de Caso simplificado 
-function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],clienteId=null,clienteNombre="",onIniciarServicio=()=>{}}){
+function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],clienteId=null,clienteNombre="",todosCasos=[],onIniciarServicio=()=>{}}){
   const sys=SISTEMAS[caso.sistema]||SISTEMAS.uscis;
   return(<div style={{background:"#F8FAFC",border:`2px solid ${sys.border}`,borderRadius:10,padding:"14px",marginBottom:12}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
@@ -4221,6 +4267,65 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
         <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:5,textTransform:"uppercase"}}>📅 Fecha en que puede aplicar al EAD</label>
         <input type="date" value={caso.eadVence||""} onChange={e=>onChange({...caso,eadVence:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #FECACA",fontSize:13,outline:"none"}}/>
       </div>}
+
+      {/* WP para dependientes (I-765 familiar) */}
+      <div style={{background:"#EAF3DE",border:"1px solid #C0DD97",borderRadius:8,padding:"10px 12px",marginTop:4}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#3B6D11",marginBottom:8}}>👥 {t("Permiso de trabajo para dependientes","Work permit for dependents")}</div>
+        <div style={{display:"flex",gap:8,marginBottom:caso.wpFamiliar?10:0}}>
+          <button onClick={()=>onChange({...caso,wpFamiliar:true})} style={{flex:1,padding:"8px",borderRadius:7,border:caso.wpFamiliar?"2px solid #639922":"1px solid #E2E8F0",background:caso.wpFamiliar?"#F7FCE9":"#fff",color:caso.wpFamiliar?"#3B6D11":"#374151",fontWeight:caso.wpFamiliar?700:400,fontSize:12,cursor:"pointer"}}>{t("Sí, incluye dependientes","Yes, includes dependents")}</button>
+          <button onClick={()=>onChange({...caso,wpFamiliar:false})} style={{flex:1,padding:"8px",borderRadius:7,border:!caso.wpFamiliar?"2px solid #64748B":"1px solid #E2E8F0",background:!caso.wpFamiliar?"#F8FAFC":"#fff",color:!caso.wpFamiliar?"#374151":"#94A3B8",fontWeight:!caso.wpFamiliar?700:400,fontSize:12,cursor:"pointer"}}>{t("No, solo titular","No, holder only")}</button>
+        </div>
+
+        {caso.wpFamiliar&&(()=>{
+          const wdeps=caso.wpDependientes||[];
+          const updWD=(i,field,val)=>onChange({...caso,wpDependientes:wdeps.map((d,idx)=>idx===i?{...d,[field]:val}:d)});
+          const addWD=()=>{
+            // Sugerir dependientes del caso de asilo del mismo cliente (nombre + A#)
+            const casoAsilo=(todosCasos||[]).find(cc=>(cc.tipoCaso||"").includes("I-589")&&cc.esFamiliar);
+            const yaAgregados=new Set(wdeps.map(w=>(w.alienNum||"").replace(/\D/g,"")));
+            const sugeridos=((casoAsilo?.dependientes)||[]).filter(d=>!yaAgregados.has((d.alienNum||"").replace(/\D/g,"")));
+            if(sugeridos.length>0){
+              const s=sugeridos[0];
+              onChange({...caso,wpDependientes:[...wdeps,{id:Date.now(),nombre:s.nombre||"",relacion:s.relacion||"",alienNum:s.alienNum||"",eadReceipt:"",eadVence:"",precio:"",pagado:"0"}]});
+            }else{
+              onChange({...caso,wpDependientes:[...wdeps,{id:Date.now(),nombre:"",relacion:"",alienNum:"",eadReceipt:"",eadVence:"",precio:"",pagado:"0"}]});
+            }
+          };
+          const delWD=(i)=>onChange({...caso,wpDependientes:wdeps.filter((_,idx)=>idx!==i)});
+          return(<div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <span style={{fontSize:11,fontWeight:700,color:"#3B6D11"}}>{t("WP de dependientes","Dependents WP")} ({wdeps.length})</span>
+              <button onClick={addWD} style={{background:"#0F6E56",color:"#fff",border:"none",borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>+ {t("Agregar dependiente","Add dependent")}</button>
+            </div>
+            {wdeps.length===0&&<div style={{textAlign:"center",padding:"12px 0",color:"#94A3B8",fontSize:12,background:"#fff",borderRadius:6,border:"1px dashed #C0DD97"}}>{t("Sin dependientes agregados aún","No dependents added yet")}</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {wdeps.map((wd,i)=>{
+                const pr=parseMoney(wd.precio),pg=parseMoney(wd.pagado),pct=pr>0?Math.round((pg/pr)*100):0;
+                return(<div key={wd.id||i} style={{background:"#fff",border:"1px solid #9FE1CB",borderRadius:7,padding:"10px 12px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <span style={{fontSize:11,fontWeight:700,color:"#0F6E56"}}>🪪 {t("WP Dependiente","WP Dependent")} {i+1}</span>
+                    <button onClick={()=>delWD(i)} style={{background:"none",border:"none",color:"#EF4444",fontSize:11,cursor:"pointer",fontWeight:600}}>🗑 {t("Quitar","Remove")}</button>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:7}}>
+                    <div><label style={{display:"block",fontSize:10,fontWeight:600,color:"#64748B",marginBottom:2}}>{t("Nombre","Name")}</label><input value={wd.nombre||""} onChange={e=>updWD(i,"nombre",e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid #D1D5DB",fontSize:12}}/></div>
+                    <div><label style={{display:"block",fontSize:10,fontWeight:600,color:"#64748B",marginBottom:2}}>A# {t("Alien","Alien")}</label><input value={wd.alienNum||""} onChange={e=>updWD(i,"alienNum",e.target.value.replace(/[^\d-]/g,""))} placeholder="012-345-678" style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid #D1D5DB",fontSize:12,fontFamily:"monospace"}}/></div>
+                    <div><label style={{display:"block",fontSize:10,fontWeight:600,color:"#64748B",marginBottom:2}}>{t("N° recibo EAD","EAD receipt #")}</label><input value={wd.eadReceipt||""} onChange={e=>updWD(i,"eadReceipt",e.target.value)} placeholder="IOE..." style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid #D1D5DB",fontSize:12,fontFamily:"monospace"}}/></div>
+                    <div><label style={{display:"block",fontSize:10,fontWeight:600,color:"#0F6E56",marginBottom:2}}>🪪 {t("Vencimiento EAD","EAD expiration")}</label><input type="date" value={wd.eadVence||""} onChange={e=>updWD(i,"eadVence",e.target.value)} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid #9FE1CB",fontSize:12}}/></div>
+                  </div>
+                  <div style={{background:"#FAEEDA",border:"0.5px solid #FAC775",borderRadius:8,padding:"9px 11px"}}>
+                    <div style={{fontSize:10,fontWeight:600,color:"#854F0B",marginBottom:6}}>💵 {t("Pago del WP de este dependiente","This dependent's WP payment")}</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+                      <div><label style={{display:"block",fontSize:10,color:"#854F0B",marginBottom:2}}>{t("Precio","Price")}</label><input value={wd.precio||""} onChange={e=>updWD(i,"precio",e.target.value)} placeholder="1000" style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid #FAC775",fontSize:12}}/></div>
+                      <div><label style={{display:"block",fontSize:10,color:"#854F0B",marginBottom:2}}>{t("Pagado","Paid")}</label><input value={wd.pagado||""} onChange={e=>updWD(i,"pagado",e.target.value)} placeholder="0" style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid #FAC775",fontSize:12}}/></div>
+                    </div>
+                    {pr>0&&<><div style={{background:"#F0E4CC",borderRadius:20,height:5,marginTop:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:pct>=100?"#16A34A":"#BA7517",width:`${Math.min(100,pct)}%`}}/></div><div style={{fontSize:10,color:"#854F0B",marginTop:4}}>{fmtMoney(pg)} / {fmtMoney(pr)} — {pct}% · {t("Saldo","Balance")}: {fmtMoney(pr-pg)}</div></>}
+                  </div>
+                </div>);
+              })}
+            </div>
+          </div>);
+        })()}
+      </div>
     </div>}
 
     
