@@ -195,12 +195,47 @@
         </div>
       </div>
       <div class="content">
-        <div class="stats-grid">
-          <div class="stat-card"><div class="stat-label">Oficinas Activas</div><div class="stat-value" id="stat-offices">—</div><div class="stat-sub" id="stat-offices-sub"></div></div>
-          <div class="stat-card"><div class="stat-label">Total Clientes</div><div class="stat-value" id="stat-clients">—</div></div>
-          <div class="stat-card"><div class="stat-label">MRR (Lo que cobras)</div><div class="stat-value" id="stat-revenue" style="color:var(--accent2)">—</div></div>
-          <div class="stat-card"><div class="stat-label">Ganancia Neta Est.</div><div class="stat-value" id="stat-profit" style="color:var(--green)">—</div><div class="stat-sub">despues de Firebase</div></div>
+        <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600">Estado de oficinas</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <div class="stat-card"><div class="stat-label">🟢 Activas</div><div class="stat-value" id="stat-active" style="color:var(--green)">—</div><div class="stat-sub" id="stat-active-sub"></div></div>
+          <div class="stat-card"><div class="stat-label">🧪 En prueba gratis</div><div class="stat-value" id="stat-trial" style="color:var(--accent2)">—</div><div class="stat-sub">período de prueba</div></div>
+          <div class="stat-card"><div class="stat-label">⚠️ Pago vencido</div><div class="stat-value" id="stat-overdue" style="color:var(--red)">—</div><div class="stat-sub">requieren atención</div></div>
+          <div class="stat-card"><div class="stat-label">⏸️ Desactivadas</div><div class="stat-value" id="stat-inactive" style="color:var(--text2)">—</div><div class="stat-sub">sin acceso</div></div>
         </div>
+
+        <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600">Ingresos</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <div class="stat-card" style="border-color:rgba(99,102,241,0.3)"><div class="stat-label">💰 MRR (mensual)</div><div class="stat-value" id="stat-mrr" style="color:var(--accent2)">—</div><div class="stat-sub">ingreso recurrente</div></div>
+          <div class="stat-card"><div class="stat-label">📈 ARR (anual)</div><div class="stat-value" id="stat-arr" style="color:var(--green)">—</div><div class="stat-sub">proyección 12 meses</div></div>
+          <div class="stat-card"><div class="stat-label">✅ Cobrado (oficinas)</div><div class="stat-value" id="stat-collected" style="color:var(--green)">—</div><div class="stat-sub">a sus clientes</div></div>
+          <div class="stat-card"><div class="stat-label">⏳ Pendiente (oficinas)</div><div class="stat-value" id="stat-pending" style="color:var(--yellow)">—</div><div class="stat-sub">por cobrar</div></div>
+        </div>
+
+        <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600">Volumen</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px">
+          <div class="stat-card"><div class="stat-label">👥 Total clientes reales</div><div class="stat-value" id="stat-clients">—</div><div class="stat-sub">en todas las oficinas</div></div>
+          <div class="stat-card"><div class="stat-label">📁 Total casos activos</div><div class="stat-value" id="stat-cases">—</div><div class="stat-sub">expedientes en curso</div></div>
+        </div>
+
+        <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600">Alertas de cobro</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px">
+          <div class="stat-card" style="border-color:rgba(245,158,11,0.3);display:flex;align-items:center;gap:12px">
+            <span style="font-size:22px">⏰</span>
+            <div style="flex:1"><div style="font-size:22px;font-weight:700;color:var(--yellow)" id="alert-porvencer">0</div><div style="font-size:12px;color:var(--text2)">Pagos por vencer · próximos 7 días</div></div>
+          </div>
+          <div class="stat-card" style="border-color:rgba(239,68,68,0.3);display:flex;align-items:center;gap:12px">
+            <span style="font-size:22px">⚠️</span>
+            <div style="flex:1"><div style="font-size:22px;font-weight:700;color:var(--red)" id="alert-vencidos">0</div><div style="font-size:12px;color:var(--text2)">Pago vencido · requiere atención</div></div>
+          </div>
+        </div>
+
+        <div class="stat-card" style="margin-bottom:24px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="font-size:14px;font-weight:600">📅 Próximos cobros</span>
+          </div>
+          <div id="proximos-cobros"><div style="font-size:12px;color:var(--text2);text-align:center;padding:12px">Cargando...</div></div>
+        </div>
+
         <div id="office-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:24px"></div>
 
         <div class="table-container">
@@ -450,6 +485,10 @@
         <div class="form-group">
           <label class="form-label">Teléfono</label>
           <input class="form-input" id="new-office-phone" placeholder="(555) 000-0000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">📅 Fecha del próximo cobro</label>
+          <input class="form-input" id="new-office-billing" type="date">
         </div>
         <div class="form-group">
           <label class="form-label">Plan</label>
@@ -739,22 +778,95 @@ async function loadDashboard() {
     const officesSnap = await getDocs(collection(db, 'offices'));
     officesCache = officesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderOfficeCards(officesCache);
-    const active = officesCache.filter(o => o.isActive);
-    const offEl=document.getElementById('stat-offices'); if(offEl) offEl.textContent = active.length;
-    const subEl=document.getElementById('stat-offices-sub'); if(subEl) subEl.textContent = officesCache.length + ' total';
-    let clients = 0, cases = 0;
-    officesCache.forEach(o => { clients += (o.stats?.totalClients||0); cases += (o.stats?.activeCases||0); });
-    const cliEl=document.getElementById('stat-clients'); if(cliEl) cliEl.textContent = clients;
-    const casEl=document.getElementById('stat-cases'); if(casEl) casEl.textContent = cases;
-    const planPrices = {basic:249, professional:697, premium:1299};
-    const planCosts = {basic:30, professional:51, premium:91};
-    const activeOffices = officesCache.filter(o=>o.isActive);
-    const totalRevenue = activeOffices.reduce((s,o)=>s+(planPrices[o.plan]||199),0);
-    const totalCost = activeOffices.reduce((s,o)=>s+(planCosts[o.plan]||30),0);
-    const totalProfit = totalRevenue - totalCost;
-    const revEl2=document.getElementById('stat-revenue'); if(revEl2) revEl2.textContent = '$' + totalRevenue.toLocaleString();
-    const profitEl = document.getElementById('stat-profit');
-    if(profitEl) profitEl.textContent = '$' + totalProfit.toLocaleString();
+
+    const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val;};
+    const money=(v)=>'$'+Math.round(v).toLocaleString('en-US');
+    const planPrices = {basic:249, professional:647, premium:1299};
+
+    // ── Fechas de cobro: calcular por vencer / vencidos ──
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const diasHasta = (fecha)=>{ if(!fecha) return null; const f=new Date(fecha+'T00:00:00'); if(isNaN(f.getTime())) return null; return Math.round((f-hoy)/86400000); };
+    const esVencido  = (o)=>{ const d=diasHasta(o.nextBilling); return d!==null && d<0 && o.isActive!==false; };
+    const esPorVencer= (o)=>{ const d=diasHasta(o.nextBilling); return d!==null && d>=0 && d<=7 && o.isActive!==false; };
+
+    // ── Estado de oficinas ──
+    const enPrueba  = officesCache.filter(o=>o.isTrial || o.plan==='trial');
+    const vencidas  = officesCache.filter(esVencido);
+    const inactivas = officesCache.filter(o=>o.isActive===false);
+    const activas   = officesCache.filter(o=>o.isActive && o.plan!=='trial' && !o.isTrial && !esVencido(o));
+    set('stat-active', activas.length);
+    set('stat-active-sub', 'de '+officesCache.length+' oficinas');
+    set('stat-trial', enPrueba.length);
+    set('stat-overdue', vencidas.length);
+    set('stat-inactive', inactivas.length);
+
+    // ── Ingresos ──
+    const facturables = officesCache.filter(o=>o.isActive && !o.isTrial && o.plan!=='trial');
+    const mrr = facturables.reduce((s,o)=>s+(planPrices[o.plan]||0),0);
+    set('stat-mrr', money(mrr));
+    set('stat-arr', money(mrr*12));
+
+    // ── Volumen + cobrado/pendiente (suma real de cada oficina) ──
+    let totalClientes=0, totalCasos=0, totalCobrado=0, totalPendiente=0;
+    await Promise.all(officesCache.map(async o=>{
+      try{
+        const snap = await getDocs(query(collection(db,'clientes'), where('officeId','==',o.id)));
+        const clientes = snap.docs.map(d=>d.data());
+        totalClientes += clientes.length;
+        clientes.forEach(c=>{
+          (c.casos||[]).forEach(ca=>{
+            totalCasos++;
+            let contratado=0, pagado=0;
+            (ca.procesos||[]).forEach(p=>{
+              contratado += parseFloat((p.precio||'0').toString().replace(/[^0-9.]/g,''))||0;
+              pagado += parseFloat((p.pagado||'0').toString().replace(/[^0-9.]/g,''))||0;
+            });
+            (ca.wpDependientes||[]).forEach(w=>{
+              contratado += parseFloat((w.precio||'0').toString().replace(/[^0-9.]/g,''))||0;
+              pagado += parseFloat((w.pagado||'0').toString().replace(/[^0-9.]/g,''))||0;
+            });
+            totalCobrado += pagado;
+            totalPendiente += Math.max(0, contratado-pagado);
+          });
+        });
+      }catch(e){}
+    }));
+    set('stat-clients', totalClientes);
+    set('stat-cases', totalCasos);
+    set('stat-collected', money(totalCobrado));
+    set('stat-pending', money(totalPendiente));
+
+    // ── Alertas de cobro ──
+    set('alert-porvencer', officesCache.filter(esPorVencer).length);
+    set('alert-vencidos', vencidas.length);
+
+    // ── Panel de próximos cobros (ordenado por fecha más cercana) ──
+    const planLabel = {basic:'Básico', professional:'Profesional', premium:'Premium'};
+    const conFecha = officesCache.filter(o=>o.nextBilling && o.isActive!==false)
+      .map(o=>({o, dias:diasHasta(o.nextBilling)}))
+      .filter(x=>x.dias!==null)
+      .sort((a,b)=>a.dias-b.dias);
+    const cobrosEl = document.getElementById('proximos-cobros');
+    if(cobrosEl){
+      if(conFecha.length===0){
+        cobrosEl.innerHTML = '<div style="font-size:12px;color:var(--text2);text-align:center;padding:12px">No hay fechas de cobro configuradas. Agrégalas al editar cada oficina.</div>';
+      } else {
+        cobrosEl.innerHTML = conFecha.slice(0,8).map((x,i)=>{
+          const o=x.o, dias=x.dias, precio=planPrices[o.plan]||0;
+          let badge, bcol, iconBg;
+          if(dias<0){ badge=`Vencido hace ${Math.abs(dias)} día${Math.abs(dias)!==1?'s':''}`; bcol='var(--red)'; iconBg='rgba(239,68,68,0.15)'; }
+          else if(dias<=7){ badge=`En ${dias} día${dias!==1?'s':''}`; bcol='var(--yellow)'; iconBg='rgba(245,158,11,0.15)'; }
+          else { badge=`En ${dias} días`; bcol='var(--green)'; iconBg='rgba(16,185,129,0.15)'; }
+          const fechaFmt = (()=>{ const f=new Date(o.nextBilling+'T00:00:00'); return String(f.getDate()).padStart(2,'0')+'/'+String(f.getMonth()+1).padStart(2,'0')+'/'+f.getFullYear(); })();
+          return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;${i<conFecha.slice(0,8).length-1?'border-bottom:0.5px solid var(--border)':''}">
+            <div style="width:34px;height:34px;border-radius:8px;background:${iconBg};display:flex;align-items:center;justify-content:center">🏢</div>
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.name||'Oficina'}</div><div style="font-size:11px;color:var(--text2)">${fechaFmt} · ${planLabel[o.plan]||o.plan||''}</div></div>
+            <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--accent2)">$${precio.toLocaleString()}</div><div style="font-size:10px;background:${iconBg};color:${bcol};padding:1px 7px;border-radius:8px;white-space:nowrap">${badge}</div></div>
+          </div>`;
+        }).join('');
+      }
+    }
+
     renderOfficesTable(officesCache);
     renderOfficesFullTable(officesCache);
   } catch(err) { showToast('Error: ' + err.message, 'error'); }
@@ -1048,8 +1160,9 @@ window.createOffice = async function() {
     const uid = userCred.user.uid;
     const isDemo = document.getElementById('type-demo')?.checked !== false && document.getElementById('type-active')?.checked !== true;
     const demoEnd = document.getElementById('new-office-demo-end')?.value || '';
+    const nextBilling = document.getElementById('new-office-billing')?.value || '';
     const officeRef = await addDoc(collection(db,'offices'), {
-      name, ownerName:owner, email, phone, plan, isActive:true,
+      name, ownerName:owner, email, phone, plan, isActive:true, nextBilling,
       enabledModules:modules,
       stats:{totalClients:0,activeCases:0,totalCases:0},
       isDemo: isDemo,
@@ -1122,6 +1235,14 @@ window.openEditOffice = function(id) {
         <div>
           <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Teléfono</label>
           <input id="edit-office-phone" type="text" value="${o.phone||''}" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">📅 Fecha del próximo cobro</label>
+          <div style="display:flex;gap:6px">
+            <input id="edit-office-billing" type="date" value="${o.nextBilling||''}" style="flex:1;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none">
+            <button type="button" onclick="marcarPagada('${o.id}')" title="Marcar como pagada y avanzar un mes" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#10b981;border-radius:8px;padding:0 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">✓ Pagada</button>
+          </div>
+          <div style="font-size:10px;color:#64748b;margin-top:4px">"Pagada" avanza la fecha un mes automáticamente.</div>
         </div>
         <div>
           <label style="font-size:12px;color:#94A3B8;display:block;margin-bottom:5px">Plan</label>
@@ -1204,7 +1325,8 @@ window.saveEditOffice = async function(id) {
     const newAccessLink = window.location.origin + monitorPath + '?o=' + id;
 
     const newPass = document.getElementById('edit-new-password')?.value.trim();
-    const updateData = { name, ownerName:owner, adminEmail:email, phone, plan, accessType, accessLink: newAccessLink };
+    const nextBilling = document.getElementById('edit-office-billing')?.value || '';
+    const updateData = { name, ownerName:owner, adminEmail:email, phone, plan, accessType, accessLink: newAccessLink, nextBilling };
     if(newPass) updateData.accessPassword = newPass;
     await updateDoc(doc(db,'offices',id), updateData);
 
@@ -1243,6 +1365,23 @@ window.updateAccessInfo = function() {
   }
   const passEl = document.getElementById('cred-pass');
   if (passEl) passEl.textContent = pass || '— completa arriba —';
+};
+
+window.marcarPagada = async function(id) {
+  try {
+    const office = officesCache.find(o=>o.id===id);
+    // Base: la fecha actual de cobro si existe, si no hoy
+    let base = office && office.nextBilling ? new Date(office.nextBilling+'T00:00:00') : new Date();
+    if(isNaN(base.getTime())) base = new Date();
+    base.setMonth(base.getMonth()+1);
+    const y=base.getFullYear(), m=String(base.getMonth()+1).padStart(2,'0'), d=String(base.getDate()).padStart(2,'0');
+    const nueva = `${y}-${m}-${d}`;
+    await updateDoc(doc(db,'offices',id), { nextBilling: nueva, overdue: false, lastPaidAt: new Date().toISOString() });
+    if(office) { office.nextBilling = nueva; office.overdue = false; }
+    const inp = document.getElementById('edit-office-billing'); if(inp) inp.value = nueva;
+    showToast('✓ Pago registrado. Próximo cobro: '+nueva, 'success');
+    loadDashboard();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
 };
 
 window.toggleOffice = async function(id, isActive) {
