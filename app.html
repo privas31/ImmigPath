@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-04-U","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-04-V","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -862,6 +862,19 @@ const assignExpedientes=async()=>{
   }catch(e){console.error("assignExpedientes error:",e);showToastFn("Error: "+e.message,"error");}
 };
 
+const registrarActividad=async(tipo,titulo,detalle)=>{
+  try{
+    const{db,collection,addDoc}=window._firebase;
+    const officeId=officeData?.id||userData?.officeId||"";
+    await addDoc(collection(db,"actividad"),{
+      tipo, titulo, detalle:detalle||"",
+      officeId, officeName:officeData?.name||"",
+      usuario:window._firebase.auth.currentUser?.email||"",
+      fecha:new Date().toISOString(),
+    });
+  }catch(e){}
+};
+
 const registrarPago=async(clienteId,pago)=>{
   try{
     const{db,collection,addDoc}=window._firebase;
@@ -881,6 +894,7 @@ const registrarPago=async(clienteId,pago)=>{
       oficinaDireccion:pago.oficinaDireccion||officeData?.address||"",
       nombreCliente:pago.nombreCliente,
     });
+    registrarActividad("pago","Pago recibido",`$${parseMoney(pago.monto).toLocaleString("en-US")} · ${pago.concepto||""}`);
   }catch(e){console.error(e);}
 };
 
@@ -1461,6 +1475,7 @@ const loadTeam=async()=>{
         }catch(ex){console.error(ex);}
         const ref=await addDoc(collection(db,"clientes"),{...formCliente,officeId,encargada:encargadaAuto,expediente:nextExp,createdAt:new Date().toISOString(),createdBy:user.email});
         try{await addDoc(collection(db,"historial"),{clienteId:ref.id,officeId,accion:"Cliente registrado",usuario:user.email,fecha:new Date().toISOString()});}catch(he){console.error(he);}
+        registrarActividad("cliente","Nuevo cliente",`${formCliente.nombre||""} · agregado por ${encargadaAuto||user.email}`);
         setClientes(prev=>[{id:ref.id,...formCliente,officeId,encargada:encargadaAuto,expediente:nextExp,createdAt:new Date().toISOString()},...prev].sort((a,b)=>(a.expediente||"zzz").localeCompare(b.expediente||"zzz")));
         showToastFn("Cliente agregado ✓");
       }
