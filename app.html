@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-04-M","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-04-R","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -827,6 +827,10 @@ const registrarPago=async(clienteId,pago)=>{
       registradoPor:window._firebase.auth.currentUser?.email||"",
       refNum:pago.refNum||("REC-"+Date.now().toString(36).toUpperCase()),
       procesoAplicado:pago.procesoAplicado||"",
+      oficinaNombre:pago.oficinaNombre||officeData?.name||"",
+      oficinaTel:pago.oficinaTel||officeData?.phone||"",
+      oficinaEmail:pago.oficinaEmail||officeData?.email||"",
+      oficinaDireccion:pago.oficinaDireccion||officeData?.address||"",
       nombreCliente:pago.nombreCliente,
     });
   }catch(e){console.error(e);}
@@ -854,9 +858,12 @@ const generarReciboPDF=async(pago)=>{
   pdoc.text(oficina,M+logoOff,13);
   pdoc.setFontSize(7.5); pdoc.setFont("helvetica","normal"); pdoc.setTextColor(100,116,139);
   pdoc.text("Immigration Services",M+logoOff,19);
-  if(pago.oficinaTel) pdoc.text(pago.oficinaTel,M+logoOff,24);
-  if(pago.oficinaEmail) pdoc.text(pago.oficinaEmail,M+logoOff,29);
-  if(pago.oficinaDireccion) pdoc.text(pago.oficinaDireccion,M+logoOff,34);
+  const _oTel=officeData?.phone||pago.oficinaTel||"";
+  const _oEmail=officeData?.email||pago.oficinaEmail||"";
+  const _oDir=officeData?.address||pago.oficinaDireccion||"";
+  if(_oTel) pdoc.text(_oTel,M+logoOff,24);
+  if(_oEmail) pdoc.text(_oEmail,M+logoOff,29);
+  if(_oDir) pdoc.text(_oDir,M+logoOff,34);
   // Bloque derecho recibo
   pdoc.setTextColor(15,23,42); pdoc.setFontSize(18); pdoc.setFont("helvetica","bold");
   pdoc.text("Recibo",W-M,13,{align:"right"});
@@ -1953,7 +1960,8 @@ const loadTeam=async()=>{
 
                           {/* Reloj de Asilo */}
                           {/* Reloj 3fr + Resumen pagos 2fr */}
-                          <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:12,alignItems:"start"}}>
+                          <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:12,alignItems:"stretch"}}>
+                            <div style={{display:"flex",flexDirection:"column",gap:12}}>
                             {tieneReloj?<div style={{background:"#0F172A",borderRadius:12,padding:"14px 16px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                                 <span style={{fontSize:15,fontWeight:600,color:relojDet2?"#FCA5A5":"#C7D2FE"}}>{relojDet2?"🔴 Reloj de Asilo — DETENIDO":"🟢 Reloj de Asilo — ACTIVO"}</span>
@@ -2016,7 +2024,7 @@ const loadTeam=async()=>{
                                 <span style={{fontSize:13,fontWeight:500,color:"#0F6E56"}}>👥 Permiso de trabajo de dependientes</span>
                                 <span style={{fontSize:11,fontWeight:600,background:"#E1F5EE",color:"#0F6E56",padding:"2px 8px",borderRadius:10}}>{(ca.wpDependientes||[]).length}</span>
                               </div>
-                              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(250px,1fr))",gap:10}}>
+                              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
                                 {(ca.wpDependientes||[]).map((wd,di)=>{
                                   const tieneV=!!wd.eadVence;
                                   const dEAD=tieneV?getDias(wd.eadVence):null;
@@ -2055,7 +2063,42 @@ const loadTeam=async()=>{
                                 </div>);
                               })()}
                             </div>}
-                            {isAdmin&&(ca.procesos||[]).length>0?<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+
+                            {/* Dependientes del caso (dentro de columna izquierda) */}
+                            {(ca.dependientes||[]).length>0&&<div style={{background:"#fff",border:"0.5px solid #E9D5FF",borderRadius:12,padding:"14px 16px"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                              <span style={{fontSize:13,fontWeight:500,color:"#7C3AED"}}>👥 Dependientes del caso</span>
+                              <span style={{fontSize:11,fontWeight:600,background:"#F3E8FF",color:"#7C3AED",padding:"2px 8px",borderRadius:10}}>{(ca.dependientes||[]).length}</span>
+                            </div>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+                              {(ca.dependientes||[]).map((dep,di)=>{
+                                const hoyD=new Date();hoyD.setHours(0,0,0,0);
+                                const diasDep=dep.fechaAsilo?Math.floor((hoyD-new Date(dep.fechaAsilo+"T00:00:00"))/86400000):null;
+                                const colorDep=diasDep===null?"#94A3B8":diasDep>=180?"#16A34A":diasDep>=120?"#D97706":"#2563EB";
+                                const EST={activo:{t:"✅ Activo",bg:"#F0FDF4",c:"#16A34A"},referido_eoir:{t:"Referido a EOIR",bg:"#FEF3C7",c:"#B45309"},aprobado:{t:"✅ Aprobado",bg:"#F0FDF4",c:"#16A34A"},denegado:{t:"❌ Denegado",bg:"#FEF2F2",c:"#DC2626"}};
+                                const est=EST[dep.estatusCaso];
+                                return(<div key={dep.id||di} style={{background:"#FAF5FF",border:"0.5px solid #E9D5FF",borderRadius:10,padding:"10px 12px"}}>
+                                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                                    <span style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>👤 {dep.nombre||"Sin nombre"}</span>
+                                    {dep.relacion&&<span style={{fontSize:11,fontWeight:500,background:"#EDE9FE",color:"#7C3AED",padding:"2px 8px",borderRadius:10}}>{dep.relacion}</span>}
+                                  </div>
+                                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px 10px",fontSize:12,color:"#475569",marginBottom:diasDep!==null||est?8:0}}>
+                                    {dep.alienNum&&<span>A#: <b style={{fontFamily:"monospace"}}>{dep.alienNum}</b></span>}
+                                    {dep.fechaHuellas&&<span>🤚 Biométricos: <b>{fmt(dep.fechaHuellas)}</b></span>}
+                                    {dep.fechaCorte&&<span>⚖️ Corte: <b>{fmt(dep.fechaCorte)}</b></span>}
+                                    {dep.fechaAsilo&&<span>📅 Asilo: <b>{fmt(dep.fechaAsilo)}</b></span>}
+                                  </div>
+                                  {(diasDep!==null||est)&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:"0.5px solid #E9D5FF",paddingTop:7}}>
+                                    {diasDep!==null?<span style={{fontSize:12,fontWeight:700,color:colorDep}}>⏱️ {diasDep} días{diasDep>=180?" — Elegible EAD":` — Faltan ${180-diasDep} para EAD`}</span>:<span/>}
+                                    {est&&<span style={{fontSize:11,fontWeight:600,background:est.bg,color:est.c,padding:"2px 8px",borderRadius:10}}>{est.t}</span>}
+                                  </div>}
+                                </div>);
+                              })}
+                            </div>
+                          </div>}
+
+                            </div>
+                            {isAdmin&&(ca.procesos||[]).length>0?<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px",display:"flex",flexDirection:"column"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                                 <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>💳 Resumen de pagos</span>
                                 <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setCobrarProcesoSel("");setShowCobrar(true);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver detalle</button>
@@ -2075,8 +2118,9 @@ const loadTeam=async()=>{
                                 </div>
                               ))}
                               {/* Historial de recibos con su número de referencia */}
-                              <div style={{borderTop:"0.5px solid #F1F5F9",marginTop:8,paddingTop:8}}>
+                              <div style={{borderTop:"0.5px solid #F1F5F9",marginTop:8,paddingTop:8,flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
                                 <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",marginBottom:6}}>Historial de recibos</div>
+                                <div style={{flex:1,overflowY:"auto",minHeight:0,maxHeight:180,paddingRight:2}}>
                                 {loadingPagos[c.id]?<div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:6}}>Cargando...</div>:
                                 (pagosPorCliente[c.id]||[]).length===0?<div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:6}}>Sin pagos registrados aún</div>:
                                 (pagosPorCliente[c.id]||[]).map((pg,pgi)=>(
@@ -2107,42 +2151,10 @@ const loadTeam=async()=>{
                                     </div>
                                   </div>
                                 ))}
+                                </div>
                               </div>
                             </div>:<div/>}
                           </div>
-
-                          {/* Dependientes del caso */}
-                          {(ca.dependientes||[]).length>0&&<div style={{background:"#fff",border:"0.5px solid #E9D5FF",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
-                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                              <span style={{fontSize:13,fontWeight:500,color:"#7C3AED"}}>👥 Dependientes del caso</span>
-                              <span style={{fontSize:11,fontWeight:600,background:"#F3E8FF",color:"#7C3AED",padding:"2px 8px",borderRadius:10}}>{(ca.dependientes||[]).length}</span>
-                            </div>
-                            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:10}}>
-                              {(ca.dependientes||[]).map((dep,di)=>{
-                                const hoyD=new Date();hoyD.setHours(0,0,0,0);
-                                const diasDep=dep.fechaAsilo?Math.floor((hoyD-new Date(dep.fechaAsilo+"T00:00:00"))/86400000):null;
-                                const colorDep=diasDep===null?"#94A3B8":diasDep>=180?"#16A34A":diasDep>=120?"#D97706":"#2563EB";
-                                const EST={activo:{t:"✅ Activo",bg:"#F0FDF4",c:"#16A34A"},referido_eoir:{t:"Referido a EOIR",bg:"#FEF3C7",c:"#B45309"},aprobado:{t:"✅ Aprobado",bg:"#F0FDF4",c:"#16A34A"},denegado:{t:"❌ Denegado",bg:"#FEF2F2",c:"#DC2626"}};
-                                const est=EST[dep.estatusCaso];
-                                return(<div key={dep.id||di} style={{background:"#FAF5FF",border:"0.5px solid #E9D5FF",borderRadius:10,padding:"10px 12px"}}>
-                                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                                    <span style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>👤 {dep.nombre||"Sin nombre"}</span>
-                                    {dep.relacion&&<span style={{fontSize:11,fontWeight:500,background:"#EDE9FE",color:"#7C3AED",padding:"2px 8px",borderRadius:10}}>{dep.relacion}</span>}
-                                  </div>
-                                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px 10px",fontSize:12,color:"#475569",marginBottom:diasDep!==null||est?8:0}}>
-                                    {dep.alienNum&&<span>A#: <b style={{fontFamily:"monospace"}}>{dep.alienNum}</b></span>}
-                                    {dep.fechaHuellas&&<span>🤚 Biométricos: <b>{fmt(dep.fechaHuellas)}</b></span>}
-                                    {dep.fechaCorte&&<span>⚖️ Corte: <b>{fmt(dep.fechaCorte)}</b></span>}
-                                    {dep.fechaAsilo&&<span>📅 Asilo: <b>{fmt(dep.fechaAsilo)}</b></span>}
-                                  </div>
-                                  {(diasDep!==null||est)&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:"0.5px solid #E9D5FF",paddingTop:7}}>
-                                    {diasDep!==null?<span style={{fontSize:12,fontWeight:700,color:colorDep}}>⏱️ {diasDep} días{diasDep>=180?" — Elegible EAD":` — Faltan ${180-diasDep} para EAD`}</span>:<span/>}
-                                    {est&&<span style={{fontSize:11,fontWeight:600,background:est.bg,color:est.c,padding:"2px 8px",borderRadius:10}}>{est.t}</span>}
-                                  </div>}
-                                </div>);
-                              })}
-                            </div>
-                          </div>}
 
                           {/* Grid: Documentos | Notas | Acciones rápidas */}
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
