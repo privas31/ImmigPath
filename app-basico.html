@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Básico — versión 2026-07-04-S","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Básico — versión 2026-07-04-T","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -534,6 +534,8 @@ function App(){
               setOfficeData({id:officeDoc.id,...od});
               if(od.logoUrl){setOfficeLogo(od.logoUrl);window._officeLogo=od.logoUrl;}
               if(od.enabledModules&&od.enabledModules.length>0)setEnabledModules(od.enabledModules);
+              // Registrar último acceso de la oficina (para el panel del superadmin)
+              try{const{updateDoc:_upd,doc:_doc}=window._firebase;_upd(_doc(db,"offices",ud.officeId),{lastLogin:new Date().toISOString()});}catch(_e){}
             }
           }
           setUser(u);
