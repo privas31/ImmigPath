@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Básico — versión 2026-07-04-H","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Básico — versión 2026-07-04-I","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -1971,6 +1971,22 @@ const loadTeam=async()=>{
                                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                                       <span style={{fontWeight:600,color:"#16A34A"}}>{fmtMoney(pg.monto)}</span>
                                       <button onClick={e=>{e.stopPropagation();descargarReciboPDF(pg);}} title="Descargar recibo" style={{background:"#F1F5F9",border:"none",borderRadius:6,padding:"4px 7px",cursor:"pointer",fontSize:11}}>📥</button>
+                                      <button onClick={async e=>{
+                                        e.stopPropagation();
+                                        if(!window.confirm(`¿Eliminar el recibo #${pg.refNum}? Esto ${pg.procesoAplicado?"también restará el monto del saldo cobrado. ":""}No se puede deshacer.`))return;
+                                        try{
+                                          const{db:dbx,doc:docx,deleteDoc:delx,updateDoc:updx}=window._firebase;
+                                          await delx(docx(dbx,"pagos",pg.id));
+                                          if(pg.procesoAplicado){
+                                            const[ciD,piD]=pg.procesoAplicado.split("-").map(Number);
+                                            const nuevosCasos=(c.casos||[]).map((ca,ci)=>ci!==ciD?ca:{...ca,procesos:(ca.procesos||[]).map((p,pi)=>pi!==piD?p:{...p,pagado:Math.max(0,parseMoney(p.pagado)-parseMoney(pg.monto)).toFixed(2)})});
+                                            await updx(docx(dbx,"clientes",c.id),{casos:nuevosCasos});
+                                            setClientes(prev=>prev.map(cl=>cl.id===c.id?{...cl,casos:nuevosCasos}:cl));
+                                          }
+                                          setPagosPorCliente(prev=>({...prev,[c.id]:(prev[c.id]||[]).filter(x=>x.id!==pg.id)}));
+                                          showToastFn("Recibo eliminado ✓");
+                                        }catch(errDel){console.error(errDel);showToastFn("Error al eliminar","error");}
+                                      }} title="Eliminar recibo" style={{background:"#FEF2F2",border:"none",borderRadius:6,padding:"4px 7px",cursor:"pointer",fontSize:11}}>🗑</button>
                                     </div>
                                   </div>
                                 ))}
@@ -3603,7 +3619,7 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
               if(!cobrarMonto||!cobrarConcepto){showToastFn("Completa monto y concepto","error");return;}
               setCobrarSaving(true);
               const refNum="REC-"+Date.now().toString(36).toUpperCase();
-              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum,alienNum:cobrarCliente.alienNum||"",expediente:cobrarCliente.expediente||"",encargada:cobrarCliente.encargada||"",oficinaNombre:officeData?.name||"ImmigPath",oficinaEmail:officeData?.email||"",oficinaTel:officeData?.phone||"",oficinaDireccion:officeData?.address||""};
+              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum,alienNum:cobrarCliente.alienNum||"",expediente:cobrarCliente.expediente||"",encargada:cobrarCliente.encargada||"",oficinaNombre:officeData?.name||"ImmigPath",oficinaEmail:officeData?.email||"",oficinaTel:officeData?.phone||"",oficinaDireccion:officeData?.address||"",procesoAplicado:cobrarProcesoSel||""};
               await registrarPago(cobrarCliente.id,pago);
               await generarReciboPDF(pago);
               // Actualizar el saldo del proceso seleccionado, si corresponde
