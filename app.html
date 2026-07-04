@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-04-I","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-04-K","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -825,7 +825,8 @@ const registrarPago=async(clienteId,pago)=>{
       metodo:pago.metodo,
       fecha:new Date().toISOString(),
       registradoPor:window._firebase.auth.currentUser?.email||"",
-      refNum:"REC-"+Date.now().toString(36).toUpperCase(),
+      refNum:pago.refNum||("REC-"+Date.now().toString(36).toUpperCase()),
+      procesoAplicado:pago.procesoAplicado||"",
       nombreCliente:pago.nombreCliente,
     });
   }catch(e){console.error(e);}
@@ -3753,6 +3754,13 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
               const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum,alienNum:cobrarCliente.alienNum||"",expediente:cobrarCliente.expediente||"",encargada:cobrarCliente.encargada||"",oficinaNombre:officeData?.name||"ImmigPath",oficinaEmail:officeData?.email||"",oficinaTel:officeData?.phone||"",oficinaDireccion:officeData?.address||"",procesoAplicado:cobrarProcesoSel||""};
               await registrarPago(cobrarCliente.id,pago);
               await generarReciboPDF(pago);
+              // Refrescar el historial de recibos en pantalla al instante
+              try{
+                const{db:dbR,collection:colR,query:qR,where:wR,getDocs:gR}=window._firebase;
+                const snapR=await gR(qR(colR(dbR,"pagos"),wR("clienteId","==",cobrarCliente.id)));
+                const pagosR=snapR.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
+                setPagosPorCliente(prev=>({...prev,[cobrarCliente.id]:pagosR}));
+              }catch(eR){console.error("refresco recibos:",eR);}
               // Actualizar el saldo del proceso seleccionado, si corresponde
               if(cobrarProcesoSel){
                 try{
