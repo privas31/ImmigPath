@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-04-G","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-04-H","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -505,6 +505,7 @@ function App(){
   const[cobrarConcepto,setCobrarConcepto]=useState("");
   const[cobrarMetodo,setCobrarMetodo]=useState("zelle");
   const[cobrarSaving,setCobrarSaving]=useState(false);
+  const[cobrarProcesoSel,setCobrarProcesoSel]=useState("");
   const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:"",precioCambioUSCIS:"40",precioCambioEOIR:"40",precioTransferencia:"75",contactTel:"",contactEmail:"",contactDireccion:""});
   const[pagosPorCliente,setPagosPorCliente]=useState({});
   const[loadingPagos,setLoadingPagos]=useState({});
@@ -1864,7 +1865,7 @@ const loadTeam=async()=>{
                     {!exp&&<div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
                       <button onClick={e=>{e.stopPropagation();const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}} style={{background:"#0C447C",color:"#E6F1FB",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:500,cursor:"pointer",whiteSpace:"nowrap"}}>📂 Ver ficha completa</button>
                       <button onClick={e=>{e.stopPropagation();const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}const nombre=c.nombre||"cliente";const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigración";const oficina=officeData?.name||"nuestra oficina";const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualización. — "+oficina;window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{border:"0.5px solid #BBF7D0",background:"#F0FDF4",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#16A34A",whiteSpace:"nowrap"}}>💬 WhatsApp</button>
-                      <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{border:"0.5px solid #BFDBFE",background:"#EFF6FF",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#0C447C",whiteSpace:"nowrap"}}>💳 Cobrar</button>
+                      <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setCobrarProcesoSel("");setShowCobrar(true);}} style={{border:"0.5px solid #BFDBFE",background:"#EFF6FF",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#0C447C",whiteSpace:"nowrap"}}>💳 Cobrar</button>
                       {isAdmin&&<button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);}} style={{border:"0.5px solid #FECACA",background:"#FEF2F2",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#DC2626",whiteSpace:"nowrap"}}>🗑 Eliminar</button>}
                     </div>}
                     <div style={{flexShrink:0,background:pf?`${scfg.color}11`:"#F8FAFC",border:`0.5px solid ${pf?scfg.color+"44":"#E2E8F0"}`,borderRadius:10,padding:"8px 14px",textAlign:"right",minWidth:130}}>
@@ -2010,7 +2011,7 @@ const loadTeam=async()=>{
                             {isAdmin&&(ca.procesos||[]).length>0?<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                                 <span style={{fontSize:13,fontWeight:500,color:"#0F172A"}}>💳 Resumen de pagos</span>
-                                <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver detalle</button>
+                                <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setCobrarProcesoSel("");setShowCobrar(true);}} style={{fontSize:11,color:"#185FA5",background:"none",border:"0.5px solid #BFDBFE",borderRadius:6,padding:"3px 9px",cursor:"pointer"}}>Ver detalle</button>
                               </div>
                               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:10}}>
                                 {[{l:"Contratado",v:fmtMoney(totalC),c:"#374151"},{l:"Cobrado",v:fmtMoney(pagadoC),c:"#16A34A"},{l:"Saldo",v:fmtMoney(totalC-pagadoC),c:totalC-pagadoC>0?"#DC2626":"#16A34A"}].map(m=>(
@@ -2117,7 +2118,7 @@ const loadTeam=async()=>{
                                 {[
                                   {icon:"💬",label:"WhatsApp",fn:()=>{const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}window.open("https://wa.me/1"+tel,"_blank");}},
                                   {icon:"🔗",label:"Portal",fn:()=>{const link=window.location.origin+"/portal-cliente.html?id="+c.id;navigator.clipboard.writeText(link).then(()=>showToastFn("Link copiado ✓")).catch(()=>prompt("Link:",link));}},
-                                  {icon:"💳",label:"Registrar pago",fn:()=>{setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setShowCobrar(true);}},
+                                  {icon:"💳",label:"Registrar pago",fn:()=>{setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setCobrarProcesoSel("");setShowCobrar(true);}},
                                   {icon:"📄",label:"Revisar Form Asilo",fn:()=>{setI589Cliente(c);setI589Comentario("");setShowI589Review(true);}},
                                   {icon:"📅",label:"Programar fecha",fn:()=>openEdit(c)},
                                   ...((c.casos||[]).some(ca=>(ca.tipoCaso||"").includes("765"))?[{icon:"📋",label:"Revisar Form WP",fn:()=>showToastFn("Revisión I-765 próximamente","info")}]:[]),
@@ -3672,6 +3673,25 @@ const loadTeam=async()=>{
           </div>
 
           
+          {(()=>{
+            const listaProcesos=[];
+            (cobrarCliente.casos||[]).forEach((ca,ci)=>(ca.procesos||[]).forEach((p,pi)=>{
+              const saldo=parseMoney(p.precio)-parseMoney(p.pagado);
+              listaProcesos.push({key:`${ci}-${pi}`,label:`${ca.tipoCaso||ca.sistema?.toUpperCase()||"Caso"} — ${p.nombre||"Proceso"} (saldo: ${fmtMoney(saldo)})`});
+            }));
+            if(listaProcesos.length===0)return null;
+            return(
+              <div style={{marginBottom:14}}>
+                <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Aplicar saldo a</label>
+                <select value={cobrarProcesoSel} onChange={e=>setCobrarProcesoSel(e.target.value)} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none",background:"#fff"}}>
+                  <option value="">— No actualizar ningún saldo (solo generar recibo) —</option>
+                  {listaProcesos.map(lp=>(<option key={lp.key} value={lp.key}>{lp.label}</option>))}
+                </select>
+                <div style={{fontSize:10,color:"#94A3B8",marginTop:4}}>Si eligen un proceso, su saldo se actualizará automáticamente con este pago.</div>
+              </div>
+            );
+          })()}
+
           <div style={{marginBottom:14}}>
             <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Concepto *</label>
             <input value={cobrarConcepto} onChange={e=>setCobrarConcepto(e.target.value)} placeholder="Ej. Asilo I-589 — primera cuota" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
@@ -3717,6 +3737,19 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
               const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum,alienNum:cobrarCliente.alienNum||"",expediente:cobrarCliente.expediente||"",encargada:cobrarCliente.encargada||"",oficinaNombre:officeData?.name||"ImmigPath",oficinaEmail:officeData?.email||"",oficinaTel:officeData?.phone||"",oficinaDireccion:officeData?.address||""};
               await registrarPago(cobrarCliente.id,pago);
               await generarReciboPDF(pago);
+              // Actualizar el saldo del proceso seleccionado, si corresponde
+              if(cobrarProcesoSel){
+                try{
+                  const[ciSel,piSel]=cobrarProcesoSel.split("-").map(Number);
+                  const{db:db3,doc:doc3,updateDoc:upd3}=window._firebase;
+                  const nuevosCasos=(cobrarCliente.casos||[]).map((ca,ci)=>{
+                    if(ci!==ciSel)return ca;
+                    return{...ca,procesos:(ca.procesos||[]).map((p,pi)=>pi!==piSel?p:{...p,pagado:(parseMoney(p.pagado)+parseFloat(cobrarMonto)).toFixed(2)})};
+                  });
+                  await upd3(doc3(db3,"clientes",cobrarCliente.id),{casos:nuevosCasos});
+                  setClientes(prev=>prev.map(cl=>cl.id===cobrarCliente.id?{...cl,casos:nuevosCasos}:cl));
+                }catch(errSaldo){console.error("Error actualizando saldo:",errSaldo);}
+              }
               // Log payment in historial
               try{
                 const{db:db2,collection:col2,addDoc:add2}=window._firebase;
