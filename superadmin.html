@@ -217,15 +217,19 @@
           <div class="stat-card"><div class="stat-label">📁 Total casos activos</div><div class="stat-value" id="stat-cases">—</div><div class="stat-sub">expedientes en curso</div></div>
         </div>
 
-        <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600">Alertas de cobro</div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px">
+        <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600">Alertas</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
           <div class="stat-card" style="border-color:rgba(245,158,11,0.3);display:flex;align-items:center;gap:12px">
             <span style="font-size:22px">⏰</span>
-            <div style="flex:1"><div style="font-size:22px;font-weight:700;color:var(--yellow)" id="alert-porvencer">0</div><div style="font-size:12px;color:var(--text2)">Pagos por vencer · próximos 7 días</div></div>
+            <div style="flex:1"><div style="font-size:22px;font-weight:700;color:var(--yellow)" id="alert-porvencer">0</div><div style="font-size:12px;color:var(--text2)">Pagos por vencer · 7 días</div></div>
           </div>
           <div class="stat-card" style="border-color:rgba(239,68,68,0.3);display:flex;align-items:center;gap:12px">
             <span style="font-size:22px">⚠️</span>
-            <div style="flex:1"><div style="font-size:22px;font-weight:700;color:var(--red)" id="alert-vencidos">0</div><div style="font-size:12px;color:var(--text2)">Pago vencido · requiere atención</div></div>
+            <div style="flex:1"><div style="font-size:22px;font-weight:700;color:var(--red)" id="alert-vencidos">0</div><div style="font-size:12px;color:var(--text2)">Pago vencido · atención</div></div>
+          </div>
+          <div class="stat-card" style="border-color:rgba(129,140,248,0.4);display:flex;align-items:center;gap:12px">
+            <span style="font-size:22px">😴</span>
+            <div style="flex:1"><div style="font-size:22px;font-weight:700;color:var(--accent2)" id="alert-inactivas">0</div><div style="font-size:12px;color:var(--text2)">Sin actividad · +10 días</div></div>
           </div>
         </div>
 
@@ -244,7 +248,7 @@
             <input class="search-input" type="search" placeholder="Buscar oficina..." oninput="filterOffices(this.value)">
           </div>
           <table>
-            <thead><tr><th>Oficina</th><th>Plan</th><th>Modulos</th><th>Estadisticas</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Oficina</th><th>Plan</th><th>Último acceso</th><th>Estadisticas</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody id="offices-table-body"><tr><td colspan="6"><div class="empty"><div class="empty-icon">🏢</div>No hay oficinas aún</div></td></tr></tbody>
           </table>
         </div>
@@ -836,9 +840,13 @@ async function loadDashboard() {
     set('stat-collected', money(totalCobrado));
     set('stat-pending', money(totalPendiente));
 
-    // ── Alertas de cobro ──
+    // ── Alertas ──
     set('alert-porvencer', officesCache.filter(esPorVencer).length);
     set('alert-vencidos', vencidas.length);
+    // Sin actividad: +10 días desde el último login (o nunca han entrado con registro)
+    const diasSinAcceso = (o)=>{ if(!o.lastLogin) return null; const f=new Date(o.lastLogin); if(isNaN(f.getTime())) return null; return Math.floor((Date.now()-f.getTime())/86400000); };
+    const inactivas10 = officesCache.filter(o=>{ const d=diasSinAcceso(o); return o.isActive!==false && d!==null && d>=10; });
+    set('alert-inactivas', inactivas10.length);
 
     // ── Panel de próximos cobros (ordenado por fecha más cercana) ──
     const planLabel = {basic:'Básico', professional:'Profesional', premium:'Premium'};
@@ -970,7 +978,16 @@ function renderOfficesTable(offices) {
         </div>
       </td>
       <td><span class="badge ${getPlanBadge(o.plan)}">${o.plan||'basic'}</span></td>
-      <td><div class="modules">${renderModulePills(o.enabledModules||[])}</div></td>
+      <td style="font-size:12px">${(()=>{
+          if(!o.lastLogin) return '<span style="color:var(--text2)">Sin registro</span>';
+          const f=new Date(o.lastLogin);
+          if(isNaN(f.getTime())) return '<span style="color:var(--text2)">Sin registro</span>';
+          const dias=Math.floor((Date.now()-f.getTime())/86400000);
+          if(dias<=0) return '<span style="color:var(--green)">Hoy</span>';
+          if(dias===1) return '<span style="color:var(--green)">Ayer</span>';
+          if(dias<10) return '<span style="color:var(--text2)">Hace '+dias+' días</span>';
+          return '<span style="color:var(--yellow)">😴 Hace '+dias+' días</span>';
+        })()}</td>
       <td id="stats-${o.id}" style="font-size:12px;color:var(--text2)">
         <span style="color:var(--accent2);font-weight:600">${o.stats?.totalClients||0}</span> clientes
       </td>
