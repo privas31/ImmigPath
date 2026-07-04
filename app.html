@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-04-T","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-04-U","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -503,6 +503,12 @@ function App(){
   const[i589Saving,setI589Saving]=useState(false);
 
   const[showPagosConfig,setShowPagosConfig]=useState(false);
+  const[showSoporte,setShowSoporte]=useState(false);
+  const[soporteAsunto,setSoporteAsunto]=useState("");
+  const[soportePrioridad,setSoportePrioridad]=useState("media");
+  const[soporteDesc,setSoporteDesc]=useState("");
+  const[soporteSaving,setSoporteSaving]=useState(false);
+  const[misTickets,setMisTickets]=useState([]);
   const[showCobrar,setShowCobrar]=useState(false);
   const[cobrarCliente,setCobrarCliente]=useState(null);
   const[cobrarMonto,setCobrarMonto]=useState("");
@@ -752,6 +758,42 @@ const descargarReciboPDF=async(pago)=>{
   pdoc.text((pago.refNum||"—")+" · immigpath.com",W-M,pH-6,{align:"right"});
   pdoc.save("recibo-"+(pago.refNum||"pago")+".pdf");
   showToastFn("📥 Recibo descargado ✓","success");
+};
+
+const cargarMisTickets=async()=>{
+  try{
+    const{db,collection,query,where,getDocs}=window._firebase;
+    const officeId=officeData?.id||userData?.officeId;
+    if(!officeId)return;
+    const snap=await getDocs(query(collection(db,"tickets_soporte"),where("officeId","==",officeId)));
+    const tks=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
+    setMisTickets(tks);
+  }catch(e){console.error("cargar tickets:",e);}
+};
+
+const enviarTicket=async()=>{
+  if(!soporteAsunto.trim()){showToastFn(t("Escribe un asunto","Enter a subject"),"error");return;}
+  if(!soporteDesc.trim()){showToastFn(t("Describe el problema","Describe the issue"),"error");return;}
+  setSoporteSaving(true);
+  try{
+    const{db,collection,addDoc}=window._firebase;
+    const officeId=officeData?.id||userData?.officeId||"";
+    await addDoc(collection(db,"tickets_soporte"),{
+      officeId,
+      officeName:officeData?.name||"",
+      officePlan:officeData?.plan||"",
+      asunto:soporteAsunto.trim(),
+      prioridad:soportePrioridad,
+      descripcion:soporteDesc.trim(),
+      estado:"abierto",
+      creadoPor:window._firebase.auth.currentUser?.email||"",
+      fecha:new Date().toISOString(),
+    });
+    showToastFn(t("Ticket enviado a soporte ✓","Ticket sent to support ✓"),"success");
+    setSoporteAsunto("");setSoportePrioridad("media");setSoporteDesc("");
+    cargarMisTickets();
+  }catch(e){console.error(e);showToastFn(t("Error al enviar","Error sending"),"error");}
+  setSoporteSaving(false);
 };
 
 const loadPagosConfig=async()=>{
@@ -1658,6 +1700,7 @@ const loadTeam=async()=>{
     {id:"usuarios",  label:t("Usuarios","Users"),                  icon:"🔐", show:isAdmin, onClick:()=>setShowAddUser(true)},
     {id:"reportes",  label:t("Reportes","Reports"),                icon:"📈", show:isAdmin, onClick:()=>setShowPDF(true)},
     {id:"config",    label:t("Configuración","Settings"),          icon:"⚙️", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
+    {id:"soporte",   label:t("Soporte","Support"),                 icon:"🎧", show:isAdmin, onClick:()=>{setShowSoporte(true);cargarMisTickets();}},
   ];
 
   return(<div style={{fontFamily:"'Segoe UI',Inter,system-ui,sans-serif",minHeight:"100vh",background:"#F8FAFC",display:"flex"}}>
@@ -3651,6 +3694,55 @@ const loadTeam=async()=>{
         </div>
       );
     })()}
+
+    {showSoporte&&isAdmin&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}} onClick={()=>setShowSoporte(false)}>
+        <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:520,padding:26,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <h2 style={{margin:0,fontSize:18,fontWeight:800,color:"#0F172A"}}>🎧 {t("Contactar soporte","Contact support")}</h2>
+            <button onClick={()=>setShowSoporte(false)} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#94A3B8"}}>×</button>
+          </div>
+          <div style={{fontSize:12,color:"#64748B",marginBottom:18}}>{t("¿Tienes un problema o una duda? Envíanos un ticket y te ayudamos.","Have an issue or question? Send us a ticket and we'll help.")}</div>
+
+          <div style={{marginBottom:14}}>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>{t("Asunto","Subject")} *</label>
+            <input value={soporteAsunto} onChange={e=>setSoporteAsunto(e.target.value)} placeholder={t("Ej. No puedo generar el PDF del recibo","Ex. Can't generate receipt PDF")} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+          </div>
+
+          <div style={{marginBottom:14}}>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:6,textTransform:"uppercase"}}>{t("Prioridad","Priority")}</label>
+            <div style={{display:"flex",gap:8}}>
+              {[["baja",t("Baja","Low"),"#64748B"],["media",t("Media","Medium"),"#D97706"],["urgente",t("Urgente","Urgent"),"#DC2626"]].map(([val,lbl,col])=>(
+                <button key={val} onClick={()=>setSoportePrioridad(val)} style={{flex:1,padding:"8px",borderRadius:7,border:soportePrioridad===val?`1.5px solid ${col}`:"1px solid #E2E8F0",background:soportePrioridad===val?`${col}12`:"#fff",color:soportePrioridad===val?col:"#64748B",fontWeight:soportePrioridad===val?700:400,fontSize:12,cursor:"pointer"}}>{lbl}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{marginBottom:18}}>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>{t("Descripción","Description")} *</label>
+            <textarea value={soporteDesc} onChange={e=>setSoporteDesc(e.target.value)} rows={4} placeholder={t("Cuéntanos qué pasó con el mayor detalle posible...","Tell us what happened in as much detail as possible...")} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none",resize:"vertical",fontFamily:"inherit"}}/>
+          </div>
+
+          <button onClick={enviarTicket} disabled={soporteSaving} style={{width:"100%",padding:"11px",borderRadius:8,border:"none",background:soporteSaving?"#94A3B8":"#0C447C",color:"#fff",fontSize:14,fontWeight:600,cursor:soporteSaving?"default":"pointer",marginBottom:18}}>{soporteSaving?t("Enviando...","Sending..."):t("Enviar a soporte","Send to support")}</button>
+
+          {misTickets.length>0&&<div>
+            <div style={{fontSize:11,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",marginBottom:8,borderTop:"1px solid #F1F5F9",paddingTop:14}}>{t("Mis tickets enviados","My sent tickets")}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:200,overflowY:"auto"}}>
+              {misTickets.map(tk=>{
+                const estCol={abierto:["#FEF2F2","#DC2626",t("Abierto","Open")],progreso:["#FFFBEB","#D97706",t("En progreso","In progress")],resuelto:["#F0FDF4","#16A34A",t("Resuelto","Resolved")]}[tk.estado]||["#F1F5F9","#64748B",tk.estado];
+                return(<div key={tk.id} style={{border:"0.5px solid #E2E8F0",borderRadius:8,padding:"9px 11px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                  <div style={{minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:600,color:"#0F172A",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tk.asunto}</div>
+                    <div style={{fontSize:10,color:"#94A3B8"}}>{tk.fecha?tk.fecha.slice(0,10):""}</div>
+                  </div>
+                  <span style={{fontSize:10,background:estCol[0],color:estCol[1],padding:"3px 9px",borderRadius:8,whiteSpace:"nowrap",fontWeight:600}}>{estCol[2]}</span>
+                </div>);
+              })}
+            </div>
+          </div>}
+        </div>
+      </div>
+    )}
 
     {showPagosConfig&&isAdmin&&(
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16}}>
