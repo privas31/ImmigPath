@@ -241,11 +241,19 @@
           </div>
         </div>
 
-        <div class="stat-card" style="margin-bottom:24px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <span style="font-size:14px;font-weight:600">📅 Próximos cobros</span>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px">
+          <div class="stat-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <span style="font-size:14px;font-weight:600">📅 Próximos cobros</span>
+            </div>
+            <div id="proximos-cobros"><div style="font-size:12px;color:var(--text2);text-align:center;padding:12px">Cargando...</div></div>
           </div>
-          <div id="proximos-cobros"><div style="font-size:12px;color:var(--text2);text-align:center;padding:12px">Cargando...</div></div>
+          <div class="stat-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <span style="font-size:14px;font-weight:600">📋 Actividad reciente</span>
+            </div>
+            <div id="actividad-reciente"><div style="font-size:12px;color:var(--text2);text-align:center;padding:12px">Cargando...</div></div>
+          </div>
         </div>
 
         <div id="office-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:24px"></div>
@@ -901,6 +909,7 @@ async function loadDashboard() {
     renderOfficesTable(officesCache);
     renderOfficesFullTable(officesCache);
     loadTickets();
+    loadActividad();
   } catch(err) { showToast('Error: ' + err.message, 'error'); }
 }
 
@@ -1239,6 +1248,7 @@ window.createOffice = async function() {
       closeModal('modal-new-office');
       loadDashboard();
     }
+    try{ await addDoc(collection(db,'actividad'),{tipo:'oficina',titulo:'Nueva oficina creada',detalle:name,officeId:officeRef.id,officeName:name,usuario:currentUser?.email||'superadmin',fecha:new Date().toISOString()}); }catch(e){}
     showToast('✓ Oficina "'+name+'" creada — copia el link antes de cerrar', 'success');
   } catch(err) { showToast('Error: '+err.message,'error'); }
 };
@@ -2106,6 +2116,36 @@ window.cambiarEstadoTicket = async function(id, nuevoEstado) {
     showToast('Ticket actualizado ✓','success');
     loadTickets();
   } catch(e){ showToast('Error: '+e.message,'error'); }
+};
+
+window.loadActividad = async function() {
+  const cont = document.getElementById('actividad-reciente');
+  if(!cont) return;
+  try {
+    const snap = await getDocs(collection(db,'actividad'));
+    const items = snap.docs.map(d=>d.data())
+      .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))
+      .slice(0,8);
+    if(items.length===0){ cont.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:12px">Aún no hay actividad registrada. Se irá llenando con el uso.</div>'; return; }
+    const iconos = {oficina:['🏢','rgba(129,140,248,0.15)'],pago:['💵','rgba(16,185,129,0.15)'],cliente:['👤','rgba(99,102,241,0.15)']};
+    const hace = (f)=>{ if(!f) return ''; const h=Math.floor((Date.now()-new Date(f).getTime())/3600000); if(h<1) return 'hace minutos'; if(h<24) return 'hace '+h+' h'; const d=Math.floor(h/24); return 'hace '+d+' día'+(d!==1?'s':''); };
+    cont.innerHTML = items.map((a,i)=>{
+      const ic = iconos[a.tipo]||['•','rgba(148,163,184,0.15)'];
+      const office = a.officeName?`<b>${a.officeName}</b>`:'';
+      let linea;
+      if(a.tipo==='oficina') linea = `Nueva oficina creada: <b>${a.detalle||a.officeName||''}</b>`;
+      else if(a.tipo==='pago') linea = `Pago recibido en ${office}`;
+      else if(a.tipo==='cliente') linea = `Nuevo cliente en ${office}`;
+      else linea = a.titulo||'';
+      return `<div style="display:flex;gap:12px;padding:${i===0?'0 0 12px':'12px 0'};${i<items.length-1?'border-bottom:0.5px solid var(--border)':''}">
+        <div style="width:32px;height:32px;border-radius:8px;background:${ic[1]};display:flex;align-items:center;justify-content:center;flex-shrink:0">${ic[0]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:var(--text)">${linea}</div>
+          <div style="font-size:11px;color:var(--text2)">${a.detalle&&a.tipo!=='oficina'?a.detalle+' · ':''}${hace(a.fecha)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){ cont.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:12px">Error al cargar actividad</div>'; }
 };
 
 window.showSection = function(section, btn) {
