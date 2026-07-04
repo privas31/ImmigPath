@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Básico — versión 2026-07-04-R","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Básico — versión 2026-07-04-S","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -99,6 +99,10 @@ function getPct(total,pagado){if(!total)return null;return Math.min(100,Math.rou
 function pagoColor(pct){if(pct===null)return"#6B7280";if(pct>=100)return"#16A34A";if(pct>=50)return"#D97706";return"#DC2626";}
 function getTotalProcesos(procesos){return(procesos||[]).reduce((s,p)=>s+parseMoney(p.precio),0);}
 function getTotalPagado(procesos){return(procesos||[]).reduce((s,p)=>s+parseMoney(p.pagado),0);}
+function getWPTotal(ca){return((ca&&ca.wpDependientes)||[]).reduce((s,w)=>s+parseMoney(w.precio),0);}
+function getWPPagado(ca){return((ca&&ca.wpDependientes)||[]).reduce((s,w)=>s+parseMoney(w.pagado),0);}
+function getTotalCaso(ca){return getTotalProcesos((ca&&ca.procesos)||[])+getWPTotal(ca);}
+function getPagadoCaso(ca){return getTotalPagado((ca&&ca.procesos)||[])+getWPPagado(ca);}
 function getPróximaFecha(cliente){const fechas=[];(cliente.casos||[]).forEach(c=>{if(c.fechaCorte)fechas.push(c.fechaCorte);if(c.fechaHuellas)fechas.push(c.fechaHuellas);});if(!fechas.length)return null;const hoy=new Date();hoy.setHours(0,0,0,0);const futuras=fechas.filter(f=>new Date(f+"T00:00:00")>=hoy).sort();if(futuras.length)return futuras[0];return fechas.sort().reverse()[0];}
 function getStatusCliente(cliente){const pf=getPróximaFecha(cliente);if(!pf)return"pendiente";return getStatus(pf);}
 
@@ -1450,14 +1454,14 @@ const loadTeam=async()=>{
     const alertas3dias=alertas.filter(c=>{const pf=getPróximaFecha(c);const d=getDias(pf);return d>1&&d<=3;});
     const alertas7dias=alertas.filter(c=>{const pf=getPróximaFecha(c);const d=getDias(pf);return d>3&&d<=7;});
     const vencidos=clientes.filter(c=>getStatusCliente(c)==="vencido");
-    const totalCobrar=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalProcesos(ca.procesos||[]),s),0);
-    const totalCobrado=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalPagado(ca.procesos||[]),s),0);
+    const totalCobrar=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalCaso(ca),s),0);
+    const totalCobrado=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getPagadoCaso(ca),s),0);
     const pendiente=totalCobrar-totalCobrado;
     const eadElegibles=clientes.filter(c=>(c.casos||[]).some(ca=>{if(!ca.fechaAsilo)return false;const dias=Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000);return dias>=180;}));
     const eadPróximos=clientes.filter(c=>(c.casos||[]).some(ca=>{if(!ca.fechaAsilo)return false;const dias=Math.floor((hoy-new Date(ca.fechaAsilo+"T00:00:00"))/86400000);return dias>=160&&dias<180;}));
-    const pagadoCompleto=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p>=t;});
-    const conSaldo=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p<t;});
-    const sinPago=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);return t>0&&p===0;});
+    const pagadoCompleto=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0);const p=(c.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);return t>0&&p>=t;});
+    const conSaldo=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0);const p=(c.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);return t>0&&p<t;});
+    const sinPago=clientes.filter(c=>{const t=(c.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0);const p=(c.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);return t>0&&p===0;});
     const sinFecha=clientes.filter(c=>!getPróximaFecha(c)&&(c.casos||[]).length>0);
     const sinDocumentos=clientes.filter(c=>(c.casos||[]).some(ca=>!ca.receiptNum&&!ca.foiaTracking&&ca.sistema==="uscis"));
     const relojActivo=clientes.filter(c=>(c.casos||[]).some(ca=>ca.fechaAsilo&&!ca.relojDetenido));
@@ -1508,8 +1512,8 @@ const loadTeam=async()=>{
                     const st=getStatusCliente(c);
                     const pf=getPróximaFecha(c);
                     const dias=pf?getDias(pf):null;
-                    const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-                    const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                    const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0);
+                    const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);
                     const pct=getPct(totalP,pagadoP);
                     // Sistemas: texto limpio deduplicado, separado por "  "
                     const TIPO_SHORT={"I-485 Ajuste de estatus":"Ajuste","I-130 Peticion familiar":"I-130","I-765 Permiso de trabajo":"W.P.","I-131 Advance Parole":"A.P.","N-400 Naturalizacion":"N-400","I-589 Asilo":"Asilo","I-90 Renovar Green Card":"I-90","Asilo":"Asilo","Deportacion":"Deportacion","Cancelación":"Cancelación","Ajuste de estatus":"Ajuste","Apelacion":"Apelacion","FOIA - Expediente migratorio":"FOIA","FOIA - Expediente USCIS":"FOIA","FOIA - Expediente ICE":"FOIA","FOIA - Expediente CBP":"FOIA","Otro":"Otro"};
@@ -1762,8 +1766,8 @@ const loadTeam=async()=>{
             : filtered
           ).map(c=>{
             const st=getStatusCliente(c);const scfg=STATUS_CONFIG[st];const pf=getPróximaFecha(c);const dias=pf?getDias(pf):null;const exp=expandedId===c.id;
-            const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-            const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+            const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0);
+            const pagadoP=(c.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);
             const pct=getPct(totalP,pagadoP);const pc=pagoColor(pct);
             const casoTab=activeCasoTab[c.id]||0;
             return(
@@ -1852,7 +1856,7 @@ const loadTeam=async()=>{
                     {(c.casos||[])[casoTab]&&(()=>{
                       const ca=(c.casos||[])[casoTab];const sys=SISTEMAS[ca.sistema]||SISTEMAS.uscis;
                       const diasFecha=getDias(ca.fechaCorte);const scfgCaso=STATUS_CONFIG[getStatus(ca.fechaCorte)];
-                      const totalC=getTotalProcesos(ca.procesos||[]);const pagadoC=getTotalPagado(ca.procesos||[]);const pctC=getPct(totalC,pagadoC);const pcC=pagoColor(pctC);
+                      const totalC=getTotalCaso(ca);const pagadoC=getPagadoCaso(ca);const pctC=getPct(totalC,pagadoC);const pcC=pagoColor(pctC);
                       // Reloj de asilo
                       const tieneReloj=(ca.sistema==="uscis"&&(ca.tipoCaso||"").includes("I-589")||ca.sistema==="eoir"&&(ca.tipoCaso||"").toLowerCase().includes("asilo"))&&ca.fechaAsilo;
                       const relojDet2=ca.relojDetenido===true;
@@ -1876,7 +1880,7 @@ const loadTeam=async()=>{
                             {[
                               {label:"A-Number",val:fmtA(ca.alienNum)||fmtA(c.alienNum)||"—",mono:true,color:"#0F172A"},
                               {label:"N° Recibo",val:ca.receiptNum||ca.foiaTracking||"—",mono:true,color:"#185FA5"},
-                              {label:"Pago",val:isAdmin?(()=>{const t=getTotalProcesos(ca.procesos||[]);const p=getTotalPagado(ca.procesos||[]);return t>0?`${fmtMoney(p)} / ${fmtMoney(t)}`:"—";})():"—",extra:isAdmin&&pctC!==null?`${pctC}% pagado`:null,color:pcC},
+                              {label:"Pago",val:isAdmin?(()=>{const t=getTotalCaso(ca);const p=getPagadoCaso(ca);return t>0?`${fmtMoney(p)} / ${fmtMoney(t)}`:"—";})():"—",extra:isAdmin&&pctC!==null?`${pctC}% pagado`:null,color:pcC},
                               {label:"Estado",val:ca.estatusCaso==="activo"?"Caso Activo":ca.estatusCaso==="referido_eoir"?"Referido EOIR":ca.estatusCaso==="aprobado"?"Aprobado":ca.estatusCaso==="denegado"?"Denegado":ca.foiaEstado||"—",color:ca.estatusCaso==="activo"?"#16A34A":ca.estatusCaso==="aprobado"?"#0369A1":ca.estatusCaso==="denegado"?"#DC2626":"#374151"},
                               {label:"Prioridad",val:scfg.label||"—",icon:scfg.icon,color:scfg.color},
                             ].map(m=>(
@@ -3126,25 +3130,25 @@ const loadTeam=async()=>{
 
     
     {showPagosReporte&&isAdmin&&(()=>{
-      const totalCobrar=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalProcesos(ca.procesos||[]),s),0);
-      const totalCobrado=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalPagado(ca.procesos||[]),s),0);
+      const totalCobrar=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getTotalCaso(ca),s),0);
+      const totalCobrado=clientes.reduce((s,c)=>(c.casos||[]).reduce((s2,ca)=>s2+getPagadoCaso(ca),s),0);
       const pendiente=totalCobrar-totalCobrado;
       const pctGeneral=getPct(totalCobrar,totalCobrado);
 
       // Clientes con saldo pendiente
       const clientesPendientes=clientes.filter(c=>{
-        const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-        const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        const t=(c.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0);
+        const p=(c.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);
         return t>0&&p<t;
       }).sort((a,b)=>{
-        const sa=(a.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0)-(a.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
-        const sb=(b.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0)-(b.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        const sa=(a.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0)-(a.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);
+        const sb=(b.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0)-(b.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);
         return sb-sa;
       });
 
       const clientesPagados=clientes.filter(c=>{
-        const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-        const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+        const t=(c.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0);
+        const p=(c.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);
         return t>0&&p>=t;
       });
 
@@ -3158,8 +3162,8 @@ const loadTeam=async()=>{
         pdfdoc.setFontSize(9);pdfdoc.setFont("helvetica","normal");
         pdfdoc.text(`${new Date().toLocaleString("es-US")}   |   Total: ${fmtMoney(totalCobrar)}   |   Cobrado: ${fmtMoney(totalCobrado)}   |   Pendiente: ${fmtMoney(pendiente)}`,14,17);
         const rows=clientes.filter(c=>(c.casos||[]).some(ca=>(ca.procesos||[]).length>0)).map(c=>{
-          const t=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-          const p=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+          const t=(c.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0);
+          const p=(c.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);
           const pct=getPct(t,p);
           const procesos=(c.casos||[]).flatMap(ca=>ca.procesos||[]).map(p=>p.nombre).filter(Boolean).join(", ");
           return[c.nombre||"—",c.encargada||"—",procesos,fmtMoney(t),fmtMoney(p),fmtMoney(t-p),pct!==null?`${pct}%`:"—",pct>=100?"✅ Pagado":pct>0?"⏳ Parcial":"❌ Pendiente"];
@@ -3251,8 +3255,8 @@ const loadTeam=async()=>{
                       <tbody>
                         {paginados.length===0&&<tr><td colSpan={6} style={{padding:"2rem",textAlign:"center",color:"#94A3B8"}}>{t("Sin resultados","No results")}</td></tr>}
                         {paginados.map((c,i)=>{
-                          const tot=(c.casos||[]).reduce((s,ca)=>s+getTotalProcesos(ca.procesos||[]),0);
-                          const pag=(c.casos||[]).reduce((s,ca)=>s+getTotalPagado(ca.procesos||[]),0);
+                          const tot=(c.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0);
+                          const pag=(c.casos||[]).reduce((s,ca)=>s+getPagadoCaso(ca),0);
                           const saldo=tot-pag;
                           const pct=getPct(tot,pag);
                           const pc=pagoColor(pct);
@@ -3303,9 +3307,11 @@ const loadTeam=async()=>{
       // Recolectar todas las empleadas: encargadas de clientes + encargadas de procesos individuales (trámites)
       const empleadasClientes = clientes.map(c=>c.encargada).filter(Boolean);
       const empleadasProcesos = [];
-      clientesPeriodo.forEach(c=>(c.casos||[]).forEach(ca=>(ca.procesos||[]).forEach(p=>{
-        if(p.encargadaProceso) empleadasProcesos.push(p.encargadaProceso);
-      })));
+      clientesPeriodo.forEach(c=>(c.casos||[]).forEach(ca=>{
+        (ca.procesos||[]).forEach(p=>{ if(p.encargadaProceso) empleadasProcesos.push(p.encargadaProceso); });
+        // Los WP de dependientes cuentan para la encargada del cliente
+        if((ca.wpDependientes||[]).length>0 && c.encargada) empleadasProcesos.push(c.encargada);
+      }));
       const empleadas = [...new Set([...empleadasClientes, ...empleadasProcesos])];
 
       const TARIFAS_DEFAULT = {
@@ -3341,6 +3347,15 @@ const loadTeam=async()=>{
               if(!procesos[p.nombre]) procesos[p.nombre]={cantidad:0,pagado:0};
               procesos[p.nombre].cantidad++;
               procesos[p.nombre].pagado += parseMoney(p.pagado);
+            });
+            // WP de dependientes: cada uno cuenta como un "Permiso de trabajo (I-765)" para la encargada del cliente
+            (ca.wpDependientes||[]).forEach(wd=>{
+              if(c.encargada !== emp) return;
+              const nom="Permiso de trabajo (I-765)";
+              clientesSet.add(c.id);
+              if(!procesos[nom]) procesos[nom]={cantidad:0,pagado:0};
+              procesos[nom].cantidad++;
+              procesos[nom].pagado += parseMoney(wd.pagado);
             });
           });
         });
