@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-04-D","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-04-E","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -505,7 +505,7 @@ function App(){
   const[cobrarConcepto,setCobrarConcepto]=useState("");
   const[cobrarMetodo,setCobrarMetodo]=useState("zelle");
   const[cobrarSaving,setCobrarSaving]=useState(false);
-  const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:"",precioCambioUSCIS:"40",precioCambioEOIR:"40",precioTransferencia:"75"});
+  const[pagosConfig,setPagosConfig]=useState({zelleEmail:"",zelleTel:"",zelleNombre:"",stripeLink:"",precioCambioUSCIS:"40",precioCambioEOIR:"40",precioTransferencia:"75",contactTel:"",contactEmail:"",contactDireccion:""});
   const[pagosPorCliente,setPagosPorCliente]=useState({});
   const[loadingPagos,setLoadingPagos]=useState({});
   const[configSaving,setConfigSaving]=useState(false);
@@ -750,7 +750,15 @@ const loadPagosConfig=async()=>{
     const{db,doc,getDoc}=window._firebase;
     const officeId=officeData?.id||userData?.officeId||"default";
     const snap=await getDoc(doc(db,"config",`pagos_${officeId}`));
-    if(snap.exists()) setPagosConfig(snap.data());
+    if(snap.exists()){
+      const datos=snap.data();
+      setPagosConfig(p=>({...p,...datos,
+        contactTel:datos.contactTel||officeData?.phone||"",
+        contactEmail:datos.contactEmail||officeData?.email||"",
+        contactDireccion:datos.contactDireccion||officeData?.address||""}));
+    }else{
+      setPagosConfig(p=>({...p,contactTel:officeData?.phone||"",contactEmail:officeData?.email||"",contactDireccion:officeData?.address||""}));
+    }
   }catch(e){}
 };
 
@@ -761,10 +769,10 @@ const savePagosConfig=async(cfg)=>{
     const officeId=officeData?.id||userData?.officeId||"default";
     await setDoc(doc(db,"config",`pagos_${officeId}`),cfg);
     setPagosConfig(cfg);
-    // Guardar logo en el documento de la oficina
+    // Guardar logo y datos de contacto en el documento de la oficina
     if(officeData?.id){
-      await updateDoc(doc(db,"offices",officeData.id),{logoUrl:officeLogo||""});
-      setOfficeData(prev=>({...prev,logoUrl:officeLogo||""}));
+      await updateDoc(doc(db,"offices",officeData.id),{logoUrl:officeLogo||"",phone:cfg.contactTel||"",email:cfg.contactEmail||"",address:cfg.contactDireccion||""});
+      setOfficeData(prev=>({...prev,logoUrl:officeLogo||"",phone:cfg.contactTel||"",email:cfg.contactEmail||"",address:cfg.contactDireccion||""}));
     }
     showToastFn("Configuración guardada ✓");
   }catch(e){console.error("Error al guardar:",e);showToastFn("Error al guardar: "+e.message,"error");}
@@ -844,6 +852,7 @@ const generarReciboPDF=async(pago)=>{
   pdoc.text("Immigration Services",M+logoOff,19);
   if(pago.oficinaTel) pdoc.text(pago.oficinaTel,M+logoOff,24);
   if(pago.oficinaEmail) pdoc.text(pago.oficinaEmail,M+logoOff,29);
+  if(pago.oficinaDireccion) pdoc.text(pago.oficinaDireccion,M+logoOff,34);
   // Bloque derecho recibo
   pdoc.setTextColor(15,23,42); pdoc.setFontSize(18); pdoc.setFont("helvetica","bold");
   pdoc.text("Recibo",W-M,13,{align:"right"});
@@ -3539,6 +3548,23 @@ const loadTeam=async()=>{
           </div>
           
           <div style={{background:"#F8FAFC",borderRadius:10,padding:"16px",marginBottom:14,border:"1px solid #E2E8F0"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:4}}>📇 Información de contacto</div>
+            <div style={{fontSize:11,color:"#64748B",marginBottom:12}}>Aparece en el encabezado de los recibos de pago que reciben sus clientes.</div>
+            <div style={{marginBottom:10}}>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Teléfono de la oficina</label>
+              <input value={pagosConfig.contactTel||""} onChange={e=>setPagosConfig(p=>({...p,contactTel:e.target.value}))} placeholder="(407) 555-1234" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            </div>
+            <div style={{marginBottom:10}}>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Email de la oficina</label>
+              <input value={pagosConfig.contactEmail||""} onChange={e=>setPagosConfig(p=>({...p,contactEmail:e.target.value}))} placeholder="oficina@correo.com" type="email" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            </div>
+            <div>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:4,textTransform:"uppercase"}}>Dirección de la oficina</label>
+              <input value={pagosConfig.contactDireccion||""} onChange={e=>setPagosConfig(p=>({...p,contactDireccion:e.target.value}))} placeholder="Calle, Ciudad, Estado, ZIP" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,outline:"none"}}/>
+            </div>
+          </div>
+
+          <div style={{background:"#F8FAFC",borderRadius:10,padding:"16px",marginBottom:14,border:"1px solid #E2E8F0"}}>
             <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:12}}>🖼️ Logo de la oficina</div>
             <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
               {officeLogo?<img src={officeLogo} alt="Logo" style={{width:60,height:60,borderRadius:10,objectFit:"contain",border:"1px solid #E2E8F0",background:"#fff",padding:4}}/>:<div style={{width:60,height:60,borderRadius:10,border:"1px dashed #CBD5E1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🏢</div>}
@@ -3668,7 +3694,7 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
               if(!cobrarMonto||!cobrarConcepto){showToastFn("Completa monto y concepto","error");return;}
               setCobrarSaving(true);
               const refNum="REC-"+Date.now().toString(36).toUpperCase();
-              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum,alienNum:cobrarCliente.alienNum||"",expediente:cobrarCliente.expediente||"",encargada:cobrarCliente.encargada||"",oficinaNombre:officeData?.name||"ImmigPath",oficinaEmail:officeData?.email||"",oficinaTel:officeData?.telefono||""};
+              const pago={monto:cobrarMonto,concepto:cobrarConcepto,metodo:cobrarMetodo,nombreCliente:cobrarCliente.nombre,refNum,alienNum:cobrarCliente.alienNum||"",expediente:cobrarCliente.expediente||"",encargada:cobrarCliente.encargada||"",oficinaNombre:officeData?.name||"ImmigPath",oficinaEmail:officeData?.email||"",oficinaTel:officeData?.phone||"",oficinaDireccion:officeData?.address||""};
               await registrarPago(cobrarCliente.id,pago);
               await generarReciboPDF(pago);
               // Log payment in historial
