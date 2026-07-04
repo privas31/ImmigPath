@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Básico — versión 2026-07-04-E","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Básico — versión 2026-07-04-F","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -1954,6 +1954,24 @@ const loadTeam=async()=>{
                                   <span style={{color:"#16A34A",fontWeight:500}}>{fmtMoney(p.pagado)} / {fmtMoney(p.precio)} {getPct(parseMoney(p.precio),parseMoney(p.pagado))===100?"✓":""}</span>
                                 </div>
                               ))}
+                              {/* Historial de recibos con su número de referencia */}
+                              <div style={{borderTop:"0.5px solid #F1F5F9",marginTop:8,paddingTop:8}}>
+                                <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",marginBottom:6}}>Historial de recibos</div>
+                                {loadingPagos[c.id]?<div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:6}}>Cargando...</div>:
+                                (pagosPorCliente[c.id]||[]).length===0?<div style={{fontSize:11,color:"#94A3B8",textAlign:"center",padding:6}}>Sin pagos registrados aún</div>:
+                                (pagosPorCliente[c.id]||[]).map((pg,pgi)=>(
+                                  <div key={pg.id||pgi} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,padding:"6px 0",borderBottom:pgi<(pagosPorCliente[c.id]||[]).length-1?"0.5px solid #F8FAFC":"none"}}>
+                                    <div>
+                                      <div style={{fontWeight:600,color:"#185FA5",fontFamily:"monospace"}}>#{pg.refNum||"—"}</div>
+                                      <div style={{color:"#94A3B8",fontSize:10}}>{pg.fecha?fmt(pg.fecha.slice(0,10)):"—"} · {pg.concepto||"Pago"}</div>
+                                    </div>
+                                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                      <span style={{fontWeight:600,color:"#16A34A"}}>{fmtMoney(pg.monto)}</span>
+                                      <button onClick={e=>{e.stopPropagation();descargarReciboPDF(pg);}} title="Descargar recibo" style={{background:"#F1F5F9",border:"none",borderRadius:6,padding:"4px 7px",cursor:"pointer",fontSize:11}}>📥</button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>:<div/>}
                           </div>
 
