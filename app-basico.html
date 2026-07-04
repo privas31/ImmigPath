@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Básico — versión 2026-07-04-F","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Básico — versión 2026-07-04-G","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -615,12 +615,14 @@ function App(){
   if(pagosPorCliente[clienteId]||loadingPagos[clienteId]) return;
   setLoadingPagos(prev=>({...prev,[clienteId]:true}));
   try{
-    const{db,collection,query,where,orderBy,getDocs}=window._firebase;
-    const q=query(collection(db,"pagos"),where("clienteId","==",clienteId),orderBy("fecha","desc"));
+    const{db,collection,query,where,getDocs}=window._firebase;
+    // Sin orderBy en la consulta (evita depender de un índice compuesto en Firestore) — se ordena en el navegador
+    const q=query(collection(db,"pagos"),where("clienteId","==",clienteId));
     const snap=await getDocs(q);
-    const pagos=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const pagos=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
     setPagosPorCliente(prev=>({...prev,[clienteId]:pagos}));
   }catch(e){
+    console.error("Error cargando pagos del cliente:",e);
     setPagosPorCliente(prev=>({...prev,[clienteId]:[]}));
   }
   setLoadingPagos(prev=>({...prev,[clienteId]:false}));
