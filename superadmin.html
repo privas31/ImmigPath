@@ -1101,6 +1101,7 @@ function renderOfficesFullTable(offices) {
         return '<span class="badge badge-green">Activa</span>';
       })()}</td>
       <td>
+        <button class="action-btn" onclick="verDetalleOficina('${o.id}')" title="Ver ficha completa" style="background:rgba(129,140,248,0.15);color:#a5b4fc;border-color:rgba(129,140,248,0.3)">👁 Ver</button>
         <button class="action-btn" onclick="window.open('${o.plan==='basic'?'/app-basico.html':'/app.html'}?o=${o.id}','_blank')" style="background:rgba(99,102,241,0.15);color:var(--accent2);border-color:rgba(99,102,241,0.3)">Entrar</button>
         <button class="action-btn" onclick="openEditOffice('${o.id}')" style="background:rgba(251,191,36,0.12);color:#FBBF24;border-color:rgba(251,191,36,0.3)">✏️ Editar</button>
         <button class="action-btn" onclick="editOfficeModules('${o.id}')">Modulos</button>
@@ -2068,10 +2069,10 @@ let ticketFilterActual = 'abierto';
 window.verDetalleOficina = async function(officeId) {
   const o = officesCache.find(x=>x.id===officeId);
   if(!o){ showToast('Oficina no encontrada','error'); return; }
-  // Cambiar a la sección de detalle
-  document.querySelectorAll('.section').forEach(s=>s.classList.add('hidden'));
+  // Cambiar a la sección de detalle (mismo patrón que showSection)
   document.querySelectorAll('[id^="section-"]').forEach(s=>s.classList.add('hidden'));
   document.getElementById('section-detalle-oficina').classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   document.getElementById('det-breadcrumb').textContent = 'Oficinas › '+(o.name||'Oficina');
 
   const planPrices = {basic:249, professional:647, premium:1299};
@@ -2124,6 +2125,7 @@ window.verDetalleOficina = async function(officeId) {
       </div>
       <div style="display:flex;gap:7px">
         <button class="btn btn-ghost" onclick="openEditOffice('${o.id}')" style="border-color:rgba(99,102,241,0.3);color:#818cf8">✏️ Editar</button>
+        <button class="btn btn-ghost" onclick="openEditOffice('${o.id}');setTimeout(()=>document.getElementById('edit-office-plan')?.focus(),300)" style="border-color:rgba(59,130,246,0.3);color:#60a5fa">⇄ Cambiar plan</button>
         <button class="btn btn-ghost" onclick="toggleOffice('${o.id}',${o.isActive!==false})" style="border-color:rgba(239,68,68,0.3);color:#ef4444">⏻ ${o.isActive===false?'Activar':'Desactivar'}</button>
       </div>
     </div>
