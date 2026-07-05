@@ -426,47 +426,84 @@
         <button class="btn btn-ghost" onclick="descargarPlantillaImport()">⬇ Descargar plantilla</button>
       </div>
       <div class="content">
-        <div class="table-container" style="padding:20px;margin-bottom:16px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end">
-            <div class="form-group" style="margin:0">
-              <label class="form-label">1. Oficina destino *</label>
-              <select class="form-input" id="imp-office"><option value="">Cargando oficinas...</option></select>
+        <!-- Barra de 4 pasos -->
+        <div class="table-container" style="padding:18px 20px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:4px">
+            <div class="imp-step" data-step="1" style="display:flex;align-items:center;gap:10px;flex:1">
+              <div class="imp-step-num" style="width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">1</div>
+              <div><div style="font-size:13px;font-weight:600">Seleccionar oficina</div><div style="font-size:10px;color:var(--text2)">Elige la oficina destino</div></div>
             </div>
-            <div class="form-group" style="margin:0">
-              <label class="form-label">2. Archivo Excel (.xlsx)</label>
-              <input class="form-input" type="file" id="imp-file" accept=".xlsx,.xls,.csv" onchange="analizarExcelImport()">
+            <span style="color:var(--bg3);font-size:18px">›</span>
+            <div class="imp-step" data-step="2" style="display:flex;align-items:center;gap:10px;flex:1">
+              <div class="imp-step-num" style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:var(--text2)">2</div>
+              <div><div style="font-size:13px;font-weight:600">Subir archivo</div><div style="font-size:10px;color:var(--text2)">Carga tu archivo Excel</div></div>
+            </div>
+            <span style="color:var(--bg3);font-size:18px">›</span>
+            <div class="imp-step" data-step="3" style="display:flex;align-items:center;gap:10px;flex:1">
+              <div class="imp-step-num" style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:var(--text2)">3</div>
+              <div><div style="font-size:13px;font-weight:600">Validar datos</div><div style="font-size:10px;color:var(--text2)">Revisa y corrige los datos</div></div>
+            </div>
+            <span style="color:var(--bg3);font-size:18px">›</span>
+            <div class="imp-step" data-step="4" style="display:flex;align-items:center;gap:10px;flex:1">
+              <div class="imp-step-num" style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:var(--text2)">4</div>
+              <div><div style="font-size:13px;font-weight:600">Confirmar importación</div><div style="font-size:10px;color:var(--text2)">Revisa y finaliza</div></div>
             </div>
           </div>
-          <div style="font-size:11px;color:var(--text2);margin-top:10px">Cada fila = un caso. Filas con el mismo A-Number (o mismo nombre + teléfono) se agrupan como un solo cliente con varios casos. Usa la plantilla para el formato correcto.</div>
         </div>
 
-        <div id="imp-preview" class="hidden">
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px">
-            <div class="stat-card"><div class="stat-label">Filas leídas</div><div class="stat-value" id="imp-st-filas">—</div></div>
-            <div class="stat-card"><div class="stat-label">Clientes únicos</div><div class="stat-value" id="imp-st-clientes">—</div></div>
-            <div class="stat-card"><div class="stat-label">Casos</div><div class="stat-value" id="imp-st-casos">—</div></div>
-            <div class="stat-card"><div class="stat-label">Filas con error</div><div class="stat-value" id="imp-st-errores" style="color:#f87171">—</div></div>
-            <div class="stat-card"><div class="stat-label">Ya existen (A-Number)</div><div class="stat-value" id="imp-st-dups" style="color:#fbbf24">—</div></div>
+        <!-- Oficina destino + Archivo -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="table-container" style="padding:16px 18px">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:8px">1. Oficina destino *</div>
+            <select class="form-input" id="imp-office" style="width:100%"><option value="">Cargando oficinas...</option></select>
           </div>
+          <div class="table-container" style="padding:16px 18px">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:8px">2. Archivo Excel (.xlsx)</div>
+            <div id="imp-file-wrap">
+              <input class="form-input" type="file" id="imp-file" accept=".xlsx,.xls,.csv" onchange="analizarExcelImport()" style="width:100%">
+            </div>
+            <div id="imp-file-info" class="hidden" style="align-items:center;justify-content:space-between;gap:10px;margin-top:4px">
+              <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                <span style="font-size:20px">📄</span>
+                <div style="min-width:0"><div id="imp-file-name" style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div><div id="imp-file-meta" style="font-size:10px;color:var(--text2)"></div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                <span style="font-size:10px;background:rgba(16,185,129,0.15);color:#10b981;padding:3px 9px;border-radius:7px">Archivo cargado</span>
+                <button onclick="resetImportFile()" title="Quitar archivo" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:15px">🗑</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-          <div id="imp-errores-box" class="table-container hidden" style="padding:16px;margin-bottom:16px;border-left:3px solid #f87171">
-            <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#f87171">Filas rechazadas (corrígelas en el Excel y vuelve a subirlo, o continúa sin ellas)</div>
-            <div id="imp-errores-lista" style="font-size:12px;color:var(--text2);max-height:180px;overflow-y:auto;line-height:1.8"></div>
+        <!-- Paso 3: Validar datos -->
+        <div id="imp-preview" class="hidden">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">3. Validar datos</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+            <div class="stat-card" style="display:flex;align-items:center;gap:12px"><span style="font-size:22px">📄</span><div><div class="stat-value" id="imp-st-filas" style="font-size:22px">—</div><div style="font-size:11px;color:var(--text2)">Filas detectadas</div></div></div>
+            <div class="stat-card" style="border-color:rgba(245,158,11,0.3);display:flex;align-items:center;gap:12px"><span style="font-size:22px">⚠️</span><div style="flex:1"><div class="stat-value" id="imp-st-dups" style="font-size:22px;color:var(--yellow)">—</div><div style="font-size:11px;color:var(--text2)">Duplicados</div></div></div>
+            <div class="stat-card" style="border-color:rgba(239,68,68,0.3);display:flex;align-items:center;gap:12px"><span style="font-size:22px">⊘</span><div style="flex:1"><div class="stat-value" id="imp-st-errores" style="font-size:22px;color:var(--red)">—</div><div style="font-size:11px;color:var(--text2)">Errores</div></div></div>
+            <div class="stat-card" style="border-color:rgba(16,185,129,0.3);display:flex;align-items:center;gap:12px"><span style="font-size:22px">✓</span><div><div class="stat-value" id="imp-st-listos" style="font-size:22px;color:#10b981">—</div><div style="font-size:11px;color:var(--text2)">Listos para importar</div></div></div>
           </div>
 
           <div class="table-container" style="margin-bottom:16px">
-            <div class="table-header"><h3>Vista previa (primeros 8 clientes)</h3></div>
+            <div class="table-header" style="display:flex;justify-content:space-between;align-items:center">
+              <h3 id="imp-resumen-msg" style="font-size:13px;font-weight:500;color:var(--text2)"></h3>
+            </div>
             <table>
-              <thead><tr><th>Nombre</th><th>A-Number</th><th>Teléfono</th><th>País</th><th>Casos</th><th>Contratado</th><th>Pagado</th></tr></thead>
+              <thead><tr><th>#</th><th>Nombre</th><th>A-Number</th><th>Teléfono</th><th>Tipo de caso</th><th>Validación</th></tr></thead>
               <tbody id="imp-preview-tabla"></tbody>
             </table>
+            <div style="padding:12px 16px;font-size:11px;color:var(--text2)" id="imp-tabla-footer"></div>
           </div>
 
-          <div class="table-container" style="padding:20px">
+          <div class="table-container" style="padding:16px 20px">
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:14px">
-              <input type="checkbox" id="imp-skip-dups" checked> Omitir clientes cuyo A-Number ya existe en esta oficina (recomendado para no duplicar)
+              <input type="checkbox" id="imp-skip-dups" checked> Omitir clientes cuyo A-Number ya existe en esta oficina (recomendado)
             </label>
-            <button class="btn btn-primary" id="imp-btn-ejecutar" onclick="ejecutarImportacion()" style="padding:11px 24px;font-size:14px">🚀 Importar clientes</button>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button class="btn btn-ghost" onclick="resetImportFile()">Cancelar</button>
+              <button class="btn btn-primary" id="imp-btn-ejecutar" onclick="ejecutarImportacion()">✓ Confirmar e importar →</button>
+            </div>
             <div id="imp-progreso-box" class="hidden" style="margin-top:16px">
               <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:6px"><span id="imp-progreso-txt">Importando...</span><span id="imp-progreso-pct">0%</span></div>
               <div style="background:var(--bg3);border-radius:20px;height:8px;overflow:hidden"><div id="imp-progreso-bar" style="height:100%;background:var(--accent);width:0%;transition:width .3s"></div></div>
@@ -1935,6 +1972,13 @@ window.analizarExcelImport = async function(){
   if(!officeId){ showToast('Selecciona primero la oficina destino','error'); document.getElementById('imp-file').value=''; return; }
   const file=document.getElementById('imp-file').files[0];
   if(!file)return;
+  // Mostrar info del archivo cargado
+  const fname=document.getElementById('imp-file-name'), fmeta=document.getElementById('imp-file-meta');
+  if(fname) fname.textContent=file.name;
+  if(fmeta) fmeta.textContent=(file.size/1024).toFixed(1)+' KB · '+new Date().toLocaleString('es-US',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('imp-file-wrap')?.classList.add('hidden');
+  const _fi=document.getElementById('imp-file-info'); if(_fi){ _fi.classList.remove('hidden'); _fi.style.display='flex'; }
+  setImportStep(2);
   showToast('Leyendo archivo...','success');
   const buf=await file.arrayBuffer();
   const wb=XLSX.read(buf,{type:'array'});
@@ -1999,23 +2043,67 @@ window.analizarExcelImport = async function(){
     impClientes.forEach(c=>{ const a=String(c.alienNum||"").replace(/\D/g,""); if(a&&existentes.has(a))impDupSet.add(a); });
   }catch(e){ console.error('dup check',e); }
 
-  // render preview
+  // ── Contadores ──
+  const nDups = impDupSet.size;
+  const nErrores = impErrores.length;
+  const nListos = impClientes.filter(c=>{ const a=String(c.alienNum||"").replace(/\\D/g,""); return !(a&&impDupSet.has(a)); }).length;
   document.getElementById('imp-st-filas').textContent=rows.length-1;
-  document.getElementById('imp-st-clientes').textContent=impClientes.length;
-  document.getElementById('imp-st-casos').textContent=impClientes.reduce((s,c)=>s+c.casos.length,0);
-  document.getElementById('imp-st-errores').textContent=impErrores.length;
-  document.getElementById('imp-st-dups').textContent=impDupSet.size;
-  const eb=document.getElementById('imp-errores-box');
-  if(impErrores.length){ eb.classList.remove('hidden'); document.getElementById('imp-errores-lista').innerHTML=impErrores.slice(0,100).map(e=>'• '+e).join('<br>')+(impErrores.length>100?`<br>...y ${impErrores.length-100} más`:''); }
-  else eb.classList.add('hidden');
-  document.getElementById('imp-preview-tabla').innerHTML=impClientes.slice(0,8).map(c=>{
-    const ct=c.casos.reduce((s,ca)=>s+(ca.procesos[0]?.precio||0),0), pg=c.casos.reduce((s,ca)=>s+(ca.procesos[0]?.pagado||0),0);
-    return `<tr><td>${c.nombre}</td><td>${c.alienNum||'—'}</td><td>${c.telefono||'—'}</td><td>${c.paisOrigen||'—'}</td><td>${c.casos.map(ca=>ca.tipoCaso||ca.sistema.toUpperCase()).join(', ')}</td><td>$${ct.toLocaleString()}</td><td>$${pg.toLocaleString()}</td></tr>`;
+  document.getElementById('imp-st-dups').textContent=nDups;
+  document.getElementById('imp-st-errores').textContent=nErrores;
+  document.getElementById('imp-st-listos').textContent=nListos;
+
+  // ── Mensaje resumen ──
+  const msg = document.getElementById('imp-resumen-msg');
+  if(msg) msg.innerHTML = `Se detectaron <b style="color:var(--text)">${impClientes.length} clientes</b>, <b style="color:var(--yellow)">${nDups} duplicado${nDups!==1?'s':''}</b> y <b style="color:var(--red)">${nErrores} fila${nErrores!==1?'s':''} con error${nErrores!==1?'es':''}</b>. Se importarán <b style="color:#10b981">${nListos}</b>.`;
+
+  // ── Tabla con columna de Validación ──
+  const dupNums = impDupSet;
+  document.getElementById('imp-preview-tabla').innerHTML=impClientes.slice(0,12).map((c,i)=>{
+    const a=String(c.alienNum||"").replace(/\\D/g,"");
+    const esDup = a&&dupNums.has(a);
+    const tipoCaso = c.casos.map(ca=>ca.tipoCaso||ca.sistema.toUpperCase()).join(', ')||'—';
+    let valBadge;
+    if(esDup) valBadge='<span style="color:var(--yellow)">⚠️ Duplicado</span>';
+    else valBadge='<span style="color:#10b981">✓ Válido</span>';
+    const rowStyle = esDup?'style="background:rgba(245,158,11,0.05)"':'';
+    return `<tr ${rowStyle}><td style="color:var(--text2)">${i+1}</td><td>${c.nombre}</td><td style="font-family:monospace">${c.alienNum||'—'}</td><td>${c.telefono||'—'}</td><td>${tipoCaso}</td><td>${valBadge}</td></tr>`;
   }).join('');
+
+  // Footer de la tabla + errores
+  const footer = document.getElementById('imp-tabla-footer');
+  if(footer){
+    let ftxt = `Mostrando ${Math.min(12,impClientes.length)} de ${impClientes.length} clientes.`;
+    if(nErrores>0) ftxt += ` <span style="color:var(--red)">${nErrores} fila${nErrores!==1?'s':''} con error se omitirán:</span> `+impErrores.slice(0,3).map(e=>e.replace(/^Fila \\d+: /,'')).join('; ')+(nErrores>3?`; y ${nErrores-3} más`:'');
+    footer.innerHTML = ftxt;
+  }
+
   document.getElementById('imp-reporte').classList.add('hidden');
   document.getElementById('imp-btn-ejecutar').disabled=false;
   document.getElementById('imp-preview').classList.remove('hidden');
-  showToast(`✓ ${impClientes.length} clientes listos para revisar`,'success');
+  // Avanzar barra de pasos a paso 3
+  setImportStep(3);
+  showToast(`✓ ${impClientes.length} clientes analizados`,'success');
+};
+
+// Marca el paso activo en la barra de pasos
+window.setImportStep = function(n){
+  document.querySelectorAll('.imp-step').forEach(el=>{
+    const s = parseInt(el.getAttribute('data-step'));
+    const num = el.querySelector('.imp-step-num');
+    if(!num) return;
+    if(s<=n){ num.style.background='var(--accent)'; num.style.color='#fff'; }
+    else { num.style.background='var(--bg3)'; num.style.color='var(--text2)'; }
+  });
+};
+
+// Quitar archivo y reiniciar
+window.resetImportFile = function(){
+  const fi=document.getElementById('imp-file'); if(fi) fi.value='';
+  document.getElementById('imp-file-wrap')?.classList.remove('hidden');
+  const _fi2=document.getElementById('imp-file-info'); if(_fi2){ _fi2.classList.add('hidden'); _fi2.style.display='none'; }
+  document.getElementById('imp-preview')?.classList.add('hidden');
+  impClientes=[]; impErrores=[]; impDupSet=new Set();
+  setImportStep(1);
 };
 
 window.ejecutarImportacion = async function(){
