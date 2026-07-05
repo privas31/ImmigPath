@@ -511,6 +511,12 @@
             <div id="imp-reporte" class="hidden" style="margin-top:16px;padding:14px;border-radius:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);font-size:13px;line-height:1.9"></div>
           </div>
         </div>
+
+        <!-- Historial de importaciones -->
+        <div class="table-container" style="margin-top:20px">
+          <div class="table-header"><h3>📜 Historial de importaciones</h3></div>
+          <div id="imp-historial" style="padding:4px 0"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Cargando...</div></div>
+        </div>
       </div>
     </div>
 
@@ -1950,6 +1956,7 @@ window.initImportar = async function(){
     try{ const snap=await getDocs(collection(db,'offices')); officesCache=snap.docs.map(d=>({id:d.id,...d.data()})); }catch(e){}
   }
   sel.innerHTML='<option value="">— Selecciona la oficina —</option>'+officesCache.map(o=>`<option value="${o.id}">${o.name||o.id}${o.isActive===false?' (inactiva)':''}</option>`).join('');
+  cargarHistorialImportaciones();
 };
 
 window.descargarPlantillaImport = function(){
@@ -2106,6 +2113,22 @@ window.resetImportFile = function(){
   setImportStep(1);
 };
 
+// Limpia valores undefined/null que Firestore rechaza (recursivo)
+function impLimpiarUndefined(obj){
+  if(Array.isArray(obj)) return obj.map(impLimpiarUndefined);
+  if(obj&&typeof obj==='object'){
+    const out={};
+    for(const k in obj){
+      const v=obj[k];
+      if(v===undefined) continue;
+      if(v===null){ out[k]=""; continue; }
+      out[k]=impLimpiarUndefined(v);
+    }
+    return out;
+  }
+  return obj===undefined?"":obj;
+}
+
 window.ejecutarImportacion = async function(){
   const officeId=document.getElementById('imp-office').value;
   if(!officeId||!impClientes.length)return;
@@ -2129,6 +2152,7 @@ window.ejecutarImportacion = async function(){
   const ahora=new Date().toISOString();
   const quien=auth.currentUser?.email||'superadmin';
   let creados=0, pagosCreados=0, fallidos=0;
+  const idsCreados=[]; // para poder deshacer
   const CHUNK=200; // 200 clientes + hasta 200 pagos = máx 400 ops por batch
 
   for(let i=0;i<lista.length;i+=CHUNK){
@@ -2138,7 +2162,9 @@ window.ejecutarImportacion = async function(){
       for(const c of grupo){
         const ref=doc(collection(db,'clientes'));
         const {_pagado,...datos}=c;
-        batch.set(ref,{...datos,officeId,expediente:"EXP-"+String(nextN++).padStart(4,"0"),createdAt:ahora,createdBy:quien+" (importación Excel)"});
+        const limpio=impLimpiarUndefined({...datos,officeId,expediente:"EXP-"+String(nextN++).padStart(4,"0"),createdAt:ahora,createdBy:quien+" (importación Excel)"});
+        batch.set(ref,limpio);
+        idsCreados.push(ref.id);
         if(_pagado>0){
           batch.set(doc(collection(db,'pagos')),{ clienteId:ref.id, officeId, monto:_pagado, concepto:"Migración de saldo inicial",
             metodo:"otro", fecha:ahora, registradoPor:quien, refNum:"MIG-"+ref.id.slice(0,8).toUpperCase(), nombreCliente:c.nombre });
@@ -2147,7 +2173,7 @@ window.ejecutarImportacion = async function(){
         creados++;
       }
       await batch.commit();
-    }catch(e){ console.error('batch',e); fallidos+=grupo.length; creados-=grupo.length; }
+    }catch(e){ console.error('batch error:',e); window._ultimoErrorImport=e.message||String(e); fallidos+=grupo.length; creados-=grupo.length; }
     const p=Math.round(Math.min(100,((i+grupo.length)/lista.length)*100));
     bar.style.width=p+"%"; pct.textContent=p+"%";
     ptxt.textContent=`Importando... ${Math.min(i+grupo.length,lista.length)} de ${lista.length} clientes`;
@@ -2160,13 +2186,85 @@ window.ejecutarImportacion = async function(){
     • Pagos iniciales registrados: <b>${pagosCreados}</b><br>
     ${skipDups&&impDupSet.size?`• Omitidos por A-Number duplicado: <b>${impClientes.length-lista.length}</b><br>`:''}
     ${impErrores.length?`• Filas rechazadas por errores: <b>${impErrores.length}</b> (corrígelas y súbelas en otro archivo)<br>`:''}
-    ${fallidos?`• <span style="color:#f87171">Fallidos por error de conexión: <b>${fallidos}</b> — reintenta subiendo solo esos</span><br>`:''}
+    ${fallidos?`• <span style="color:#f87171">Fallidos: <b>${fallidos}</b>${window._ultimoErrorImport?' — '+window._ultimoErrorImport:''}</span><br>`:''}
     La oficina ya puede ver los clientes en su monitor.`;
+
+  // Guardar registro en el historial de importaciones (para poder deshacer)
+  try {
+    const office = officesCache.find(o=>o.id===officeId);
+    await addDoc(collection(db,'importaciones'), {
+      officeId, officeName: office?.name||'',
+      clientesIds: idsCreados,
+      totalImportados: creados,
+      totalCasos: lista.reduce((s,c)=>s+c.casos.length,0),
+      estado: 'completada',
+      fecha: ahora, realizadoPor: quien,
+      archivo: document.getElementById('imp-file')?.files[0]?.name||'',
+    });
+  } catch(e){ console.error('registro importación',e); }
+
   showToast(`✓ ${creados} clientes importados`,'success');
+  cargarHistorialImportaciones();
 };
 
 let ticketsCache = [];
 let ticketFilterActual = 'abierto';
+
+window.cargarHistorialImportaciones = async function() {
+  const cont = document.getElementById('imp-historial');
+  if(!cont) return;
+  try {
+    const snap = await getDocs(collection(db,'importaciones'));
+    const imps = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    if(imps.length===0){ cont.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Aún no hay importaciones registradas.</div>'; return; }
+    const fmt = (iso)=>{ const f=new Date(iso); return f.toLocaleDateString('es-US',{day:'2-digit',month:'short',year:'numeric'})+', '+f.toLocaleTimeString('es-US',{hour:'2-digit',minute:'2-digit'}); };
+    cont.innerHTML = `<table style="width:100%"><thead><tr><th>Fecha</th><th>Oficina</th><th>Clientes</th><th>Estado</th><th></th></tr></thead><tbody>` +
+      imps.map(im=>{
+        const deshecha = im.estado==='deshecha';
+        const estadoBadge = deshecha
+          ? '<span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8">↩ Deshecha</span>'
+          : '<span class="badge badge-green">Completada</span>';
+        const accion = deshecha
+          ? '<span style="color:var(--text2);font-size:11px">—</span>'
+          : `<button class="action-btn" onclick="deshacerImportacion('${im.id}')" style="background:rgba(239,68,68,0.12);color:#ef4444;border-color:rgba(239,68,68,0.3)">↩ Deshacer</button>`;
+        return `<tr>
+          <td style="font-size:12px">${fmt(im.fecha)}</td>
+          <td style="font-size:12px">${im.officeName||'—'}</td>
+          <td style="font-size:12px"><b style="color:${deshecha?'#94a3b8':'#10b981'}">${im.totalImportados||0}</b> ${deshecha?'(borrados)':'importados'}</td>
+          <td>${estadoBadge}</td>
+          <td style="text-align:right">${accion}</td>
+        </tr>`;
+      }).join('') + '</tbody></table>';
+  } catch(e){ cont.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Error al cargar historial</div>'; }
+};
+
+window.deshacerImportacion = async function(impId) {
+  try {
+    const snap = await getDoc(doc(db,'importaciones',impId));
+    if(!snap.exists()){ showToast('Registro no encontrado','error'); return; }
+    const im = snap.data();
+    const ids = im.clientesIds||[];
+    if(ids.length===0){ showToast('Esta importación no tiene clientes registrados para deshacer','error'); return; }
+    const ok = confirm(`⚠️ ¿Deshacer esta importación?\n\nSe eliminarán los ${ids.length} clientes que se importaron a "${im.officeName}" el ${new Date(im.fecha).toLocaleDateString('es-US')}.\n\nEsta acción NO se puede revertir. Los clientes que ya existían antes NO se tocan.\n\n¿Continuar?`);
+    if(!ok) return;
+    showToast('Deshaciendo importación...','success');
+    // Borrar en lotes de 400
+    const CHUNK=400;
+    let borrados=0;
+    for(let i=0;i<ids.length;i+=CHUNK){
+      const grupo=ids.slice(i,i+CHUNK);
+      const batch=writeBatch(db);
+      grupo.forEach(cid=>batch.delete(doc(db,'clientes',cid)));
+      await batch.commit();
+      borrados+=grupo.length;
+    }
+    // Marcar la importación como deshecha
+    await updateDoc(doc(db,'importaciones',impId), { estado:'deshecha', deshechaEn:new Date().toISOString() });
+    showToast(`✓ ${borrados} clientes eliminados`,'success');
+    cargarHistorialImportaciones();
+    loadDashboard();
+  } catch(e){ console.error(e); showToast('Error al deshacer: '+e.message,'error'); }
+};
 
 window.toggleNotasEdit = function(officeId) {
   document.getElementById('notas-display').style.display='none';
