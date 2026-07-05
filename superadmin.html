@@ -517,6 +517,18 @@
           <div class="table-header"><h3>📜 Historial de importaciones</h3></div>
           <div id="imp-historial" style="padding:4px 0"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Cargando...</div></div>
         </div>
+
+        <!-- Mantenimiento: limpiar pagos huérfanos (temporal) -->
+        <div class="table-container" style="margin-top:16px;padding:16px 20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:13px;font-weight:600">🧹 Limpiar pagos huérfanos</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px">Busca pagos de "Migración de saldo inicial" cuyo cliente ya no existe (quedaron de pruebas) y los elimina. Seguro: pide confirmación y solo borra los que no tienen cliente.</div>
+            </div>
+            <button class="btn btn-ghost" onclick="limpiarPagosHuerfanos()" style="border-color:rgba(239,68,68,0.3);color:#ef4444;flex-shrink:0">🧹 Buscar y limpiar</button>
+          </div>
+          <div id="limpieza-resultado" style="margin-top:10px;font-size:12px"></div>
+        </div>
       </div>
     </div>
 
@@ -2209,6 +2221,45 @@ window.ejecutarImportacion = async function(){
 
 let ticketsCache = [];
 let ticketFilterActual = 'abierto';
+
+window.limpiarPagosHuerfanos = async function() {
+  const out = document.getElementById('limpieza-resultado');
+  if(out) out.innerHTML = '<span style="color:var(--text2)">Buscando pagos huérfanos...</span>';
+  try {
+    // 1. Traer todos los clientes (sus IDs) y todos los pagos de migración
+    const [cliSnap, pagSnap] = await Promise.all([
+      getDocs(collection(db,'clientes')),
+      getDocs(collection(db,'pagos'))
+    ]);
+    const clienteIds = new Set(cliSnap.docs.map(d=>d.id));
+    // 2. Pagos de migración cuyo clienteId ya no existe
+    const huerfanos = pagSnap.docs.filter(d=>{
+      const p = d.data();
+      return p.concepto==='Migración de saldo inicial' && p.clienteId && !clienteIds.has(p.clienteId);
+    });
+    if(huerfanos.length===0){
+      if(out) out.innerHTML = '<span style="color:#10b981">✓ No se encontraron pagos huérfanos. Todo limpio.</span>';
+      return;
+    }
+    // 3. Confirmar
+    const total = huerfanos.reduce((s,d)=>s+(d.data().monto||0),0);
+    const ok = confirm(`Se encontraron ${huerfanos.length} pagos huérfanos (de clientes que ya no existen), por un total de $${total.toLocaleString()}.\n\nEstos quedaron de importaciones de prueba. ¿Eliminarlos?\n\nSolo se borran estos pagos — ningún cliente ni pago real se toca.`);
+    if(!ok){ if(out) out.innerHTML = '<span style="color:var(--text2)">Cancelado. No se borró nada.</span>'; return; }
+    // 4. Borrar en lotes
+    let borrados=0;
+    for(let i=0;i<huerfanos.length;i+=400){
+      const grupo=huerfanos.slice(i,i+400);
+      const batch=writeBatch(db);
+      grupo.forEach(d=>batch.delete(doc(db,'pagos',d.id)));
+      await batch.commit();
+      borrados+=grupo.length;
+    }
+    if(out) out.innerHTML = `<span style="color:#10b981">✓ Se eliminaron ${borrados} pagos huérfanos.</span>`;
+    showToast(`✓ ${borrados} pagos huérfanos eliminados`,'success');
+  } catch(e){
+    if(out) out.innerHTML = '<span style="color:#ef4444">Error: '+e.message+'</span>';
+  }
+};
 
 window.cargarHistorialImportaciones = async function() {
   const cont = document.getElementById('imp-historial');
