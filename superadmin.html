@@ -446,24 +446,26 @@
           </button>
           <div id="cot-conv-resultado"></div>
         </div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
-          <h3 style="margin:0 0 16px;font-size:14px;color:var(--text)">💰 Resumen en tiempo real</h3>
-          <div id="cot-preview">
-            <div style="text-align:center;color:var(--text2);padding:40px 0">Completa los datos para ver la cotización</div>
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+            <h3 style="margin:0 0 16px;font-size:14px;color:var(--text)">💰 Resumen en tiempo real</h3>
+            <div id="cot-preview">
+              <div style="text-align:center;color:var(--text2);padding:40px 0">Completa los datos para ver la cotización</div>
+            </div>
+          </div>
+
+          <!-- Historial de cotizaciones -->
+          <div class="table-container" style="margin:0">
+            <div class="table-header"><h3 style="font-size:13px">📋 Historial de cotizaciones</h3></div>
+            <div id="cot-historial" style="padding:4px 0;max-height:280px;overflow-y:auto"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Cargando...</div></div>
+          </div>
+
+          <!-- Facturas / Invoices -->
+          <div class="table-container" style="margin:0">
+            <div class="table-header"><h3 style="font-size:13px">🧾 Facturas emitidas</h3></div>
+            <div id="cot-invoices" style="padding:4px 0;max-height:280px;overflow-y:auto"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Cargando...</div></div>
           </div>
         </div>
-      </div>
-
-      <!-- Historial de cotizaciones -->
-      <div class="table-container" style="margin-top:20px">
-        <div class="table-header"><h3>📋 Historial de cotizaciones</h3></div>
-        <div id="cot-historial" style="padding:4px 0"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Cargando...</div></div>
-      </div>
-
-      <!-- Facturas / Invoices -->
-      <div class="table-container" style="margin-top:20px">
-        <div class="table-header"><h3>🧾 Facturas emitidas</h3></div>
-        <div id="cot-invoices" style="padding:4px 0"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Cargando...</div></div>
       </div>
     </div>
     <div id="section-branding" class="hidden">
@@ -1779,17 +1781,27 @@ window.cargarInvoices = async function() {
           : '<span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b">● Pendiente</span>';
         const accion = pagado
           ? `<span style="font-size:10px;color:var(--text2)">${inv.pagadoEn?fmt(inv.pagadoEn):''}</span>`
-          : `<button class="action-btn" onclick="marcarInvoicePagado('${inv.id}')" style="background:rgba(16,185,129,0.15);color:#10b981;border-color:rgba(16,185,129,0.4)">✓ Marcar pagado</button>`;
+          : `<button class="action-btn" onclick="marcarInvoicePagado('${inv.id}')" style="background:rgba(16,185,129,0.15);color:#10b981;border-color:rgba(16,185,129,0.4)">✓ Pagado</button>`;
+        const btnEliminar = `<button class="action-btn" onclick="eliminarInvoice('${inv.id}','${(inv.numero||'').replace(/'/g,"")}')" title="Eliminar factura" style="background:rgba(239,68,68,0.12);color:#ef4444;border-color:rgba(239,68,68,0.3)">🗑</button>`;
         return `<tr>
           <td style="font-size:12px;font-family:monospace">${inv.numero||'—'}</td>
           <td style="font-size:12px">${inv.nombre||'—'}</td>
           <td style="font-size:13px"><b>$${(inv.total||0).toLocaleString()}</b></td>
           <td style="font-size:12px">${fmt(inv.vence)}</td>
           <td>${badge}</td>
-          <td style="text-align:right">${accion}</td>
+          <td style="text-align:right;white-space:nowrap">${accion} ${btnEliminar}</td>
         </tr>`;
       }).join('')+'</tbody></table>';
   } catch(e){ cont.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Error al cargar facturas</div>'; }
+};
+
+window.eliminarInvoice = async function(id, numero) {
+  if(!confirm(`¿Eliminar la factura ${numero}?\n\nEsto la quita del listado permanentemente. Úsalo si el cliente ya no quiere el servicio o la factura fue un error.`)) return;
+  try {
+    await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js").then(async m=>{ await m.deleteDoc(m.doc(db,'invoices',id)); });
+    showToast('✓ Factura eliminada','success');
+    cargarInvoices();
+  } catch(e){ showToast('Error: '+e.message,'error'); }
 };
 
 window.marcarInvoicePagado = async function(id) {
