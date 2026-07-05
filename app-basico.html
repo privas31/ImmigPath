@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Básico — versión 2026-07-05-Y","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Básico — versión 2026-07-05-Z","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -2069,7 +2069,7 @@ const loadTeam=async()=>{
                                         <span style={{color:saldo<=0?"#4ADE80":"#FBBF24",fontWeight:600}}>{fmtMoney(pg)} / {fmtMoney(pr)}{saldo<=0?" ✓":""}</span>
                                       </div>
                                       {saldo>0&&<div style={{fontSize:10,color:"#F87171",textAlign:"right",marginTop:2}}>Saldo: {fmtMoney(saldo)}</div>}
-                                      {isAdmin&&saldo>0&&<button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto(String(saldo));setCobrarConcepto(`WP - ${wd.nombre||"Dependiente"}`);setCobrarMetodo("zelle");setCobrarProcesoSel("");setCobrarWpRef({casoIdx:i,depIdx:di});setShowCobrar(true);}} style={{width:"100%",marginTop:6,background:"rgba(255,255,255,0.12)",color:"#fff",border:"none",borderRadius:6,padding:"5px",fontSize:11,fontWeight:600,cursor:"pointer"}}>💵 Cobrar WP</button>}
+                                      {isAdmin&&saldo>0&&<button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto(String(saldo));setCobrarConcepto(`WP - ${wd.nombre||"Dependiente"}`);setCobrarMetodo("zelle");setCobrarProcesoSel("");setCobrarWpRef({casoId:ca.id,depId:wd.id,depNombre:wd.nombre||""});setShowCobrar(true);}} style={{width:"100%",marginTop:6,background:"rgba(255,255,255,0.12)",color:"#fff",border:"none",borderRadius:6,padding:"5px",fontSize:11,fontWeight:600,cursor:"pointer"}}>💵 Cobrar WP</button>}
                                     </div>}
                                   </div>);
                                 })}
@@ -3856,9 +3856,17 @@ Gracias — ${officeData?.name||"ImmigPath"}`;
               if(cobrarWpRef){
                 try{
                   const{db:db4,doc:doc4,updateDoc:upd4}=window._firebase;
-                  const nuevosCasosWp=(cobrarCliente.casos||[]).map((ca,ci)=>{
-                    if(ci!==cobrarWpRef.casoIdx)return ca;
-                    return{...ca,wpDependientes:(ca.wpDependientes||[]).map((wd,di)=>di!==cobrarWpRef.depIdx?wd:{...wd,pagado:(parseMoney(wd.pagado)+parseFloat(cobrarMonto)).toFixed(2)})};
+                  const matchDep=(wd)=>{
+                    if(cobrarWpRef.depId!=null&&wd.id!=null)return wd.id===cobrarWpRef.depId;
+                    return (wd.nombre||"")===(cobrarWpRef.depNombre||"");
+                  };
+                  const matchCaso=(ca)=>{
+                    if(cobrarWpRef.casoId!=null&&ca.id!=null)return ca.id===cobrarWpRef.casoId;
+                    return (ca.wpDependientes||[]).some(matchDep);
+                  };
+                  const nuevosCasosWp=(cobrarCliente.casos||[]).map((ca)=>{
+                    if(!matchCaso(ca))return ca;
+                    return{...ca,wpDependientes:(ca.wpDependientes||[]).map((wd)=>!matchDep(wd)?wd:{...wd,pagado:(parseMoney(wd.pagado)+parseFloat(cobrarMonto)).toFixed(2)})};
                   });
                   await upd4(doc4(db4,"clientes",cobrarCliente.id),{casos:nuevosCasosWp});
                   setClientes(prev=>prev.map(cl=>cl.id===cobrarCliente.id?{...cl,casos:nuevosCasosWp}:cl));
