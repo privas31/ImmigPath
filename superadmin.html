@@ -2066,6 +2066,49 @@ window.ejecutarImportacion = async function(){
 let ticketsCache = [];
 let ticketFilterActual = 'abierto';
 
+window.toggleNotasEdit = function(officeId) {
+  document.getElementById('notas-display').style.display='none';
+  document.getElementById('notas-edit-btn').style.display='none';
+  document.getElementById('notas-editor').style.display='block';
+  document.getElementById('notas-textarea')?.focus();
+};
+window.cancelarNotas = function() {
+  document.getElementById('notas-editor').style.display='none';
+  document.getElementById('notas-display').style.display='block';
+  document.getElementById('notas-edit-btn').style.display='inline-block';
+};
+window.guardarNotas = async function(officeId) {
+  const val = document.getElementById('notas-textarea')?.value||'';
+  try {
+    await updateDoc(doc(db,'offices',officeId), { notasInternas: val });
+    const o = officesCache.find(x=>x.id===officeId); if(o) o.notasInternas=val;
+    const disp = document.getElementById('notas-display');
+    if(disp) disp.innerHTML = val.trim()? val.replace(/</g,'&lt;') : '<span style="color:#64748b">Sin notas. Haz clic en Editar para agregar.</span>';
+    cancelarNotas();
+    showToast('Notas guardadas ✓','success');
+  } catch(e){ showToast('Error: '+e.message,'error'); }
+};
+
+async function cargarActividadOficina(officeId) {
+  const cont = document.getElementById('det-actividad');
+  if(!cont) return;
+  try {
+    const snap = await getDocs(query(collection(db,'actividad'), where('officeId','==',officeId)));
+    const items = snap.docs.map(d=>d.data()).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,6);
+    if(items.length===0){ cont.innerHTML='<div style="font-size:11px;color:var(--text2);padding:6px 0">Sin actividad registrada aún.</div>'; return; }
+    const iconos = {oficina:['🏢','rgba(129,140,248,0.15)'],pago:['💵','rgba(16,185,129,0.15)'],cliente:['👤','rgba(99,102,241,0.15)']};
+    const hace = (f)=>{ if(!f) return ''; const h=Math.floor((Date.now()-new Date(f).getTime())/3600000); if(h<1) return 'hace min'; if(h<24) return 'hace '+h+' h'; const d=Math.floor(h/24); return 'hace '+d+' día'+(d!==1?'s':''); };
+    cont.innerHTML = items.map((a,i)=>{
+      const ic = iconos[a.tipo]||['•','rgba(148,163,184,0.15)'];
+      let titulo = a.tipo==='pago'?'Pago recibido':a.tipo==='cliente'?'Nuevo cliente':a.tipo==='oficina'?'Oficina creada':(a.titulo||'');
+      return `<div style="display:flex;gap:10px;padding:${i===0?'0 0 10px':'10px 0'};${i<items.length-1?'border-bottom:0.5px solid var(--border)':''}">
+        <div style="width:28px;height:28px;border-radius:7px;background:${ic[1]};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px">${ic[0]}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12px">${titulo}</div><div style="font-size:10px;color:var(--text2)">${a.detalle?a.detalle+' · ':''}${hace(a.fecha)}</div></div>
+      </div>`;
+    }).join('');
+  } catch(e){ cont.innerHTML='<div style="font-size:11px;color:var(--text2)">Error al cargar</div>'; }
+}
+
 window.verDetalleOficina = async function(officeId) {
   const o = officesCache.find(x=>x.id===officeId);
   if(!o){ showToast('Oficina no encontrada','error'); return; }
@@ -2170,11 +2213,27 @@ window.verDetalleOficina = async function(officeId) {
 
     <!-- Fila de 3 paneles (parte 2, se llena después) -->
     <div id="det-paneles" style="display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:12px">
-      <div class="stat-card"><div style="font-size:12px;color:var(--text2);text-align:center;padding:20px">Notas y actividad — próximamente</div></div>
+      <div class="stat-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+          <span style="font-size:13px;font-weight:600">📝 Notas Internas</span>
+          <button class="btn btn-ghost" id="notas-edit-btn" onclick="toggleNotasEdit('${o.id}')" style="font-size:11px;padding:3px 10px;border-color:rgba(99,102,241,0.3);color:#818cf8">✏️ Editar</button>
+        </div>
+        <div id="notas-display" style="font-size:11px;color:#cbd5e1;line-height:1.7;background:var(--bg);border-radius:7px;padding:11px;margin-bottom:16px;min-height:40px;white-space:pre-wrap">${(o.notasInternas||'').trim()||'<span style=\'color:#64748b\'>Sin notas. Haz clic en Editar para agregar.</span>'}</div>
+        <div id="notas-editor" style="display:none;margin-bottom:16px">
+          <textarea id="notas-textarea" rows="4" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid rgba(99,102,241,0.3);border-radius:7px;padding:10px;color:#f1f5f9;font-size:11px;font-family:inherit;resize:vertical;outline:none" placeholder="Escribe notas privadas sobre esta oficina...">${(o.notasInternas||'').replace(/</g,'&lt;')}</textarea>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn btn-primary" onclick="guardarNotas('${o.id}')" style="font-size:11px;padding:5px 12px">✓ Guardar</button>
+            <button class="btn btn-ghost" onclick="cancelarNotas()" style="font-size:11px;padding:5px 12px">Cancelar</button>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">📌 Actividad Reciente</div>
+        <div id="det-actividad"><div style="font-size:11px;color:var(--text2);padding:8px 0">Cargando...</div></div>
+      </div>
       <div class="stat-card"><div style="font-size:12px;color:var(--text2);text-align:center;padding:20px">Historial de pagos — próximamente</div></div>
       <div class="stat-card"><div style="font-size:12px;color:var(--text2);text-align:center;padding:20px">Tickets — próximamente</div></div>
     </div>
   `;
+  cargarActividadOficina(officeId);
 };
 
 window.loadTickets = async function() {
