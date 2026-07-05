@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-04-W","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-05-X","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -194,19 +194,34 @@ function LoginScreen({onLogin}){
               if(od3.enabledModules&&od3.enabledModules.length>0)setEnabledModules(od3.enabledModules);
             }
       }
-      // Registrar actividad de login
+      // Entrar primero (el login no debe esperar por el registro de actividad)
+      onLogin(cred.user,userData,officeInfo);
+      // Registrar actividad de login en segundo plano (si falla, no afecta el acceso)
       try{
         const{collection:colA,addDoc:addA}=window._firebase;
-        await addA(colA(db,"actividadEmpleadas"),{
+        addA(colA(db,"actividadEmpleadas"),{
           officeId:userData.officeId||"",
           usuario:cred.user.email,
           tipo:"login",
           detalle:"Inició sesión",
           fecha:new Date().toISOString(),
-        });
+        }).catch(ae=>console.error("Error registrando login:",ae));
       }catch(ae){console.error("Error registrando login:",ae);}
-      onLogin(cred.user,userData,officeInfo);
-    }catch(e){setErr("Email o contraseña incorrectos");}setLoading(false);};
+    }catch(e){
+      const code=e.code||"";
+      if(code.includes("wrong-password")||code.includes("user-not-found")||code.includes("invalid-credential")||code.includes("invalid-email")){
+        setErr("Email o contraseña incorrectos");
+      } else if(e.message==="Sin acceso"){
+        setErr("Esta cuenta no tiene acceso al monitor");
+      } else if(e.message==="Usuario no encontrado"){
+        setErr("Usuario no encontrado en el sistema");
+      } else {
+        // Error no relacionado con credenciales (ej. registro de actividad): no bloquear
+        console.error("Login (no credencial):",e);
+        setErr("");
+      }
+    }
+    setLoading(false);};
   return(<div onClick={()=>setOpenMenuId(null)} style={{minHeight:"100vh",background:"linear-gradient(135deg,#0F172A 0%,#1E40AF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
     <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:400,padding:36,boxShadow:"0 20px 60px rgba(0,0,0,0.3)",maxHeight:"90vh",overflowY:"auto"}}>
       <div style={{textAlign:"center",marginBottom:28}}>
