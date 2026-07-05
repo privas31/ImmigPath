@@ -164,7 +164,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         Importar Excel
       </button>
-      <button class="nav-item" onclick="showSection('cotizador',this);cargarHistorialCotizaciones()">
+      <button class="nav-item" onclick="showSection('cotizador',this);cargarHistorialCotizaciones();cargarInvoices()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-3M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m-5 0h5"/></svg>
         Cotizador
       </button>
@@ -430,6 +430,17 @@
               📝 Contrato PDF
             </button>
           </div>
+          <div style="margin-top:10px">
+            <label class="form-label">¿Qué cobra el invoice?</label>
+            <select class="form-input" id="cot-invoice-tipo" style="margin-bottom:8px">
+              <option value="completo">Primer pago completo (instalación + 1ª mensualidad)</option>
+              <option value="instalacion">Solo instalación (cobro único)</option>
+              <option value="mensual">Solo mensualidad del plan</option>
+            </select>
+            <button class="btn" onclick="generarInvoicePDF()" style="width:100%;padding:12px;font-size:13px;background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.4)">
+              🧾 Crear Invoice (Factura)
+            </button>
+          </div>
         </div>
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
           <h3 style="margin:0 0 16px;font-size:14px;color:var(--text)">💰 Resumen en tiempo real</h3>
@@ -443,6 +454,12 @@
       <div class="table-container" style="max-width:1000px;margin-top:20px">
         <div class="table-header"><h3>📋 Historial de cotizaciones</h3></div>
         <div id="cot-historial" style="padding:4px 0"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Cargando...</div></div>
+      </div>
+
+      <!-- Facturas / Invoices -->
+      <div class="table-container" style="max-width:1000px;margin-top:20px">
+        <div class="table-header"><h3>🧾 Facturas emitidas</h3></div>
+        <div id="cot-invoices" style="padding:4px 0"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Cargando...</div></div>
       </div>
     </div>
     <div id="section-branding" class="hidden">
@@ -1663,6 +1680,44 @@ window.cargarHistorialCotizaciones = async function() {
   } catch(e){ cont.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Error al cargar historial</div>'; }
 };
 
+window.cargarInvoices = async function() {
+  const cont = document.getElementById('cot-invoices');
+  if(!cont) return;
+  try {
+    const snap = await getDocs(collection(db,'invoices'));
+    const invs = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    if(invs.length===0){ cont.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Aún no hay facturas emitidas.</div>'; return; }
+    const fmt=(iso)=>{ if(!iso) return '—'; const f=new Date(iso.length<=10?iso+'T00:00:00':iso); return f.toLocaleDateString('es-US',{day:'2-digit',month:'short',year:'numeric'}); };
+    cont.innerHTML = `<table style="width:100%"><thead><tr><th>Factura</th><th>Cliente</th><th>Total</th><th>Vence</th><th>Estado</th><th></th></tr></thead><tbody>`+
+      invs.map(inv=>{
+        const pagado = inv.estadoPago==='pagado';
+        const badge = pagado
+          ? '<span class="badge badge-green">✓ Pagado</span>'
+          : '<span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b">● Pendiente</span>';
+        const accion = pagado
+          ? `<span style="font-size:10px;color:var(--text2)">${inv.pagadoEn?fmt(inv.pagadoEn):''}</span>`
+          : `<button class="action-btn" onclick="marcarInvoicePagado('${inv.id}')" style="background:rgba(16,185,129,0.15);color:#10b981;border-color:rgba(16,185,129,0.4)">✓ Marcar pagado</button>`;
+        return `<tr>
+          <td style="font-size:12px;font-family:monospace">${inv.numero||'—'}</td>
+          <td style="font-size:12px">${inv.nombre||'—'}</td>
+          <td style="font-size:13px"><b>$${(inv.total||0).toLocaleString()}</b></td>
+          <td style="font-size:12px">${fmt(inv.vence)}</td>
+          <td>${badge}</td>
+          <td style="text-align:right">${accion}</td>
+        </tr>`;
+      }).join('')+'</tbody></table>';
+  } catch(e){ cont.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Error al cargar facturas</div>'; }
+};
+
+window.marcarInvoicePagado = async function(id) {
+  if(!confirm('¿Marcar esta factura como PAGADA? Quedará registrada con la fecha de hoy.')) return;
+  try {
+    await updateDoc(doc(db,'invoices',id), { estadoPago:'pagado', pagadoEn:new Date().toISOString() });
+    showToast('✓ Factura marcada como pagada','success');
+    cargarInvoices();
+  } catch(e){ showToast('Error: '+e.message,'error'); }
+};
+
 window.cambiarEstadoCotizacion = async function(id, estado) {
   try { await updateDoc(doc(db,'cotizaciones',id), {estado}); showToast('Estado actualizado','success'); cargarHistorialCotizaciones(); }
   catch(e){ showToast('Error: '+e.message,'error'); }
@@ -2092,6 +2147,141 @@ window.generarContratoPDF = function() {
 
   pdf.save('Contrato-ImmigPath-'+d.nombre.replace(/[^a-zA-Z0-9]/g,'-')+'.pdf');
   showToast('✓ Contrato bilingüe generado','success');
+};
+
+// Obtiene el siguiente número de factura consecutivo (INV-AÑO-####)
+async function siguienteNumeroInvoice() {
+  const year = new Date().getFullYear();
+  try {
+    const snap = await getDocs(collection(db,'invoices'));
+    const delAno = snap.docs.map(d=>d.data()).filter(i=>(i.numero||'').includes('-'+year+'-'));
+    const maxN = delAno.reduce((m,i)=>{ const n=parseInt((i.numero||'').split('-').pop())||0; return n>m?n:m; },0);
+    return 'INV-'+year+'-'+String(maxN+1).padStart(4,'0');
+  } catch(e){ return 'INV-'+year+'-0001'; }
+}
+
+window.generarInvoicePDF = async function() {
+  calcCotizacion();
+  const d = window._cotData;
+  if(!d){ showToast('Completa la cotización primero','error'); return; }
+  if(!d.nombre || d.nombre==='Oficina Cliente'){ showToast('Escribe el nombre del prospecto','error'); return; }
+
+  const tipo = document.getElementById('cot-invoice-tipo')?.value||'completo';
+  const PLAN_NOMBRE={basic:'Básico',professional:'Profesional',premium:'Premium'};
+
+  // Construir líneas según el tipo
+  let lineas=[], total=0;
+  if(tipo==='completo'){
+    lineas=[['Instalación del sistema (única vez)', d.totalInst],['Primera mensualidad — Plan '+(PLAN_NOMBRE[d.plan]||d.plan), d.mensual]];
+    total=d.totalInst+d.mensual;
+  } else if(tipo==='instalacion'){
+    lineas=[['Instalación del sistema (única vez)', d.totalInst]];
+    total=d.totalInst;
+  } else {
+    lineas=[['Mensualidad — Plan '+(PLAN_NOMBRE[d.plan]||d.plan), d.mensual]];
+    total=d.mensual;
+  }
+
+  const numero = await siguienteNumeroInvoice();
+  const hoy = new Date();
+  const fechaEmision = hoy.toLocaleDateString('es-US',{year:'numeric',month:'long',day:'numeric'});
+  const vence = d.vence ? new Date(d.vence+'T00:00:00').toLocaleDateString('es-US',{year:'numeric',month:'long',day:'numeric'}) : '—';
+
+  // Datos ImmigPath
+  const einImm = document.getElementById('immig-ein')?.value||'';
+  const dirImm = document.getElementById('immig-direccion')?.value||'';
+  const telImm = document.getElementById('immig-tel')?.value||'';
+  const emailImm = 'facturacion@immigpath.com';
+
+  const {jsPDF} = window.jspdf;
+  const pdf = new jsPDF({unit:'mm',format:'letter'});
+  const W=215.9,M=16; let y=20;
+
+  // Encabezado
+  pdf.setFillColor(12,68,124); pdf.rect(0,0,W,6,'F');
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(20); pdf.setTextColor(12,68,124);
+  pdf.text('ImmigPath Services', M, y);
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(20); pdf.setTextColor(30,41,59);
+  pdf.text('INVOICE', W-M, y, {align:'right'});
+  y+=6;
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(100,116,139);
+  pdf.text(emailImm, M, y);
+  pdf.text(numero, W-M, y, {align:'right'});
+  y+=5;
+  if(einImm){ pdf.text(einImm, M, y); }
+  pdf.text('Fecha: '+fechaEmision, W-M, y, {align:'right'});
+  y+=5;
+  if(dirImm){ pdf.text(dirImm, M, y); }
+  if(telImm){ pdf.text('Tel: '+telImm, W-M, y, {align:'right'}); }
+  y+=8;
+
+  pdf.setDrawColor(12,68,124); pdf.setLineWidth(0.5); pdf.line(M,y,W-M,y); y+=10;
+
+  // Facturar a / Vence
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(148,163,184);
+  pdf.text('FACTURAR A', M, y);
+  pdf.text('VENCE', W-M, y, {align:'right'});
+  y+=5;
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(30,41,59);
+  pdf.text(d.nombre, M, y);
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(10);
+  pdf.text(vence, W-M, y, {align:'right'});
+  y+=5;
+  pdf.setFontSize(10); pdf.setTextColor(100,116,139);
+  if(d.representante){ pdf.text(d.representante, M, y); y+=4.5; }
+  if(d.email){ pdf.text(d.email, M, y); y+=4.5; }
+  if(d.telefono){ pdf.text(d.telefono, M, y); y+=4.5; }
+  if(d.metodo){ pdf.setFontSize(9); pdf.text('Método de pago: '+d.metodo, W-M, y-4.5, {align:'right'}); }
+  y+=6;
+
+  // Tabla de conceptos
+  pdf.setFillColor(241,245,249); pdf.rect(M,y-5,W-M*2,8,'F');
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(100,116,139);
+  pdf.text('CONCEPTO', M+3, y);
+  pdf.text('MONTO', W-M-3, y, {align:'right'});
+  y+=8;
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(30,41,59);
+  lineas.forEach(([concepto,monto])=>{
+    pdf.text(concepto, M+3, y);
+    pdf.text('$'+monto.toLocaleString('en-US',{minimumFractionDigits:2}), W-M-3, y, {align:'right'});
+    pdf.setDrawColor(241,245,249); pdf.line(M,y+2,W-M,y+2);
+    y+=8;
+  });
+  if(d.descuento>0){
+    pdf.setTextColor(22,163,74);
+    pdf.text('Descuento aplicado', M+3, y);
+    pdf.text('−$'+d.descuento.toLocaleString('en-US',{minimumFractionDigits:2}), W-M-3, y, {align:'right'});
+    y+=8;
+  }
+  y+=2;
+  // Total
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(14); pdf.setTextColor(12,68,124);
+  pdf.text('TOTAL', M+3, y);
+  pdf.text('$'+total.toLocaleString('en-US',{minimumFractionDigits:2})+' USD', W-M-3, y, {align:'right'});
+  y+=12;
+
+  // Sello PENDIENTE
+  pdf.setFillColor(254,243,199); pdf.roundedRect(M,y-5,W-M*2,10,2,2,'F');
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(180,83,9);
+  pdf.text('● PENDIENTE DE PAGO', W/2, y+1, {align:'center'});
+  y+=16;
+
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(148,163,184);
+  pdf.text('Gracias por confiar en ImmigPath Services. Los precios no incluyen impuestos aplicables.', W/2, y, {align:'center'});
+
+  pdf.save('Invoice-'+numero+'-'+d.nombre.replace(/[^a-zA-Z0-9]/g,'-')+'.pdf');
+
+  // Guardar el invoice en Firestore
+  try {
+    await addDoc(collection(db,'invoices'), {
+      numero, nombre:d.nombre, representante:d.representante||'', email:d.email||'',
+      tipo, total, plan:d.plan, metodo:d.metodo||'', vence:d.vence||'',
+      estadoPago:'pendiente', fecha:new Date().toISOString(), creadoPor:currentUser?.email||'superadmin',
+      cotizacionId: window._cotEditandoId||null,
+    });
+    showToast('✓ Invoice '+numero+' generado','success');
+    cargarHistorialCotizaciones();
+  } catch(e){ showToast('Invoice PDF generado (no se pudo guardar el registro)','success'); }
 };
 
 
