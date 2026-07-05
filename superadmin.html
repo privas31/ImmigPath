@@ -295,6 +295,65 @@
         <h2>🧮 Cotizador de Instalación</h2>
         <p style="color:var(--text2);font-size:13px;margin-top:4px">Genera una propuesta personalizada para cada cliente potencial</p>
       </div>
+
+      <!-- Información del prospecto -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:1000px;margin-bottom:20px">
+        <h3 style="margin:0 0 16px;font-size:14px;color:var(--text)">👤 Información del prospecto</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Nombre del dueño / representante</label>
+            <input class="form-input" id="cot-representante" placeholder="Ej: María González">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Correo electrónico</label>
+            <input class="form-input" id="cot-email" type="email" placeholder="correo@ejemplo.com">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Teléfono / WhatsApp</label>
+            <input class="form-input" id="cot-telefono" placeholder="(000) 000-0000">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Vence el (validez de la cotización)</label>
+            <input class="form-input" id="cot-vence" type="date">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Cargo / Title</label>
+            <input class="form-input" id="cot-cargo" placeholder="Ej: Owner / Dueña">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Tipo de descuento</label>
+            <select class="form-input" id="cot-desc-tipo" onchange="calcCotizacion()">
+              <option value="none">Sin descuento</option>
+              <option value="pct">Porcentaje (%)</option>
+              <option value="fijo">Monto fijo ($)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Valor del descuento</label>
+            <input class="form-input" id="cot-desc-valor" type="number" value="0" min="0" oninput="calcCotizacion()">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Método de pago</label>
+            <select class="form-input" id="cot-metodo">
+              <option value="">— Seleccionar —</option>
+              <option value="zelle">Zelle</option>
+              <option value="transferencia">Transferencia bancaria</option>
+              <option value="tarjeta">Tarjeta de crédito/débito</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="cheque">Cheque</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin:14px 0 0">
+          <label class="form-label">🔒 Notas internas <span style="font-size:10px;color:var(--text2);font-weight:400">(solo para ti, NO salen en el PDF)</span></label>
+          <textarea class="form-input" id="cot-notas-internas" rows="2" placeholder="Ej: Le interesa pero lo está pensando. Llamar el lunes. Referida por Oficina Prueba."></textarea>
+        </div>
+      </div>
+
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1000px">
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
           <h3 style="margin:0 0 16px;font-size:14px;color:var(--text)">📋 Datos de la Oficina</h3>
@@ -359,18 +418,6 @@
             <input class="form-input" id="immig-direccion" placeholder="Dirección: Ciudad, FL XXXXX" style="margin-bottom:6px">
             <input class="form-input" id="immig-email" value="plataforma-migracion@outlook.com" style="margin-bottom:6px">
             <input class="form-input" id="immig-tel" placeholder="Teléfono ImmigPath">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Nombre del representante / dueño</label>
-            <input class="form-input" id="cot-representante" placeholder="Ej: María González">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Cargo / Title</label>
-            <input class="form-input" id="cot-cargo" placeholder="Ej: Owner / Dueña">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Teléfono / WhatsApp</label>
-            <input class="form-input" id="cot-telefono" placeholder="(000) 000-0000">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
             <button class="btn btn-primary" onclick="generarCotizacionPDF()" style="padding:12px;font-size:13px">
@@ -1565,7 +1612,15 @@ window.calcCotizacion = function() {
     ...(i589?[{label:'Activación I-589 + Chat', precio:150}]:[]),
   ];
 
-  const totalInst = items.reduce((s,i)=>s+i.precio,0);
+  const totalInstBruto = items.reduce((s,i)=>s+i.precio,0);
+  // Descuento (aplica al total de instalación)
+  const descTipo = document.getElementById('cot-desc-tipo')?.value||'none';
+  const descValor = parseFloat(document.getElementById('cot-desc-valor')?.value)||0;
+  let descuento = 0;
+  if(descTipo==='pct') descuento = Math.round(totalInstBruto*(descValor/100));
+  else if(descTipo==='fijo') descuento = descValor;
+  descuento = Math.min(descuento, totalInstBruto); // no puede ser mayor al total
+  const totalInst = totalInstBruto - descuento;
   const mensual   = PLAN_MENSUAL[plan];
   const costo     = PLAN_COSTO[plan];
   const ganancia  = mensual - costo;
@@ -1577,6 +1632,7 @@ window.calcCotizacion = function() {
     <div style="margin-bottom:14px">
       <div style="font-size:10px;color:var(--text2);text-transform:uppercase;font-weight:700;margin-bottom:8px;letter-spacing:0.06em">Desglose Instalación (cobro único)</div>
       ${items.map((i,idx)=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;background:${idx%2===0?'rgba(255,255,255,0.02)':'transparent'}"><span style="color:var(--text2)">${i.label}</span><span style="font-weight:600;color:${i.precio===0?'var(--text2)':'var(--text)'}">${i.precio===0?'Incluido':'$'+i.precio.toLocaleString()}</span></div>`).join('')}
+      ${descuento>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:#16A34A">Descuento ${descTipo==='pct'?descValor+'%':''}</span><span style="font-weight:600;color:#16A34A">−$${descuento.toLocaleString()}</span></div>`:''}
       <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;font-weight:800;color:var(--accent2);border-top:2px solid var(--accent);margin-top:4px">
         <span>TOTAL INSTALACIÓN</span><span>$${totalInst.toLocaleString()}</span>
       </div>
@@ -1594,9 +1650,16 @@ window.calcCotizacion = function() {
       <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text2)">Año 2+ (solo mensual)</span><span style="font-weight:700;color:#16A34A">$${(ganancia*12).toLocaleString()}/año</span></div>
     </div>`;
 
-  window._cotData = {items,totalInst,mensual,costo,ganancia,ganancia12,plan,
+  window._cotData = {items,totalInst,totalInstBruto,descuento,descTipo,descValor,mensual,costo,ganancia,ganancia12,plan,
     nombre:document.getElementById('cot-nombre')?.value||'Oficina Cliente',
-    usuarios,clientes,horas,notas:document.getElementById('cot-notas')?.value||''};
+    usuarios,clientes,horas,notas:document.getElementById('cot-notas')?.value||'',
+    representante:document.getElementById('cot-representante')?.value||'',
+    email:document.getElementById('cot-email')?.value||'',
+    telefono:document.getElementById('cot-telefono')?.value||'',
+    cargo:document.getElementById('cot-cargo')?.value||'',
+    vence:document.getElementById('cot-vence')?.value||'',
+    metodo:document.getElementById('cot-metodo')?.value||'',
+    notasInternas:document.getElementById('cot-notas-internas')?.value||''};
 };
 
 window.generarCotizacionPDF = function() {
