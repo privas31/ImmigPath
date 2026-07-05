@@ -2107,8 +2107,8 @@ async function cargarActividadOficina(officeId) {
   const cont = document.getElementById('det-actividad');
   if(!cont) return;
   try {
-    const snap = await getDocs(query(collection(db,'actividad'), where('officeId','==',officeId)));
-    const items = snap.docs.map(d=>d.data()).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,6);
+    const snap = await getDocs(collection(db,'actividad'));
+    const items = snap.docs.map(d=>d.data()).filter(a=>a.officeId===officeId).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,6);
     if(items.length===0){ cont.innerHTML='<div style="font-size:11px;color:var(--text2);padding:6px 0">Sin actividad registrada aún.</div>'; return; }
     const iconos = {oficina:['🏢','rgba(129,140,248,0.15)'],pago:['💵','rgba(16,185,129,0.15)'],cliente:['👤','rgba(99,102,241,0.15)']};
     const hace = (f)=>{ if(!f) return ''; const h=Math.floor((Date.now()-new Date(f).getTime())/3600000); if(h<1) return 'hace min'; if(h<24) return 'hace '+h+' h'; const d=Math.floor(h/24); return 'hace '+d+' día'+(d!==1?'s':''); };
@@ -2268,8 +2268,8 @@ async function cargarPagosOficina(officeId) {
   const cont = document.getElementById('det-pagos');
   if(!cont) return;
   try {
-    const snap = await getDocs(query(collection(db,'pagos_oficinas'), where('officeId','==',officeId)));
-    const pagos = snap.docs.map(d=>d.data()).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    const snap = await getDocs(collection(db,'pagos_oficinas'));
+    const pagos = snap.docs.map(d=>d.data()).filter(p=>p.officeId===officeId).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
     const fmt = (iso)=>{ const f=new Date(iso); return f.toLocaleDateString('es-US',{day:'2-digit',month:'short',year:'2-digit'}); };
     if(pagos.length===0){
       cont.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:16px 0">Aún no hay pagos registrados.<br><span style="font-size:10px">Se registran al marcar "✓ Pagada" en el editor.</span></div>';
@@ -2297,8 +2297,8 @@ async function cargarTicketsOficina(officeId) {
   const cont = document.getElementById('det-tickets');
   if(!cont) return;
   try {
-    const snap = await getDocs(query(collection(db,'tickets_soporte'), where('officeId','==',officeId)));
-    const tks = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    const snap = await getDocs(collection(db,'tickets_soporte'));
+    const tks = snap.docs.map(d=>({id:d.id,...d.data()})).filter(t=>t.officeId===officeId).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
     const abiertos = tks.filter(t=>t.estado==='abierto').length;
     const progreso = tks.filter(t=>t.estado==='progreso').length;
     const resueltos = tks.filter(t=>t.estado==='resuelto').length;
