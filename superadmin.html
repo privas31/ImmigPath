@@ -441,6 +441,10 @@
               🧾 Crear Invoice (Factura)
             </button>
           </div>
+          <button class="btn" onclick="convertirEnOficina()" style="width:100%;padding:14px;font-size:14px;font-weight:700;margin-top:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;box-shadow:0 4px 12px rgba(16,185,129,0.3)">
+            🏢 Convertir en oficina →
+          </button>
+          <div id="cot-conv-resultado"></div>
         </div>
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
           <h3 style="margin:0 0 16px;font-size:14px;color:var(--text)">💰 Resumen en tiempo real</h3>
@@ -1618,6 +1622,85 @@ function getMigracionCosto(n) {
   if(n<=20000) return 500;
   return 700;
 }
+
+window.convertirEnOficina = async function() {
+  calcCotizacion();
+  const d = window._cotData;
+  if(!d){ showToast('Completa la cotización primero','error'); return; }
+  if(!d.nombre || d.nombre==='Oficina Cliente'){ showToast('Escribe el nombre de la oficina','error'); return; }
+  if(!d.email){ showToast('Falta el correo del prospecto (será su usuario de acceso)','error'); return; }
+
+  const PLAN_NOMBRE={basic:'Básico',professional:'Profesional',premium:'Premium'};
+  const modulosMap={imm:'immigration',not:'notary',tax:'taxes',seg:'insurance'};
+  const modulos=['imm','not','tax','seg'].filter(m=>document.getElementById('cot-mod-'+m)?.checked).map(m=>modulosMap[m]);
+
+  const ok = confirm(`🏢 Crear oficina desde esta cotización\n\n`+
+    `Oficina: ${d.nombre}\n`+
+    `Plan: ${PLAN_NOMBRE[d.plan]||d.plan} — $${d.mensual}/mes\n`+
+    `Dueño: ${d.representante||'—'}\n`+
+    `Email de acceso: ${d.email}\n\n`+
+    `Se creará: la oficina (activa), un usuario administrador, una contraseña temporal y el link de acceso.\n\n¿Continuar?`);
+  if(!ok) return;
+
+  const resDiv = document.getElementById('cot-conv-resultado');
+  if(resDiv) resDiv.innerHTML='<div style="margin-top:12px;padding:12px;font-size:12px;color:var(--text2)">Creando oficina...</div>';
+
+  // Generar contraseña temporal
+  const tempPass = 'Temp-'+Math.random().toString(36).slice(2,6)+Math.floor(Math.random()*90+10);
+
+  try {
+    const userCred = await createUserWithEmailAndPassword(auth, d.email, tempPass);
+    const uid = userCred.user.uid;
+    const officeRef = await addDoc(collection(db,'offices'), {
+      name:d.nombre, ownerName:d.representante||'', email:d.email, phone:d.telefono||'',
+      plan:d.plan, isActive:true, nextBilling:d.vence||'',
+      enabledModules:modulos.length?modulos:['immigration'],
+      stats:{totalClients:0,activeCases:0,totalCases:0},
+      isDemo:false, accessType:'active', accessPassword:tempPass, adminEmail:d.email,
+      createdAt:serverTimestamp(), createdBy:currentUser?.uid||'superadmin',
+      origenCotizacion:true,
+    });
+    await setDoc(doc(db,'users',uid), {
+      uid, email:d.email, displayName:d.representante||d.nombre, role:'office_admin',
+      officeId:officeRef.id, moduleAccess:modulos.length?modulos:['immigration'],
+      isActive:true, createdAt:serverTimestamp(),
+    });
+    const accessLink = 'https://immigpath.com'+(d.plan==='basic'?'/app-basico.html':'/app.html')+'?o='+officeRef.id;
+    try { await updateDoc(doc(db,'offices',officeRef.id),{accessLink}); } catch(e){}
+    try { await addDoc(collection(db,'actividad'),{tipo:'oficina',titulo:'Nueva oficina creada',detalle:d.nombre+' (desde cotización)',officeId:officeRef.id,officeName:d.nombre,usuario:currentUser?.email||'superadmin',fecha:new Date().toISOString()}); } catch(e){}
+
+    // Marcar la cotización como ganada si está guardada
+    if(window._cotEditandoId){ try{ await updateDoc(doc(db,'cotizaciones',window._cotEditandoId),{estado:'ganada',oficinaCreada:officeRef.id}); }catch(e){} }
+
+    // Mostrar credenciales
+    if(resDiv) resDiv.innerHTML = `
+      <div style="margin-top:14px;background:var(--bg2);border:1px solid rgba(16,185,129,0.4);border-radius:10px;padding:16px">
+        <div style="font-size:14px;font-weight:700;color:#10b981;margin-bottom:12px">✅ ¡Oficina creada!</div>
+        <div style="background:var(--bg);border-radius:8px;padding:14px;font-size:12px;line-height:2.1">
+          <div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--text2)">🔗 Link de acceso</span><span style="color:#818cf8;word-break:break-all;text-align:right">${accessLink}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--text2)">👤 Usuario</span><span>${d.email}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--text2)">🔑 Contraseña temporal</span><span style="font-family:monospace;background:var(--bg3);padding:2px 8px;border-radius:5px">${tempPass}</span></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-primary" onclick="copiarCredenciales('${d.nombre.replace(/'/g,"")}','${d.email}','${tempPass}','${accessLink}')" style="font-size:11px;padding:7px 14px">📋 Copiar credenciales</button>
+          <button class="btn btn-ghost" onclick="verDetalleOficina('${officeRef.id}')" style="font-size:11px;padding:7px 14px">Ver la oficina →</button>
+        </div>
+        <div style="font-size:10px;color:var(--text2);margin-top:10px">Comparte estas credenciales con el dueño. Se recomienda que cambie la contraseña al entrar.</div>
+      </div>`;
+    showToast('✓ Oficina "'+d.nombre+'" creada','success');
+    cargarHistorialCotizaciones();
+  } catch(e){
+    let msg = e.message||String(e);
+    if(msg.includes('email-already-in-use')) msg='Ese correo ya tiene una cuenta. Usa otro email o esa oficina ya existe.';
+    if(resDiv) resDiv.innerHTML = `<div style="margin-top:12px;padding:12px;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.08);border-radius:8px">Error: ${msg}</div>`;
+    showToast('Error al crear oficina','error');
+  }
+};
+
+window.copiarCredenciales = function(nombre,email,pass,link){
+  const texto = `Bienvenido a ImmigPath — ${nombre}\n\n🔗 Acceso: ${link}\n👤 Usuario: ${email}\n🔑 Contraseña temporal: ${pass}\n\nTe recomendamos cambiar tu contraseña al ingresar.`;
+  navigator.clipboard.writeText(texto).then(()=>showToast('✓ Credenciales copiadas','success')).catch(()=>showToast('No se pudo copiar','error'));
+};
 
 window.guardarCotizacion = async function() {
   calcCotizacion();
