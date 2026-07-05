@@ -2230,11 +2230,50 @@ window.verDetalleOficina = async function(officeId) {
         <div id="det-actividad"><div style="font-size:11px;color:var(--text2);padding:8px 0">Cargando...</div></div>
       </div>
       <div class="stat-card"><div style="font-size:12px;color:var(--text2);text-align:center;padding:20px">Historial de pagos — próximamente</div></div>
-      <div class="stat-card"><div style="font-size:12px;color:var(--text2);text-align:center;padding:20px">Tickets — próximamente</div></div>
+      <div class="stat-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span style="font-size:13px;font-weight:600">🎧 Resumen de Tickets</span>
+          <button class="btn btn-ghost" onclick="showSection('soporte',document.querySelectorAll('.nav-item')[5]);loadTickets()" style="font-size:10px;padding:2px 9px;color:#818cf8">Ver todos</button>
+        </div>
+        <div id="det-tickets"><div style="font-size:11px;color:var(--text2);padding:8px 0">Cargando...</div></div>
+      </div>
     </div>
   `;
   cargarActividadOficina(officeId);
+  cargarTicketsOficina(officeId);
 };
+
+async function cargarTicketsOficina(officeId) {
+  const cont = document.getElementById('det-tickets');
+  if(!cont) return;
+  try {
+    const snap = await getDocs(query(collection(db,'tickets_soporte'), where('officeId','==',officeId)));
+    const tks = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    const abiertos = tks.filter(t=>t.estado==='abierto').length;
+    const progreso = tks.filter(t=>t.estado==='progreso').length;
+    const resueltos = tks.filter(t=>t.estado==='resuelto').length;
+    const estBadge = {abierto:['rgba(239,68,68,0.15)','#ef4444','Abierto'],progreso:['rgba(245,158,11,0.15)','#f59e0b','Progreso'],resuelto:['rgba(16,185,129,0.15)','#10b981','Resuelto']};
+    const hace = (f)=>{ if(!f) return ''; const h=Math.floor((Date.now()-new Date(f).getTime())/3600000); if(h<1) return 'hace min'; if(h<24) return 'hace '+h+' h'; const d=Math.floor(h/24); return 'hace '+d+' día'+(d!==1?'s':''); };
+    let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
+      <div style="background:var(--bg);border-radius:8px;padding:9px;text-align:center"><div style="font-size:18px;font-weight:700;color:#ef4444">${abiertos}</div><div style="font-size:9px;color:var(--text2)">Abiertos</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:9px;text-align:center"><div style="font-size:18px;font-weight:700;color:#f59e0b">${progreso}</div><div style="font-size:9px;color:var(--text2)">Progreso</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:9px;text-align:center"><div style="font-size:18px;font-weight:700;color:#10b981">${resueltos}</div><div style="font-size:9px;color:var(--text2)">Resueltos</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:9px;text-align:center"><div style="font-size:18px;font-weight:700;color:#818cf8">${tks.length}</div><div style="font-size:9px;color:var(--text2)">Total</div></div>
+    </div>`;
+    if(tks.length===0){
+      html += '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px 0">Esta oficina no ha enviado tickets.</div>';
+    } else {
+      html += '<div style="display:flex;flex-direction:column">' + tks.slice(0,4).map((t,i)=>{
+        const eb=estBadge[t.estado]||estBadge.abierto;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:${i===0?'0 0 9px':'9px 0'};${i<Math.min(4,tks.length)-1?'border-bottom:0.5px solid var(--border)':''}">
+          <div style="min-width:0"><div style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(t.asunto||'(sin asunto)').replace(/</g,'&lt;')}</div><div style="font-size:10px;color:var(--text2)">#${(t.id||'').slice(-5).toUpperCase()} · ${hace(t.fecha)}</div></div>
+          <span style="font-size:10px;background:${eb[0]};color:${eb[1]};padding:2px 8px;border-radius:8px;white-space:nowrap">${eb[2]}</span>
+        </div>`;
+      }).join('') + '</div>';
+    }
+    cont.innerHTML = html;
+  } catch(e){ cont.innerHTML='<div style="font-size:11px;color:var(--text2)">Error al cargar tickets</div>'; }
+}
 
 window.loadTickets = async function() {
   try {
