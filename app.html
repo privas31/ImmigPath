@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-04-V","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-04-W","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -453,6 +453,7 @@ function App(){
   const[user,setUser]=useState(null);const[userData,setUserData]=useState(null);const[officeData,setOfficeData]=useState(null);const[officeLogo,setOfficeLogo]=useState(null);
   const[enabledModules,setEnabledModules]=useState(["immigration"]);
   const[authLoading,setAuthLoading]=useState(true);
+  const[officeDisabled,setOfficeDisabled]=useState(false);
   const[clientes,setClientes]=useState([]);const[loading,setLoading]=useState(false);const[solicitudesServicio,setSolicitudesServicio]=useState([]);
   const[showModal,setShowModal]=useState(false);const[editId,setEditId]=useState(null);const[formCliente,setFormCliente]=useState(emptyCliente);
   const[filtroStatus,setFiltroStatus]=useState("todos");const[filtroSistema,setFiltroSistema]=useState("todos");
@@ -548,6 +549,8 @@ function App(){
             const officeDoc=await getDoc(doc(db,"offices",ud.officeId));
             if(officeDoc.exists()){
               const od=officeDoc.data();
+              //  Oficina desactivada: bloquear acceso 
+              if(od.isActive===false){const{auth,signOut}=window._firebase;await signOut(auth);setOfficeDisabled(true);setUser(null);setAuthLoading(false);return;}
               //  PLAN BÁSICO: esta app es solo del plan Profesional/Premium 
               if(od.plan==="basic"){window.location.replace("app-basico.html"+window.location.search);return;}
               setOfficeData({id:officeDoc.id,...od});
@@ -1693,6 +1696,14 @@ const loadTeam=async()=>{
   };
 
   if(authLoading)return<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontSize:16,color:"#6B7280"}}>⚖️ Cargando...</div>;
+  if(officeDisabled)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#F8FAFC",padding:20}}>
+    <div style={{background:"#fff",borderRadius:16,padding:"40px 32px",maxWidth:440,textAlign:"center",boxShadow:"0 10px 40px rgba(0,0,0,0.08)"}}>
+      <div style={{fontSize:48,marginBottom:16}}>🔒</div>
+      <h1 style={{fontSize:20,fontWeight:700,color:"#0F172A",margin:"0 0 10px"}}>{t("Cuenta desactivada","Account disabled")}</h1>
+      <p style={{fontSize:14,color:"#64748B",lineHeight:1.6,margin:"0 0 20px"}}>{t("El acceso a esta oficina ha sido suspendido temporalmente. Por favor comunícate con ImmigPath para más información.","Access to this office has been temporarily suspended. Please contact ImmigPath for more information.")}</p>
+      <a href="mailto:soporte@immigpath.com" style={{display:"inline-block",background:"#0C447C",color:"#fff",textDecoration:"none",padding:"10px 20px",borderRadius:8,fontSize:14,fontWeight:600}}>{t("Contactar soporte","Contact support")}</a>
+    </div>
+  </div>);
   if(!user||!officeData)return<LoginScreen onLogin={handleLogin}/>;
 
   const officeName=officeData?.name||"Mi Oficina";
