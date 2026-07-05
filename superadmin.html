@@ -164,7 +164,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         Importar Excel
       </button>
-      <button class="nav-item" onclick="showSection('cotizador',this)">
+      <button class="nav-item" onclick="showSection('cotizador',this);cargarHistorialCotizaciones()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-3M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m-5 0h5"/></svg>
         Cotizador
       </button>
@@ -419,7 +419,10 @@
             <input class="form-input" id="immig-email" value="plataforma-migracion@outlook.com" style="margin-bottom:6px">
             <input class="form-input" id="immig-tel" placeholder="Teléfono ImmigPath">
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+          <button class="btn btn-primary" onclick="guardarCotizacion()" style="width:100%;padding:12px;font-size:13px;margin-top:8px;background:var(--accent)">
+            💾 Guardar cotización
+          </button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
             <button class="btn btn-primary" onclick="generarCotizacionPDF()" style="padding:12px;font-size:13px">
               📄 Cotización PDF
             </button>
@@ -434,6 +437,12 @@
             <div style="text-align:center;color:var(--text2);padding:40px 0">Completa los datos para ver la cotización</div>
           </div>
         </div>
+      </div>
+
+      <!-- Historial de cotizaciones -->
+      <div class="table-container" style="max-width:1000px;margin-top:20px">
+        <div class="table-header"><h3>📋 Historial de cotizaciones</h3></div>
+        <div id="cot-historial" style="padding:4px 0"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Cargando...</div></div>
       </div>
     </div>
     <div id="section-branding" class="hidden">
@@ -1592,6 +1601,93 @@ function getMigracionCosto(n) {
   if(n<=20000) return 500;
   return 700;
 }
+
+window.guardarCotizacion = async function() {
+  calcCotizacion();
+  const d = window._cotData;
+  if(!d){ showToast('Completa la cotización primero','error'); return; }
+  if(!d.nombre || d.nombre==='Oficina Cliente'){ showToast('Escribe el nombre de la oficina/prospecto','error'); return; }
+  try {
+    const payload = {
+      nombre: d.nombre, representante: d.representante||'', email: d.email||'', telefono: d.telefono||'', cargo: d.cargo||'',
+      plan: d.plan, totalInst: d.totalInst, totalInstBruto: d.totalInstBruto||d.totalInst, descuento: d.descuento||0,
+      descTipo: d.descTipo||'none', descValor: d.descValor||0, mensual: d.mensual, totalPrimerPago: d.totalInst+d.mensual,
+      usuarios: d.usuarios, clientes: d.clientes, horas: d.horas, metodo: d.metodo||'', vence: d.vence||'',
+      notas: d.notas||'', notasInternas: d.notasInternas||'',
+      modulos: ['imm','not','tax','seg'].filter(m=>document.getElementById('cot-mod-'+m)?.checked),
+      portal: document.getElementById('cot-portal')?.checked||false, i589: document.getElementById('cot-i589')?.checked||false,
+      estado: 'borrador', fecha: new Date().toISOString(), creadoPor: currentUser?.email||'superadmin',
+    };
+    if(window._cotEditandoId){
+      await updateDoc(doc(db,'cotizaciones',window._cotEditandoId), payload);
+      showToast('✓ Cotización actualizada','success');
+    } else {
+      await addDoc(collection(db,'cotizaciones'), payload);
+      showToast('✓ Cotización guardada','success');
+    }
+    window._cotEditandoId=null;
+    cargarHistorialCotizaciones();
+  } catch(e){ showToast('Error: '+e.message,'error'); }
+};
+
+window.cargarHistorialCotizaciones = async function() {
+  const cont = document.getElementById('cot-historial');
+  if(!cont) return;
+  try {
+    const snap = await getDocs(collection(db,'cotizaciones'));
+    const cots = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    if(cots.length===0){ cont.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Aún no hay cotizaciones guardadas.</div>'; return; }
+    const planLabel={basic:'Básico',professional:'Profesional',premium:'Premium'};
+    const planCol={basic:['rgba(148,163,184,0.15)','#94a3b8'],professional:['rgba(99,102,241,0.15)','#818cf8'],premium:['rgba(251,191,36,0.15)','#FBBF24']};
+    const estCfg={borrador:['rgba(148,163,184,0.15)','#94a3b8','Borrador'],enviada:['rgba(245,158,11,0.15)','#f59e0b','Enviada'],ganada:['rgba(16,185,129,0.15)','#10b981','Ganada ✓'],perdida:['rgba(239,68,68,0.15)','#ef4444','Perdida']};
+    const fmt=(iso)=>{ if(!iso) return '—'; const f=new Date(iso.length<=10?iso+'T00:00:00':iso); return f.toLocaleDateString('es-US',{day:'2-digit',month:'short'}); };
+    cont.innerHTML = `<table style="width:100%"><thead><tr><th>Prospecto</th><th>Plan</th><th>Total 1er pago</th><th>Vence</th><th>Estado</th><th></th></tr></thead><tbody>`+
+      cots.map(c=>{
+        const pc=planCol[c.plan]||planCol.professional, ec=estCfg[c.estado]||estCfg.borrador;
+        return `<tr>
+          <td><div style="font-size:13px;font-weight:600">${c.nombre||'—'}</div><div style="font-size:10px;color:var(--text2)">${c.representante||''}</div></td>
+          <td><span style="background:${pc[0]};color:${pc[1]};padding:2px 8px;border-radius:6px;font-size:10px">${planLabel[c.plan]||c.plan}</span></td>
+          <td style="font-size:13px"><b>$${(c.totalPrimerPago||0).toLocaleString()}</b></td>
+          <td style="font-size:12px">${fmt(c.vence)}</td>
+          <td>
+            <select onchange="cambiarEstadoCotizacion('${c.id}',this.value)" style="background:${ec[0]};color:${ec[1]};border:none;border-radius:8px;padding:3px 8px;font-size:11px;cursor:pointer">
+              <option value="borrador" ${c.estado==='borrador'?'selected':''}>Borrador</option>
+              <option value="enviada" ${c.estado==='enviada'?'selected':''}>Enviada</option>
+              <option value="ganada" ${c.estado==='ganada'?'selected':''}>Ganada</option>
+              <option value="perdida" ${c.estado==='perdida'?'selected':''}>Perdida</option>
+            </select>
+          </td>
+          <td style="text-align:right"><button class="action-btn" onclick="abrirCotizacion('${c.id}')" style="background:rgba(99,102,241,0.15);color:#818cf8;border-color:rgba(99,102,241,0.3)">Abrir</button></td>
+        </tr>`;
+      }).join('')+'</tbody></table>';
+  } catch(e){ cont.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">Error al cargar historial</div>'; }
+};
+
+window.cambiarEstadoCotizacion = async function(id, estado) {
+  try { await updateDoc(doc(db,'cotizaciones',id), {estado}); showToast('Estado actualizado','success'); cargarHistorialCotizaciones(); }
+  catch(e){ showToast('Error: '+e.message,'error'); }
+};
+
+window.abrirCotizacion = async function(id) {
+  try {
+    const snap = await getDoc(doc(db,'cotizaciones',id));
+    if(!snap.exists()){ showToast('No encontrada','error'); return; }
+    const c = snap.data();
+    const set=(elId,val)=>{ const el=document.getElementById(elId); if(el) el.value=val??''; };
+    const chk=(elId,val)=>{ const el=document.getElementById(elId); if(el) el.checked=!!val; };
+    set('cot-nombre',c.nombre); set('cot-plan',c.plan); set('cot-usuarios',c.usuarios); set('cot-clientes',c.clientes);
+    set('cot-horas',c.horas); set('cot-representante',c.representante); set('cot-email',c.email); set('cot-telefono',c.telefono);
+    set('cot-cargo',c.cargo); set('cot-vence',c.vence); set('cot-metodo',c.metodo); set('cot-notas',c.notas);
+    set('cot-notas-internas',c.notasInternas); set('cot-desc-tipo',c.descTipo); set('cot-desc-valor',c.descValor);
+    chk('cot-mod-imm',(c.modulos||[]).includes('imm')); chk('cot-mod-not',(c.modulos||[]).includes('not'));
+    chk('cot-mod-tax',(c.modulos||[]).includes('tax')); chk('cot-mod-seg',(c.modulos||[]).includes('seg'));
+    chk('cot-portal',c.portal); chk('cot-i589',c.i589);
+    window._cotEditandoId=id;
+    calcCotizacion();
+    window.scrollTo({top:0,behavior:'smooth'});
+    showToast('Cotización cargada — puedes editarla y guardar','success');
+  } catch(e){ showToast('Error: '+e.message,'error'); }
+};
 
 window.calcCotizacion = function() {
   const modulos  = ['imm','not','tax','seg'].filter(m=>document.getElementById('cot-mod-'+m)?.checked);
