@@ -1445,6 +1445,20 @@ window.marcarPagada = async function(id) {
     const nueva = `${y}-${m}-${d}`;
     await updateDoc(doc(db,'offices',id), { nextBilling: nueva, overdue: false, lastPaidAt: new Date().toISOString() });
     if(office) { office.nextBilling = nueva; office.overdue = false; }
+    // Registrar la mensualidad en el historial de pagos de la oficina
+    const planPrices = {basic:249, professional:647, premium:1299};
+    const monto = planPrices[office?.plan]||0;
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const hoy = new Date();
+    const concepto = `Suscripción ${meses[hoy.getMonth()]} ${hoy.getFullYear()}`;
+    try {
+      await addDoc(collection(db,'pagos_oficinas'), {
+        officeId: id, officeName: office?.name||'', plan: office?.plan||'',
+        monto, concepto, estado: 'pagado', fecha: new Date().toISOString(),
+      });
+    } catch(e){}
+    // Registrar también en actividad
+    try { await addDoc(collection(db,'actividad'),{tipo:'pago',titulo:'Mensualidad pagada',detalle:`$${monto} · ${concepto}`,officeId:id,officeName:office?.name||'',usuario:currentUser?.email||'superadmin',fecha:new Date().toISOString()}); } catch(e){}
     const inp = document.getElementById('edit-office-billing'); if(inp) inp.value = nueva;
     showToast('✓ Pago registrado. Próximo cobro: '+nueva, 'success');
     loadDashboard();
@@ -2229,7 +2243,13 @@ window.verDetalleOficina = async function(officeId) {
         <div style="font-size:13px;font-weight:600;margin-bottom:10px">📌 Actividad Reciente</div>
         <div id="det-actividad"><div style="font-size:11px;color:var(--text2);padding:8px 0">Cargando...</div></div>
       </div>
-      <div class="stat-card"><div style="font-size:12px;color:var(--text2);text-align:center;padding:20px">Historial de pagos — próximamente</div></div>
+      <div class="stat-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px">
+          <span style="font-size:13px;font-weight:600">💳 Historial de Pagos</span>
+          <span style="font-size:10px;color:var(--text2)">Suscripción a ImmigPath</span>
+        </div>
+        <div id="det-pagos"><div style="font-size:11px;color:var(--text2);padding:8px 0">Cargando...</div></div>
+      </div>
       <div class="stat-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <span style="font-size:13px;font-weight:600">🎧 Resumen de Tickets</span>
@@ -2241,7 +2261,37 @@ window.verDetalleOficina = async function(officeId) {
   `;
   cargarActividadOficina(officeId);
   cargarTicketsOficina(officeId);
+  cargarPagosOficina(officeId);
 };
+
+async function cargarPagosOficina(officeId) {
+  const cont = document.getElementById('det-pagos');
+  if(!cont) return;
+  try {
+    const snap = await getDocs(query(collection(db,'pagos_oficinas'), where('officeId','==',officeId)));
+    const pagos = snap.docs.map(d=>d.data()).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    const fmt = (iso)=>{ const f=new Date(iso); return f.toLocaleDateString('es-US',{day:'2-digit',month:'short',year:'2-digit'}); };
+    if(pagos.length===0){
+      cont.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:16px 0">Aún no hay pagos registrados.<br><span style="font-size:10px">Se registran al marcar "✓ Pagada" en el editor.</span></div>';
+      return;
+    }
+    const total = pagos.reduce((s,p)=>s+(p.monto||0),0);
+    let html = `<div style="font-size:11px">
+      <div style="display:grid;grid-template-columns:1fr 1.4fr 0.8fr 0.8fr;gap:6px;color:var(--text2);padding-bottom:8px;border-bottom:0.5px solid var(--border);font-size:10px;text-transform:uppercase">
+        <span>Fecha</span><span>Concepto</span><span>Monto</span><span>Estado</span>
+      </div>
+      <div style="max-height:170px;overflow-y:auto">`;
+    html += pagos.map((p,i)=>`<div style="display:grid;grid-template-columns:1fr 1.4fr 0.8fr 0.8fr;gap:6px;padding:9px 0;${i<pagos.length-1?'border-bottom:0.5px solid var(--border)':''}">
+      <span>${fmt(p.fecha)}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(p.concepto||'').replace('Suscripción ','')}</span><span>$${(p.monto||0).toLocaleString()}</span><span style="color:#10b981">Pagado</span>
+    </div>`).join('');
+    html += '</div>';
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <span style="font-size:11px;color:var(--text2)">Total recibido de esta oficina</span>
+      <span style="font-size:15px;font-weight:700;color:#10b981">$${total.toLocaleString()}</span>
+    </div></div>`;
+    cont.innerHTML = html;
+  } catch(e){ cont.innerHTML='<div style="font-size:11px;color:var(--text2)">Error al cargar pagos</div>'; }
+}
 
 async function cargarTicketsOficina(officeId) {
   const cont = document.getElementById('det-tickets');
