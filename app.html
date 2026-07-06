@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AH","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AI","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -142,6 +142,31 @@ const ESTATUS_USCIS=[
 const FORMULARIOS_USCIS=["I-589 Asilo","I-765 Permiso de trabajo","I-485 Residencia","I-130 Petición familiar","I-131 Permiso de viaje","N-400 Ciudadanía","I-90 Renovación de tarjeta","I-751 Remover condiciones","Otro"];
 const colorEstatusUscis=(est)=>{const m=ESTATUS_USCIS.find(s=>s.en===est);return m?m.color:"#888780";};
 const descEstatusUscis=(est)=>{const m=ESTATUS_USCIS.find(s=>s.en===est);return m?m.es:"";};
+
+// ===== Control de envíos y tracking (Plan Premium / Add-on) =====
+const METODOS_ENVIO=[
+  {id:"USPS", color:"#1D4ED8", bg:"#EFF6FF"},
+  {id:"FedEx", color:"#7C3AED", bg:"#F5F3FF"},
+  {id:"UPS", color:"#92610E", bg:"#FDF6E3"},
+  {id:"Otro", color:"#475569", bg:"#F1F5F9"},
+];
+const ESTADOS_ENVIO=[
+  {id:"Etiqueta creada", color:"#94A3B8", icon:"🏷️"},
+  {id:"Paquete enviado", color:"#378ADD", icon:"📦"},
+  {id:"En tránsito", color:"#378ADD", icon:"✈️"},
+  {id:"Entregado", color:"#1D9E75", icon:"✅"},
+  {id:"Devuelto / Problema", color:"#E24B4A", icon:"⚠️"},
+];
+const DESTINATARIOS_ENVIO=["EOIR","USCIS","Cliente","Abogado","Otro"];
+const colorEstadoEnvio=(e)=>{const m=ESTADOS_ENVIO.find(s=>s.id===e);return m?m.color:"#94A3B8";};
+const iconEstadoEnvio=(e)=>{const m=ESTADOS_ENVIO.find(s=>s.id===e);return m?m.icon:"📦";};
+const trackingUrl=(metodo,num)=>{
+  const n=encodeURIComponent(String(num||"").replace(/\s+/g,""));
+  if(metodo==="USPS")return "https://tools.usps.com/go/TrackConfirmAction?tLabels="+n;
+  if(metodo==="FedEx")return "https://www.fedex.com/fedextrack/?trknbr="+n;
+  if(metodo==="UPS")return "https://www.ups.com/track?tracknum="+n;
+  return "";
+};
 
 
 //  Pequeos componentes 
@@ -574,6 +599,15 @@ function App(){
   const[uscisForm,setUscisForm]=useState({recibo:"",formulario:"I-765 Permiso de trabajo",estatus:"",estatusOtro:"",nota:"",clienteId:""});
   const[uscisSaving,setUscisSaving]=useState(false);
   const[uscisExpandido,setUscisExpandido]=useState(null);
+  // Control de envíos y tracking (Premium / Add-on)
+  const[showEnvios,setShowEnvios]=useState(false);
+  const[enviosList,setEnviosList]=useState([]);
+  const[enviosLoading,setEnviosLoading]=useState(false);
+  const[envioForm,setEnvioForm]=useState({tracking:"",metodo:"USPS",destinatario:"EOIR",destinatarioOtro:"",documentos:"",estado:"Paquete enviado",clienteId:"",fechaEnvio:new Date().toISOString().split("T")[0],fechaEntrega:""});
+  const[envioSaving,setEnvioSaving]=useState(false);
+  const[envioSelId,setEnvioSelId]=useState(null);
+  const[enviosPage,setEnviosPage]=useState(1);
+  const[envioUploading,setEnvioUploading]=useState(false);
   const[reporteBusq,setReporteBusq]=useState("");
   const[reporteEmp,setReporteEmp]=useState("");
   const[reporteEst,setReporteEst]=useState("");
@@ -1829,6 +1863,102 @@ const loadTeam=async()=>{
     window.open("https://egov.uscis.gov/casestatus/landing.do","_blank");
   };
 
+  // ===== Funciones del Control de envíos (Premium / Add-on) =====
+  const enviosHabilitado = enabledModules.includes("controlEnvios");
+  const loadEnvios=async()=>{
+    setEnviosLoading(true);
+    try{
+      const{db,collection,getDocs}=window._firebase;
+      const officeId=officeData?.id||userData?.officeId||"";
+      const snap=await getDocs(collection(db,"envios_tracking"));
+      const lista=[];
+      snap.forEach(d=>{const c=d.data();if(c.officeId===officeId)lista.push({id:d.id,...c});});
+      lista.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+      setEnviosList(lista);
+      if(lista.length&&!lista.some(e=>e.id===envioSelId))setEnvioSelId(lista[0].id);
+    }catch(e){console.error("Error cargando envíos:",e);showToastFn(t("Error al cargar envíos: ","Error loading shipments: ")+e.message,"error");}
+    setEnviosLoading(false);
+  };
+  const guardarEnvio=async()=>{
+    const tracking=(envioForm.tracking||"").trim();
+    if(tracking.replace(/\s+/g,"").length<8){showToastFn(t("Ingresa un número de tracking válido","Enter a valid tracking number"),"error");return;}
+    const destinatarioFinal=envioForm.destinatario==="Otro"?(envioForm.destinatarioOtro||"").trim()||"Otro":envioForm.destinatario;
+    setEnvioSaving(true);
+    try{
+      const{db,collection,addDoc,updateDoc,doc}=window._firebase;
+      const officeId=officeData?.id||userData?.officeId||"";
+      const ahora=new Date().toISOString();
+      const por=userData?.displayName||user?.email||"";
+      const cliente=envioForm.clienteId?clientes.find(c=>c.id===envioForm.clienteId):null;
+      const trackKey=tracking.replace(/\s+/g,"").toUpperCase();
+      const existente=enviosList.find(e=>(e.tracking||"").replace(/\s+/g,"").toUpperCase()===trackKey);
+      if(existente){
+        const cambios={tracking,metodo:envioForm.metodo,destinatario:destinatarioFinal,documentos:envioForm.documentos||"",clienteId:envioForm.clienteId||existente.clienteId||"",clienteNombre:cliente?cliente.nombre:(existente.clienteNombre||""),fechaEnvio:envioForm.fechaEnvio||existente.fechaEnvio||"",fechaEntrega:envioForm.fechaEntrega||"",updatedAt:ahora,responsable:por};
+        if(envioForm.estado!==existente.estado){
+          cambios.estado=envioForm.estado;
+          cambios.historial=[...(existente.historial||[]),{estado:envioForm.estado,fecha:ahora,por}];
+        }
+        await updateDoc(doc(db,"envios_tracking",existente.id),cambios);
+        showToastFn(t("Envío actualizado ✓","Shipment updated ✓"));
+        registrarActividad("envio",t("Envío actualizado","Shipment updated"),`${tracking} · ${envioForm.estado}`);
+        setEnvioSelId(existente.id);
+      }else{
+        const ref=await addDoc(collection(db,"envios_tracking"),{officeId,tracking,metodo:envioForm.metodo,destinatario:destinatarioFinal,documentos:envioForm.documentos||"",estado:envioForm.estado,clienteId:envioForm.clienteId||"",clienteNombre:cliente?cliente.nombre:"",fechaEnvio:envioForm.fechaEnvio||"",fechaEntrega:envioForm.fechaEntrega||"",comprobanteUrl:"",comprobanteNombre:"",historial:[{estado:envioForm.estado,fecha:ahora,por}],createdAt:ahora,updatedAt:ahora,responsable:por});
+        showToastFn(t("Envío guardado ✓","Shipment saved ✓"));
+        registrarActividad("envio",t("Envío registrado","Shipment added"),`${tracking} · ${destinatarioFinal}`);
+        setEnvioSelId(ref.id);
+      }
+      setEnvioForm({tracking:"",metodo:"USPS",destinatario:"EOIR",destinatarioOtro:"",documentos:"",estado:"Paquete enviado",clienteId:"",fechaEnvio:new Date().toISOString().split("T")[0],fechaEntrega:""});
+      await loadEnvios();
+    }catch(e){console.error("Error guardando envío:",e);showToastFn(t("Error al guardar: ","Error saving: ")+e.message,"error");}
+    setEnvioSaving(false);
+  };
+  const eliminarEnvio=async(envio)=>{
+    if(!window.confirm(t(`¿Eliminar el envío con tracking ${envio.tracking}?`,`Delete shipment with tracking ${envio.tracking}?`)))return;
+    try{
+      const{db,deleteDoc,doc}=window._firebase;
+      await deleteDoc(doc(db,"envios_tracking",envio.id));
+      showToastFn(t("Envío eliminado ✓","Shipment deleted ✓"));
+      setEnviosList(prev=>prev.filter(e=>e.id!==envio.id));
+      if(envioSelId===envio.id)setEnvioSelId(null);
+    }catch(e){showToastFn(t("Error al eliminar: ","Error deleting: ")+e.message,"error");}
+  };
+  const notificarClienteEnvio=(envio)=>{
+    const cliente=clientes.find(c=>c.id===envio.clienteId);
+    const tel=(cliente?.telefono||"").replace(/[^0-9]/g,"");
+    if(!tel){showToastFn(t("El envío no tiene cliente vinculado con teléfono","Shipment has no linked client with phone"),"error");return;}
+    const msg=encodeURIComponent(`Hola ${cliente.nombre}, le confirmamos que sus documentos (${envio.documentos||"paquete"}) fueron enviados a ${envio.destinatario} por ${envio.metodo}. Tracking: ${envio.tracking}. Estado actual: ${envio.estado}. Cualquier duda estamos a la orden. — ${officeData?.name||""}`);
+    window.open(`https://wa.me/${tel.length===10?"1"+tel:tel}?text=${msg}`,"_blank");
+  };
+  const abrirTrackingEnvio=(envio)=>{
+    if(!envio)return;
+    const url=trackingUrl(envio.metodo,envio.tracking);
+    try{navigator.clipboard.writeText(envio.tracking);}catch(e){}
+    if(url)window.open(url,"_blank");
+    else showToastFn(t("Tracking copiado (método sin página de rastreo)","Tracking copied (carrier has no tracking page)"));
+  };
+  const subirComprobanteEnvio=(envio,archivo)=>{
+    if(!envio||!archivo)return;
+    const{storage,ref,uploadBytesResumable,getDownloadURL}=window._firebase;
+    const officeId=officeData?.id||userData?.officeId||"";
+    const path=`envios/${officeId}/${envio.id}/${Date.now()}_${archivo.name}`;
+    const storageRef=ref(storage,path);
+    setEnvioUploading(true);
+    const task=uploadBytesResumable(storageRef,archivo);
+    task.on("state_changed",null,
+      err=>{showToastFn(t("Error al subir comprobante: ","Error uploading proof: ")+err.message,"error");setEnvioUploading(false);},
+      async()=>{
+        try{
+          const url=await getDownloadURL(task.snapshot.ref);
+          const{db,updateDoc,doc}=window._firebase;
+          await updateDoc(doc(db,"envios_tracking",envio.id),{comprobanteUrl:url,comprobanteNombre:archivo.name,updatedAt:new Date().toISOString()});
+          showToastFn(t("Comprobante subido ✓","Proof uploaded ✓"));
+          await loadEnvios();
+        }catch(e){showToastFn(t("Error al guardar comprobante: ","Error saving proof: ")+e.message,"error");}
+        setEnvioUploading(false);
+      });
+  };
+
   // ── SIDEBAR NAV ITEMS ──────────────────────────────────────────────────────
   const navItems = [
     {id:"monitor",   label:t("Monitor Oficina","Office Monitor"),  icon:"🖥", onClick:()=>{setActiveNav("monitor");}},
@@ -1845,6 +1975,7 @@ const loadTeam=async()=>{
     {id:"usuarios",  label:t("Usuarios","Users"),                  icon:"🔐", show:isAdmin, onClick:()=>setShowAddUser(true)},
     {id:"reportes",  label:t("Reportes","Reports"),                icon:"📈", show:isAdmin, onClick:()=>setShowPDF(true)},
     {id:"uscis",     label:t("Verificador USCIS","USCIS Checker")+(uscisHabilitado?"":" 🔒"), icon:"🔎", onClick:()=>{setShowUSCIS(true);if(uscisHabilitado)loadCasosUscis();}},
+    {id:"envios",    label:t("Control de envíos","Shipments")+(enviosHabilitado?"":" 🔒"), icon:"📦", onClick:()=>{setShowEnvios(true);if(enviosHabilitado)loadEnvios();}},
     {id:"config",    label:t("Configuración","Settings"),          icon:"⚙️", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
     {id:"soporte",   label:t("Soporte","Support"),                 icon:"🎧", show:isAdmin, onClick:()=>{setShowSoporte(true);cargarMisTickets();}},
   ];
@@ -2796,6 +2927,224 @@ const loadTeam=async()=>{
 
 
     {/* ── PANEL DE ACTIVIDAD DEL EQUIPO ── */}
+    {showEnvios&&(()=>{
+      const envioSel=enviosList.find(e=>e.id===envioSelId)||enviosList[0]||null;
+      const porPagina=5;
+      const totalPaginas=Math.max(1,Math.ceil(enviosList.length/porPagina));
+      const pagina=Math.min(enviosPage,totalPaginas);
+      const enviosPagina=enviosList.slice((pagina-1)*porPagina,pagina*porPagina);
+      const fmtFecha=(f)=>{if(!f)return "—";try{const[y,m,d]=String(f).split("T")[0].split("-");return `${m}/${d}/${y}`;}catch(e){return f;}};
+      return(
+      <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:100,padding:"24px 16px",overflowY:"auto"}}>
+        <div style={{background:"#F8FAFC",borderRadius:16,width:"100%",maxWidth:1150,boxShadow:"0 24px 64px rgba(0,0,0,0.2)",maxHeight:"92vh",overflowY:"auto"}}>
+          <div style={{padding:"16px 24px",borderBottom:"1px solid #E2E8F0",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"#fff",zIndex:5,borderRadius:"16px 16px 0 0"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:22}}>📦</span>
+              <div>
+                <div style={{fontSize:16,fontWeight:800,color:"#0F172A",display:"flex",alignItems:"center",gap:8}}>{t("Control de envíos y tracking","Shipment control & tracking")}<span style={{background:"#EEEDFE",color:"#3C3489",fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:99}}>PREMIUM</span></div>
+                <div style={{fontSize:12,color:"#64748B"}}>{t("Registra, consulta y comprueba el envío de documentos por caso","Register, check and prove document shipments per case")}</div>
+              </div>
+            </div>
+            <button onClick={()=>setShowEnvios(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{t("Cerrar","Close")}</button>
+          </div>
+
+          {!enviosHabilitado?(
+            <div style={{padding:"48px 32px",textAlign:"center",background:"#fff",borderRadius:"0 0 16px 16px"}}>
+              <div style={{fontSize:44,marginBottom:12}}>🔒</div>
+              <div style={{fontSize:17,fontWeight:800,color:"#0F172A",marginBottom:8}}>{t("Disponible en el Plan Premium","Available on the Premium plan")}</div>
+              <div style={{fontSize:13,color:"#64748B",maxWidth:440,margin:"0 auto 20px",lineHeight:1.6}}>{t("Registra cada envío de documentos con tracking, destinatario, comprobante de entrega y responsable. Cuando el cliente pregunte '¿ustedes sí enviaron mis papeles?', tendrás la prueba completa en segundos.","Log every document shipment with tracking, recipient, delivery proof and responsible staff. When a client asks 'did you really send my papers?', you'll have full proof in seconds.")}</div>
+              <div style={{fontSize:13,color:"#0C447C",fontWeight:600}}>{t("Contacta a ImmigPath para activarlo","Contact ImmigPath to activate it")}</div>
+            </div>
+          ):(
+          <div style={{display:"grid",gridTemplateColumns:"1fr 280px",gap:16,padding:"16px 20px"}}>
+            <div>
+              {/* ── Registrar envío ── */}
+              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:16,marginBottom:14}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#0F172A"}}>{t("Registrar envío","Register shipment")}</div>
+                <div style={{fontSize:12,color:"#64748B",marginBottom:12}}>{t("Mantén organizado el historial de envíos y la evidencia de entrega por caso.","Keep shipment history and delivery evidence organized per case.")}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.6fr 1.2fr 1.2fr",gap:10,marginBottom:10}}>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Número de tracking","Tracking number")}</label>
+                    <input value={envioForm.tracking} onChange={e=>setEnvioForm(f=>({...f,tracking:e.target.value}))} placeholder="Ej. 9400 1111 2222 3333 4444 55" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,fontFamily:"monospace",outline:"none"}}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Método","Carrier")}</label>
+                    <div style={{display:"flex",gap:5}}>
+                      {METODOS_ENVIO.map(m=>(
+                        <button key={m.id} onClick={()=>setEnvioForm(f=>({...f,metodo:m.id}))} style={{flex:1,padding:"8px 4px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",border:envioForm.metodo===m.id?`1.5px solid ${m.color}`:"1px solid #E2E8F0",background:envioForm.metodo===m.id?m.bg:"#fff",color:m.color}}>{m.id}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Buscar caso o cliente","Find case or client")}</label>
+                    <select value={envioForm.clienteId} onChange={e=>setEnvioForm(f=>({...f,clienteId:e.target.value}))} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none",background:"#fff"}}>
+                      <option value="">{t("— Sin vincular —","— Not linked —")}</option>
+                      {clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:10}}>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Destinatario","Recipient")}</label>
+                    <select value={envioForm.destinatario} onChange={e=>setEnvioForm(f=>({...f,destinatario:e.target.value}))} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none",background:"#fff"}}>
+                      {DESTINATARIOS_ENVIO.map(d=><option key={d} value={d}>{d}</option>)}
+                    </select>
+                    {envioForm.destinatario==="Otro"&&<input value={envioForm.destinatarioOtro} onChange={e=>setEnvioForm(f=>({...f,destinatarioOtro:e.target.value}))} placeholder={t("¿A quién?","To whom?")} style={{width:"100%",marginTop:5,padding:"7px 10px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:12,outline:"none"}}/>}
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Estado","Status")}</label>
+                    <select value={envioForm.estado} onChange={e=>setEnvioForm(f=>({...f,estado:e.target.value}))} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none",background:"#fff"}}>
+                      {ESTADOS_ENVIO.map(s=><option key={s.id} value={s.id}>{s.icon} {s.id}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Fecha de envío","Ship date")}</label>
+                    <input type="date" value={envioForm.fechaEnvio} onChange={e=>setEnvioForm(f=>({...f,fechaEnvio:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Fecha de entrega","Delivery date")}</label>
+                    <input type="date" value={envioForm.fechaEntrega} onChange={e=>setEnvioForm(f=>({...f,fechaEntrega:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
+                  </div>
+                </div>
+                <div style={{marginBottom:12}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Documentos enviados","Documents sent")}</label>
+                  <input value={envioForm.documentos} onChange={e=>setEnvioForm(f=>({...f,documentos:e.target.value}))} placeholder={t("Ej: Paquete I-589, evidencias y copias","E.g.: I-589 packet, evidence and copies")} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
+                </div>
+                <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                  <button onClick={guardarEnvio} disabled={envioSaving} style={{background:"#0C447C",color:"#fff",border:"none",borderRadius:8,padding:"9px 18px",fontSize:13,fontWeight:700,cursor:"pointer",opacity:envioSaving?0.6:1}}>{envioSaving?t("Guardando...","Saving..."):t("Guardar envío 💾","Save shipment 💾")}</button>
+                  {envioSel&&envioSel.comprobanteUrl&&<button onClick={()=>window.open(envioSel.comprobanteUrl,"_blank")} style={{background:"#fff",color:"#0C447C",border:"1px solid #0C447C",borderRadius:8,padding:"9px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{t("Ver comprobante ↗","View proof ↗")}</button>}
+                </div>
+              </div>
+
+              {/* ── Tarjeta del envío seleccionado ── */}
+              {envioSel&&(
+                <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:16,marginBottom:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,marginBottom:12}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:22}}>📦</span>
+                      <div>
+                        <div style={{fontSize:14,fontWeight:800,color:"#0F172A",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                          {(envioSel.documentos||t("Paquete","Package"))+" → "+envioSel.destinatario}
+                          <span style={{background:colorEstadoEnvio(envioSel.estado)+"22",color:colorEstadoEnvio(envioSel.estado),fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99}}>{envioSel.estado}</span>
+                        </div>
+                        <div style={{fontSize:11,color:"#94A3B8"}}>{t("Actualizado el","Updated")} {envioSel.updatedAt?new Date(envioSel.updatedAt).toLocaleString():""}</div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:6}}>
+                      {envioSel.comprobanteUrl&&<button onClick={()=>window.open(envioSel.comprobanteUrl,"_blank")} style={{background:"#fff",color:"#0C447C",border:"1px solid #0C447C",borderRadius:8,padding:"6px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{t("Abrir comprobante ↗","Open proof ↗")}</button>}
+                      <button onClick={()=>setEnvioForm({tracking:envioSel.tracking,metodo:envioSel.metodo,destinatario:DESTINATARIOS_ENVIO.includes(envioSel.destinatario)?envioSel.destinatario:"Otro",destinatarioOtro:DESTINATARIOS_ENVIO.includes(envioSel.destinatario)?"":envioSel.destinatario,documentos:envioSel.documentos||"",estado:envioSel.estado,clienteId:envioSel.clienteId||"",fechaEnvio:envioSel.fechaEnvio||"",fechaEntrega:envioSel.fechaEntrega||""})} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"6px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏️ {t("Actualizar","Update")}</button>
+                    </div>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:1,background:"#E2E8F0",border:"1px solid #E2E8F0",borderRadius:10,overflow:"hidden"}}>
+                    {[
+                      ["📅",t("Fecha de envío","Ship date"),fmtFecha(envioSel.fechaEnvio)],
+                      ["🚚",t("Método","Carrier"),envioSel.metodo],
+                      ["🔢",t("Tracking number","Tracking number"),envioSel.tracking],
+                      ["🏛️",t("Destinatario","Recipient"),envioSel.destinatario],
+                      ["📄",t("Documentos enviados","Documents sent"),envioSel.documentos||"—"],
+                      ["📬",t("Fecha de entrega","Delivery date"),fmtFecha(envioSel.fechaEntrega)],
+                      ["☁️",t("Comprobante subido","Proof uploaded"),envioSel.comprobanteUrl?t("Sí, subido","Yes, uploaded"):t("No subido","Not uploaded")],
+                      ["👤",t("Responsable","Responsible"),envioSel.responsable||"—"],
+                    ].map(([ic,lab,val],i)=>(
+                      <div key={i} style={{background:"#fff",padding:"10px 12px"}}>
+                        <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",display:"flex",alignItems:"center",gap:4}}>{ic} {lab}</div>
+                        <div style={{fontSize:13,fontWeight:600,color:"#0F172A",marginTop:2,wordBreak:"break-word"}}>{val}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {envioSel.clienteNombre&&<div style={{marginTop:8,fontSize:12,color:"#1D4ED8"}}>👤 {t("Cliente vinculado","Linked client")}: {envioSel.clienteNombre}</div>}
+                </div>
+              )}
+
+              {/* ── Historial + Envíos recientes ── */}
+              <div style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:14}}>
+                <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:14}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>{t("Historial de tracking","Tracking history")}</div>
+                  {!envioSel||!(envioSel.historial||[]).length?<div style={{fontSize:12,color:"#94A3B8"}}>{t("Sin historial aún","No history yet")}</div>:
+                    [...(envioSel.historial||[])].reverse().map((h,i,arr)=>(
+                      <div key={i} style={{display:"flex",gap:8}}>
+                        <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+                          <span style={{fontSize:13,lineHeight:"16px"}}>{iconEstadoEnvio(h.estado)}</span>
+                          {i<arr.length-1&&<span style={{width:2,flex:1,background:"#E2E8F0",minHeight:14}}></span>}
+                        </div>
+                        <div style={{paddingBottom:10}}>
+                          <div style={{fontSize:12,fontWeight:i===0?700:500,color:"#0F172A"}}>{h.estado}{i===0&&<span style={{background:"#DCFCE7",color:"#166534",fontSize:9,fontWeight:700,padding:"1px 7px",borderRadius:99,marginLeft:6}}>{t("Actual","Current")}</span>}</div>
+                          <div style={{fontSize:10,color:"#94A3B8"}}>{h.fecha?new Date(h.fecha).toLocaleString():""}</div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+                <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:14}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>{t("Envíos recientes","Recent shipments")}</div>
+                  {enviosLoading?<div style={{fontSize:12,color:"#94A3B8",padding:12}}>{t("Cargando...","Loading...")}</div>:
+                   enviosList.length===0?<div style={{fontSize:12,color:"#94A3B8",padding:12}}>{t("Aún no hay envíos registrados.","No shipments yet.")}</div>:(
+                    <div style={{overflowX:"auto"}}>
+                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                        <thead><tr style={{color:"#94A3B8",textAlign:"left",fontSize:10,textTransform:"uppercase"}}>
+                          <th style={{padding:"6px 8px"}}>{t("Caso","Case")}</th><th style={{padding:"6px 8px"}}>{t("Método","Carrier")}</th><th style={{padding:"6px 8px"}}>Tracking</th><th style={{padding:"6px 8px"}}>{t("Estado","Status")}</th><th style={{padding:"6px 8px"}}>{t("Fecha","Date")}</th><th style={{padding:"6px 8px"}}>{t("Resp.","Resp.")}</th><th></th>
+                        </tr></thead>
+                        <tbody>
+                          {enviosPagina.map(e=>(
+                            <tr key={e.id} onClick={()=>setEnvioSelId(e.id)} style={{borderTop:"1px solid #F1F5F9",cursor:"pointer",background:envioSel&&envioSel.id===e.id?"#EFF6FF":"transparent"}}>
+                              <td style={{padding:"8px",fontWeight:600,color:"#0F172A",maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(e.documentos||"—")+(e.clienteNombre?" · "+e.clienteNombre:"")}</td>
+                              <td style={{padding:"8px"}}><span style={{color:(METODOS_ENVIO.find(m=>m.id===e.metodo)||{}).color||"#475569",fontWeight:700,fontSize:11}}>{e.metodo}</span></td>
+                              <td style={{padding:"8px",fontFamily:"monospace",fontSize:11}}>{e.tracking}</td>
+                              <td style={{padding:"8px"}}><span style={{background:colorEstadoEnvio(e.estado)+"22",color:colorEstadoEnvio(e.estado),fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,whiteSpace:"nowrap"}}>{e.estado}</span></td>
+                              <td style={{padding:"8px",whiteSpace:"nowrap"}}>{fmtFecha(e.fechaEnvio)}</td>
+                              <td style={{padding:"8px",maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.responsable||"—"}</td>
+                              <td style={{padding:"8px"}}>{isAdmin&&<button onClick={ev=>{ev.stopPropagation();eliminarEnvio(e);}} style={{background:"#FEE2E2",border:"none",borderRadius:6,padding:"3px 7px",fontSize:11,cursor:"pointer",color:"#B91C1C"}}>🗑</button>}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10}}>
+                        <div style={{fontSize:11,color:"#94A3B8"}}>{t(`Mostrando ${enviosPagina.length} de ${enviosList.length} envíos`,`Showing ${enviosPagina.length} of ${enviosList.length} shipments`)}</div>
+                        <div style={{display:"flex",gap:4}}>
+                          <button onClick={()=>setEnviosPage(p=>Math.max(1,p-1))} disabled={pagina<=1} style={{border:"1px solid #E2E8F0",background:"#fff",borderRadius:6,padding:"3px 9px",fontSize:12,cursor:"pointer",opacity:pagina<=1?0.4:1}}>‹</button>
+                          {Array.from({length:totalPaginas},(_,i)=>i+1).slice(0,7).map(n=>(
+                            <button key={n} onClick={()=>setEnviosPage(n)} style={{border:"1px solid",borderColor:n===pagina?"#0C447C":"#E2E8F0",background:n===pagina?"#0C447C":"#fff",color:n===pagina?"#fff":"#0F172A",borderRadius:6,padding:"3px 9px",fontSize:12,cursor:"pointer",fontWeight:n===pagina?700:400}}>{n}</button>
+                          ))}
+                          <button onClick={()=>setEnviosPage(p=>Math.min(totalPaginas,p+1))} disabled={pagina>=totalPaginas} style={{border:"1px solid #E2E8F0",background:"#fff",borderRadius:6,padding:"3px 9px",fontSize:12,cursor:"pointer",opacity:pagina>=totalPaginas?0.4:1}}>›</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Columna derecha ── */}
+            <div>
+              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:14,marginBottom:12}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>⚡ {t("Acciones rápidas","Quick actions")}</div>
+                {[
+                  ["💾",t("Guardar seguimiento","Save tracking"),guardarEnvio],
+                  ["💬",t("Notificar cliente","Notify client"),()=>envioSel?notificarClienteEnvio(envioSel):showToastFn(t("Selecciona un envío primero","Select a shipment first"),"error")],
+                  ["🔗",t("Abrir tracking","Open tracking"),()=>envioSel?abrirTrackingEnvio(envioSel):showToastFn(t("Selecciona un envío primero","Select a shipment first"),"error")],
+                ].map(([ic,lab,fn],i)=>(
+                  <button key={i} onClick={fn} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 12px",fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:8,color:"#0F172A"}}><span>{ic} {lab}</span><span style={{color:"#94A3B8"}}>›</span></button>
+                ))}
+                <label style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 12px",fontSize:13,fontWeight:600,cursor:"pointer",color:"#0F172A",boxSizing:"border-box"}}>
+                  <span>☁️ {envioUploading?t("Subiendo...","Uploading..."):t("Subir comprobante","Upload proof")}</span><span style={{color:"#94A3B8"}}>›</span>
+                  <input type="file" accept="image/*,.pdf" style={{display:"none"}} disabled={envioUploading} onChange={e=>{const f=e.target.files[0];if(!f)return;if(!envioSel){showToastFn(t("Selecciona un envío primero","Select a shipment first"),"error");return;}subirComprobanteEnvio(envioSel,f);e.target.value="";}}/>
+                </label>
+              </div>
+              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:14,marginBottom:12}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:8}}>ℹ️ {t("Información importante","Important information")}</div>
+                <div style={{fontSize:12,color:"#64748B",lineHeight:1.6}}>{t("Desde aquí puedes guardar el método de envío, número de tracking, destinatario, fecha de entrega, comprobante subido y el responsable del envío. Esto crea un historial completo y verificable por caso.","Here you can save the carrier, tracking number, recipient, delivery date, uploaded proof and responsible staff. This creates a complete, verifiable history per case.")}</div>
+              </div>
+              <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:12,padding:14}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#92400E",marginBottom:8}}>💡 {t("Consejo","Tip")}</div>
+                <div style={{fontSize:12,color:"#92400E",lineHeight:1.6}}>{t("Documenta cada envío para que, cuando el cliente pregunte: '¿Ustedes sí enviaron mis papeles?', puedas responder con pruebas claras y evitar confusiones.","Document every shipment so when a client asks 'did you really send my papers?', you can answer with clear proof and avoid disputes.")}</div>
+              </div>
+            </div>
+          </div>
+          )}
+        </div>
+      </div>
+      );
+    })()}
+
     {showUSCIS&&(
       <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:100,padding:"24px 16px",overflowY:"auto"}}>
         <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:760,boxShadow:"0 24px 64px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
