@@ -723,6 +723,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+console.log("%cImmigPath Portal Cliente — versión 2026-07-06-B","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const db  = getFirestore(app);
 const auth = getAuth(app);
 // Login anónimo invisible: permite que el cliente guarde su formulario de forma segura
@@ -1060,6 +1061,8 @@ function updateI589Step(){
   const next=document.getElementById("i589-btn-next");
   if(back)back.style.display=i589Step>1?"block":"none";
   if(next)next.textContent=i589Step===5?"💾 Guardar y enviar a mi oficina":"Siguiente →";
+  // Fix firma: el canvas se creó con el paso 5 oculto (tamaño 0x0). Al llegar al paso 5, re-dimensionar.
+  if(i589Step===5){ setTimeout(()=>{ if(sigPads["i589"]&&sigPads["i589"].resize){ sigPads["i589"].resize(); } else { setupSigPad("i589"); } }, 60); }
   document.getElementById("i589-body")?.scrollTo(0,0);
 }
 window.i589Next=function(){if(i589Step<5){i589Step++;updateI589Step();}else saveI589();};
@@ -1213,7 +1216,7 @@ function setupSigPad(id){
   canvas.addEventListener("touchmove", move, {passive:false});
   canvas.addEventListener("touchend", end);
   sigPads[id] = {
-    canvas, ctx,
+    canvas, ctx, resize,
     isEmpty: () => !hasDrawn,
     clear: () => { ctx.clearRect(0,0,canvas.width,canvas.height); hasDrawn=false; if(hint) hint.style.display="flex"; },
     toDataURL: () => canvas.toDataURL("image/png"),
