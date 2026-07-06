@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AD","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AE","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -4678,14 +4678,14 @@ window.descargarI589PDF = async function(cliente) {
     // ==== PÁGINA 9 — Firma del solicitante (Parte D) ====
     const N='form1[0].#subform[10].';
     const nombreCompleto=((d.nombre||'')+' '+(d.apellido||'')).trim();
-    set(N+'TextField25[0]', nombreCompleto);   // Print your complete name
-    set(N+'TextField25[1]', nombreCompleto);   // Name in native alphabet
+    set(N+'TextField20[0]', nombreCompleto);   // Print your complete name
+    set(N+'TextField20[1]', nombreCompleto);   // Name in native alphabet
     set(N+'DateTimeField48[0]', fmtD(d.savedAt)); // Fecha de firma
-    // Estampar la firma dibujada por el cliente (imagen del canvas) sobre el recuadro de firma
+    // Estampar la firma dibujada por el cliente dentro del recuadro de corchetes (Signature of Applicant)
     if(d.firma && String(d.firma).startsWith('data:image/png')){
       try{
         const sigImg = await pdfDoc.embedPng(d.firma);
-        const sigField = form.getTextField(N+'TextField20[0]');
+        const sigField = form.getTextField(N+'TextField22[0]');
         const rect = sigField.acroField.getWidgets()[0].getRectangle();
         const pag9 = pdfDoc.getPage(8);
         const esc = Math.min(rect.width/sigImg.width, rect.height/sigImg.height);
