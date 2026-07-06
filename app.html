@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AC","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AD","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -4603,6 +4603,97 @@ window.descargarI589PDF = async function(cliente) {
     if(d.sexo==='M') setCheck(P+'PartALine9Sex[0]');
     else if(d.sexo==='F') setCheck(P+'PartALine9Sex[1]');
 
+    // ==== Helpers de formato ====
+    const fmtD = v => { if(!v) return ''; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m? m[2]+'/'+m[3]+'/'+m[1] : String(v); };
+    const lineas = v => String(v||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+
+    // ==== PÁGINA 2 — Cónyuge (Parte A.II) ====
+    const S = 'form1[0].#subform[1].NotMarried[0].';
+    const C2 = 'form1[0].#subform[1].';
+    if(d['tiene-conyuge']==='si'){
+      set(S+'PtAIILine5_LastName[0]', d['c-apellido']);
+      set(S+'PtAIILine6_FirstName[0]', d['c-nombre']);
+      set(S+'DateTimeField7[0]', fmtD(d['c-dob']));
+      set(S+'DateTimeField8[0]', fmtD(d['c-fecha-mat']));
+      set(S+'TextField10[3]', d['c-ciudad-nac']);
+      set(S+'TextField10[4]', d['c-nacionalidad']);
+      if(d['c-sexo']==='M') setCheck(S+'CheckBox14_Sex[0]');
+      else if(d['c-sexo']==='F') setCheck(S+'CheckBox14_Sex[1]');
+      if(d['c-enusa']==='si') setCheck(S+'PtAIILine15_CheckBox15[0]');
+      else if(d['c-enusa']==='no') setCheck(S+'PtAIILine15_CheckBox15[1]');
+      if(d['c-incluir']==='si') setCheck(S+'PtAIILine24_Yes[0]');
+      else if(d['c-incluir']==='no') setCheck(S+'PtAIILine24_No[0]');
+    } else if(d['tiene-conyuge']==='no'){
+      setCheck(C2+'CheckBox5[0]'); // "I am not married"
+    }
+
+    // ==== PÁGINAS 2-3 — Hijos (hasta 4) ====
+    const hijosArr = Array.isArray(d.hijos)? d.hijos : [];
+    if(d['tiene-hijos']==='si' && hijosArr.length){
+      setCheck(C2+'ChildrenCheckbox[1]'); // "I have children"
+      set(C2+'TotalChild[0]', String(hijosArr.length));
+      const C3='form1[0].#subform[3].';
+      const defs=[
+        {p:C2, suf:'1', sexo:'CheckBox12_Sex', enusa:'CheckBox17', incY:'PtAIILine21_Yes[0]',  incN:'PtAIILine21_No[0]'},
+        {p:C3, suf:'2', sexo:'CheckBox26_Sex', enusa:'CheckBox27', incY:'PtAIILine21_Yes2[0]', incN:'PtAIILine21_No2[0]'},
+        {p:C3, suf:'3', sexo:'CheckBox36_Sex', enusa:'CheckBox37', incY:'PtAIILine21_Yes3[0]', incN:'PtAIILine21_No3[0]'},
+        {p:C3, suf:'4', sexo:'CheckBox46_Sex', enusa:'CheckBox47', incY:'PtAIILine21_Yes4[0]', incN:'PtAIILine21_No4[0]'},
+      ];
+      hijosArr.slice(0,4).forEach((h,i)=>{
+        const c=defs[i];
+        set(c.p+'ChildLast'+c.suf+'[0]', h.apellido);
+        set(c.p+'ChildFirst'+c.suf+'[0]', h.nombre);
+        set(c.p+'ChildDOB'+c.suf+'[0]', fmtD(h.dob));
+        set(c.p+'ChildNat'+c.suf+'[0]', h.nac);
+        set(c.p+'ChildCity'+c.suf+'[0]', h.ciudad);
+        if(h.sexo==='M') setCheck(c.p+c.sexo+'[0]'); else if(h.sexo==='F') setCheck(c.p+c.sexo+'[1]');
+        if(h.enusa==='si') setCheck(c.p+c.enusa+'[0]'); else if(h.enusa==='no') setCheck(c.p+c.enusa+'[1]');
+        if(h.incluir==='si') setCheck(c.p+c.incY); else if(h.incluir==='no') setCheck(c.p+c.incN);
+      });
+    } else if(d['tiene-hijos']==='no'){
+      setCheck(C2+'ChildrenCheckbox[0]'); // "I do not have any children"
+    }
+
+    // ==== PÁGINA 4 — Antecedentes (Parte A.III) ====
+    const Q='form1[0].#subform[4].';
+    // 1. Última dirección antes de venir a EE.UU.
+    set(Q+'TextField13[0]', d['dir-origen']);
+    set(Q+'DateTimeField21[0]', fmtD(d['dir-origen-desde']));
+    set(Q+'DateTimeField22[0]', fmtD(d['dir-origen-hasta']));
+    // 2. Residencias últimos 5 años (una por línea → columna "Number and Street")
+    [8,12,16,20,24].forEach((row,i)=>{ const ln=lineas(d.residencias)[i]; if(ln) set(Q+'TextField13['+row+']', ln); });
+    // 3. Educación (una por línea → columna "Name of School")
+    [28,31,34,37].forEach((row,i)=>{ const ln=lineas(d.educacion)[i]; if(ln) set(Q+'TextField13['+row+']', ln); });
+    // 4. Empleos (uno por línea → columna "Name and Address of Employer")
+    [40,42,44].forEach((row,i)=>{ const ln=lineas(d.empleos)[i]; if(ln) set(Q+'TextField13['+row+']', ln); });
+    // 5. Padres y hermanos
+    set(Q+'TextField13[46]', d['madre-nombre']);
+    set(Q+'TextField13[47]', d['madre-nac']);
+    set(Q+'TextField35[0]',  d['madre-ubicacion']);
+    set(Q+'TextField13[48]', d['padre-nombre']);
+    set(Q+'TextField13[49]', d['padre-nac']);
+    set(Q+'TextField35[1]',  d['padre-ubicacion']);
+    [50,52,54,56].forEach((row,i)=>{ const ln=lineas(d.hermanos)[i]; if(ln) set(Q+'TextField13['+row+']', ln); });
+
+    // ==== PÁGINA 9 — Firma del solicitante (Parte D) ====
+    const N='form1[0].#subform[10].';
+    const nombreCompleto=((d.nombre||'')+' '+(d.apellido||'')).trim();
+    set(N+'TextField25[0]', nombreCompleto);   // Print your complete name
+    set(N+'TextField25[1]', nombreCompleto);   // Name in native alphabet
+    set(N+'DateTimeField48[0]', fmtD(d.savedAt)); // Fecha de firma
+    // Estampar la firma dibujada por el cliente (imagen del canvas) sobre el recuadro de firma
+    if(d.firma && String(d.firma).startsWith('data:image/png')){
+      try{
+        const sigImg = await pdfDoc.embedPng(d.firma);
+        const sigField = form.getTextField(N+'TextField20[0]');
+        const rect = sigField.acroField.getWidgets()[0].getRectangle();
+        const pag9 = pdfDoc.getPage(8);
+        const esc = Math.min(rect.width/sigImg.width, rect.height/sigImg.height);
+        const sw = sigImg.width*esc, sh = sigImg.height*esc;
+        pag9.drawImage(sigImg, { x: rect.x+(rect.width-sw)/2, y: rect.y+(rect.height-sh)/2, width: sw, height: sh });
+      }catch(e){ console.warn('No se pudo estampar la firma:', e); }
+    }
+
     // 4. Aplanar para que se vea en cualquier visor
     form.flatten();
 
@@ -4616,7 +4707,7 @@ window.descargarI589PDF = async function(cliente) {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    if(typeof showToastFn==='function') showToastFn('📥 Formulario I-589 oficial descargado (páginas 1-4 y 9). Completa la narrativa a mano.','success');
+    if(typeof showToastFn==='function') showToastFn('📥 I-589 oficial descargado con páginas 1-4 y 9 llenas (incluye firma). Revisa y completa la narrativa (Parte B) a mano.','success');
   } catch(e){
     console.error('Error I-589:',e);
     if(typeof showToastFn==='function') showToastFn('Error: '+e.message,'error');
