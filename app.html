@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-05-AB","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AC","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -4575,7 +4575,7 @@ window.descargarI589PDF = async function(cliente) {
   try {
     // 1. Cargar el formulario base oficial (desbloqueado) desde GitHub
     const P = 'form1[0].#subform[0].';  // prefijo de página 1
-    const baseUrl = 'https://privas31.github.io/ImmigPath/i589-base.pdf';
+    const baseUrl = 'i589-base.pdf'; // ruta relativa: funciona en immigpath.com y github.io sin CORS
     const resp = await fetch(baseUrl);
     if(!resp.ok) throw new Error('No se encontró el formulario base. Súbelo a GitHub como i589-base.pdf');
     const bytes = await resp.arrayBuffer();
