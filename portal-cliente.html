@@ -711,6 +711,7 @@ body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#F8FAFC;min-he
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAnZXNV8tUCgUheOrI2p0due1Dj4S_tYCg",
@@ -723,6 +724,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
+const auth = getAuth(app);
+// Login anónimo invisible: permite que el cliente guarde su formulario de forma segura
+signInAnonymously(auth).catch(e=>console.error("Error auth anónima:",e));
 const params   = new URLSearchParams(window.location.search);
 const clientId = params.get("id");
 
@@ -1102,6 +1106,10 @@ window.saveI589=async function(){
   const btn=document.getElementById("i589-btn-next");
   if(btn){btn.textContent="Guardando...";btn.disabled=true;}
   try{
+    // Asegurar que la sesión anónima esté lista antes de guardar
+    if(!auth.currentUser){
+      try{ await signInAnonymously(auth); }catch(e){ console.error("auth:",e); }
+    }
     const draft=collectDraft();
     await setDoc(doc(db,"clientes",clientId),{i589Draft:draft},{merge:true});
     clientData.i589Draft=draft;
