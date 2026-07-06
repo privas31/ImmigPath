@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AK","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AM","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -2048,8 +2048,10 @@ const loadTeam=async()=>{
     {id:"actividad", label:t("Actividad","Activity"),               icon:"📊", show:isAdmin, onClick:()=>{setShowActividad(true);loadActividad();}},
     {id:"usuarios",  label:t("Usuarios","Users"),                  icon:"🔐", show:isAdmin, onClick:()=>setShowAddUser(true)},
     {id:"reportes",  label:t("Reportes","Reports"),                icon:"📈", show:isAdmin, onClick:()=>setShowPDF(true)},
+    {id:"sec-herramientas", section:t("Herramientas","Tools")},
     {id:"uscis",     label:t("Verificador USCIS","USCIS Checker")+(uscisHabilitado?"":" 🔒"), icon:"🔎", onClick:()=>{setShowUSCIS(true);if(uscisHabilitado)loadCasosUscis();}},
     {id:"envios",    label:t("Control de envíos","Shipments")+(enviosHabilitado?"":" 🔒"), icon:"📦", onClick:()=>{setShowEnvios(true);if(enviosHabilitado)loadEnvios();}},
+    {id:"sec-sistema", section:t("Sistema","System"), show:isAdmin},
     {id:"config",    label:t("Configuración","Settings"),          icon:"⚙️", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
     {id:"soporte",   label:t("Soporte","Support"),                 icon:"🎧", show:isAdmin, onClick:()=>{setShowSoporte(true);cargarMisTickets();}},
   ];
@@ -2070,6 +2072,9 @@ const loadTeam=async()=>{
       </div>
       <nav style={{flex:1,padding:"12px 0",overflowY:"auto"}}>
         {navItems.filter(n=>n.show!==false).map(n=>{
+          if(n.section) return(
+            <div key={n.id} style={{padding:"14px 20px 6px",fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.6px"}}>{n.section}</div>
+          );
           const active = activeNav===n.id;
           const handleClick = ()=>{ setActiveNav(n.id); n.onClick&&n.onClick(); };
           if(n.href) return(
