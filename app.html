@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AE","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AF","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -2932,7 +2932,7 @@ const loadTeam=async()=>{
           </div>
           <div style={{padding:"14px 22px",borderTop:"1px solid #F1F5F9",display:"flex",gap:10,flexWrap:"wrap"}}>
             <button onClick={()=>setShowI589Review(false)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer",fontSize:13,color:"#64748B"}}>{ t("Cerrar","Close") }</button>
-            {<button onClick={()=>window.descargarI589PDF(i589Cliente)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #BBF7D0",background:"#F0FDF4",color:"#16A34A",cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>📥 { t("Descargar I-589 oficial","Download official I-589") }</button>}
+            {<button onClick={()=>window.descargarI589PDF(i589Cliente, officeData, userData)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #BBF7D0",background:"#F0FDF4",color:"#16A34A",cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>📥 { t("Descargar I-589 oficial","Download official I-589") }</button>}
             <div style={{flex:1}}/>
             <button disabled={i589Saving} onClick={async()=>{
               setI589Saving(true);
@@ -4565,7 +4565,7 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 
 // ── PDF I-589 ────────────────────────────────────────────────────────────────
-window.descargarI589PDF = async function(cliente) {
+window.descargarI589PDF = async function(cliente, oficina, usuario) {
   const d = cliente.i589Draft;
   if(!d){ if(typeof showToastFn==='function') showToastFn('Este cliente no tiene datos del I-589','error'); return; }
   if(typeof PDFLib==='undefined'){ if(typeof showToastFn==='function') showToastFn('Cargando librería PDF, intenta de nuevo en unos segundos','error'); return; }
@@ -4692,6 +4692,24 @@ window.descargarI589PDF = async function(cliente) {
         const sw = sigImg.width*esc, sh = sigImg.height*esc;
         pag9.drawImage(sigImg, { x: rect.x+(rect.width-sw)/2, y: rect.y+(rect.height-sh)/2, width: sw, height: sh });
       }catch(e){ console.warn('No se pudo estampar la firma:', e); }
+    }
+
+    // ==== PÁGINA 9 — Parte E: Datos de la preparadora (auto-llenados; la firma queda a mano) ====
+    const prepNombre = (usuario && usuario.displayName) || (oficina && oficina.name) || '';
+    const prepDir    = (oficina && oficina.address) || '';
+    const prepTel    = ((oficina && oficina.phone) || '').replace(/[^0-9]/g,'');
+    if(prepNombre || prepDir || prepTel){
+      // Marcar "Yes" en "¿Alguien más preparó esta solicitud?" (requiere completar Parte E)
+      setCheck(N+'ckboxynd2[0]');
+      set(N+'PtE_PreparerName[0]', prepNombre);
+      set(N+'PtE_StreetNumAndName[0]', prepDir);
+      if(prepTel.length===10){
+        set(N+'TextField25[1]', prepTel.slice(0,3));                      // código de área
+        set(N+'TextField25[0]', prepTel.slice(3,6)+'-'+prepTel.slice(6)); // número
+      } else if(prepTel){
+        set(N+'TextField25[0]', prepTel);
+      }
+      // PtE_PreparerSignature se deja vacío a propósito: la preparadora firma a mano
     }
 
     // 4. Aplanar para que se vea en cualquier visor
