@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AG","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AH","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -120,6 +120,29 @@ function getFlagEmoji(p){return FLAG_EMOJI[p]||"🌍";}
 
 const emptyCaso={sistema:"uscis",tipoCaso:"",receiptNum:"",alienNum:"",corte:"",juez:"",fechaCorte:"",fechaHuellas:"",tipoCita:"",tieneEAD:"",eadReceipt:"",eadVence:"",eadRenovado:"",fechaAsilo:"",estatusReloj:"",estatusCaso:"",origenCaso:"",foiaTracking:"",foiaEstado:"",foiaRespuesta:"",procesos:[],nota:""};
 const emptyCliente={nombre:"",paisOrigen:"",alienNum:"",telefono:"",email:"",encargada:"",casos:[],nota:""};
+
+// ===== Verificador de caso USCIS (Plan Premium) =====
+const ESTATUS_USCIS=[
+  {en:"Case Was Received",es:"Caso recibido",color:"#378ADD"},
+  {en:"Fee Was Received",es:"Tarifa recibida",color:"#378ADD"},
+  {en:"Biometrics Appointment Was Scheduled",es:"Biométricos programados",color:"#378ADD"},
+  {en:"Biometrics Were Taken",es:"Biométricos tomados",color:"#378ADD"},
+  {en:"Case Is Pending",es:"Caso pendiente",color:"#378ADD"},
+  {en:"Case Is Being Actively Reviewed",es:"En revisión activa",color:"#378ADD"},
+  {en:"Request for Additional Evidence (RFE) Was Sent",es:"Solicitud de evidencia adicional — requiere acción",color:"#EF9F27"},
+  {en:"Response to RFE Was Received",es:"Respuesta a RFE recibida",color:"#378ADD"},
+  {en:"Interview Was Scheduled",es:"Entrevista programada — requiere acción",color:"#EF9F27"},
+  {en:"Case Was Approved",es:"Caso aprobado",color:"#1D9E75"},
+  {en:"New Card Is Being Produced",es:"Tarjeta en producción",color:"#1D9E75"},
+  {en:"Card Was Mailed",es:"Tarjeta enviada por correo",color:"#1D9E75"},
+  {en:"Case Was Denied",es:"Caso negado",color:"#E24B4A"},
+  {en:"Case Was Closed",es:"Caso cerrado",color:"#888780"},
+  {en:"Case Was Transferred",es:"Caso transferido",color:"#888780"},
+];
+const FORMULARIOS_USCIS=["I-589 Asilo","I-765 Permiso de trabajo","I-485 Residencia","I-130 Petición familiar","I-131 Permiso de viaje","N-400 Ciudadanía","I-90 Renovación de tarjeta","I-751 Remover condiciones","Otro"];
+const colorEstatusUscis=(est)=>{const m=ESTATUS_USCIS.find(s=>s.en===est);return m?m.color:"#888780";};
+const descEstatusUscis=(est)=>{const m=ESTATUS_USCIS.find(s=>s.en===est);return m?m.es:"";};
+
 
 //  Pequeos componentes 
 // ── Global language state ────────────────────────────────────────
@@ -544,6 +567,13 @@ function App(){
   });
   const[nominaPeriodoFin,setNóminaPeriodoFin]=useState(()=>new Date().toISOString().split("T")[0]);
   const[showPagosReporte,setShowPagosReporte]=useState(false);
+  // Verificador de caso USCIS (Premium)
+  const[showUSCIS,setShowUSCIS]=useState(false);
+  const[casosUscis,setCasosUscis]=useState([]);
+  const[uscisLoading,setUscisLoading]=useState(false);
+  const[uscisForm,setUscisForm]=useState({recibo:"",formulario:"I-765 Permiso de trabajo",estatus:"",estatusOtro:"",nota:"",clienteId:""});
+  const[uscisSaving,setUscisSaving]=useState(false);
+  const[uscisExpandido,setUscisExpandido]=useState(null);
   const[reporteBusq,setReporteBusq]=useState("");
   const[reporteEmp,setReporteEmp]=useState("");
   const[reporteEst,setReporteEst]=useState("");
@@ -1730,6 +1760,75 @@ const loadTeam=async()=>{
   //  PERMISOS POR ROL 
   const isAdmin = userData?.role==="office_admin" || userData?.role==="superadmin";
 
+  // ===== Funciones del Verificador USCIS (Premium) =====
+  const uscisHabilitado = enabledModules.includes("verificadorUSCIS");
+  const loadCasosUscis=async()=>{
+    setUscisLoading(true);
+    try{
+      const{db,collection,getDocs}=window._firebase;
+      const officeId=officeData?.id||userData?.officeId||"";
+      const snap=await getDocs(collection(db,"casos_uscis"));
+      const lista=[];
+      snap.forEach(d=>{const c=d.data();if(c.officeId===officeId)lista.push({id:d.id,...c});});
+      lista.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+      setCasosUscis(lista);
+    }catch(e){console.error("Error cargando casos USCIS:",e);showToastFn(t("Error al cargar casos: ","Error loading cases: ")+e.message,"error");}
+    setUscisLoading(false);
+  };
+  const guardarCasoUscis=async()=>{
+    const recibo=(uscisForm.recibo||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+    if(!/^[A-Z]{3}[0-9]{10}$/.test(recibo)){showToastFn(t("El recibo debe tener 3 letras + 10 números (ej: IOE1234567890)","Receipt must be 3 letters + 10 digits (e.g. IOE1234567890)"),"error");return;}
+    const estatusFinal=uscisForm.estatus==="__otro__"?(uscisForm.estatusOtro||"").trim():uscisForm.estatus;
+    if(!estatusFinal){showToastFn(t("Selecciona el estatus actual del caso","Select the current case status"),"error");return;}
+    setUscisSaving(true);
+    try{
+      const{db,collection,addDoc,updateDoc,doc}=window._firebase;
+      const officeId=officeData?.id||userData?.officeId||"";
+      const ahora=new Date().toISOString();
+      const por=userData?.displayName||user?.email||"";
+      const cliente=uscisForm.clienteId?clientes.find(c=>c.id===uscisForm.clienteId):null;
+      const existente=casosUscis.find(c=>c.recibo===recibo);
+      if(existente){
+        const cambios={formulario:uscisForm.formulario,nota:uscisForm.nota||"",clienteId:uscisForm.clienteId||existente.clienteId||"",clienteNombre:cliente?cliente.nombre:(existente.clienteNombre||""),updatedAt:ahora,revisadoAt:ahora,revisadoPor:por};
+        if(estatusFinal!==existente.estatus){
+          cambios.estatus=estatusFinal;
+          cambios.historial=[...(existente.historial||[]),{estatus:estatusFinal,fecha:ahora,por}];
+        }
+        await updateDoc(doc(db,"casos_uscis",existente.id),cambios);
+        showToastFn(t("Caso actualizado ✓","Case updated ✓"));
+        registrarActividad("uscis",t("Caso USCIS actualizado","USCIS case updated"),`${recibo} · ${estatusFinal}`);
+      }else{
+        await addDoc(collection(db,"casos_uscis"),{officeId,recibo,formulario:uscisForm.formulario,estatus:estatusFinal,nota:uscisForm.nota||"",clienteId:uscisForm.clienteId||"",clienteNombre:cliente?cliente.nombre:"",historial:[{estatus:estatusFinal,fecha:ahora,por}],createdAt:ahora,updatedAt:ahora,revisadoAt:ahora,revisadoPor:por});
+        showToastFn(t("Caso guardado ✓","Case saved ✓"));
+        registrarActividad("uscis",t("Caso USCIS registrado","USCIS case added"),`${recibo} · ${estatusFinal}`);
+      }
+      setUscisForm({recibo:"",formulario:"I-765 Permiso de trabajo",estatus:"",estatusOtro:"",nota:"",clienteId:""});
+      await loadCasosUscis();
+    }catch(e){console.error("Error guardando caso USCIS:",e);showToastFn(t("Error al guardar: ","Error saving: ")+e.message,"error");}
+    setUscisSaving(false);
+  };
+  const eliminarCasoUscis=async(caso)=>{
+    if(!window.confirm(t(`¿Eliminar el seguimiento del recibo ${caso.recibo}?`,`Delete tracking for receipt ${caso.recibo}?`)))return;
+    try{
+      const{db,deleteDoc,doc}=window._firebase;
+      await deleteDoc(doc(db,"casos_uscis",caso.id));
+      showToastFn(t("Caso eliminado ✓","Case deleted ✓"));
+      setCasosUscis(prev=>prev.filter(c=>c.id!==caso.id));
+    }catch(e){showToastFn(t("Error al eliminar: ","Error deleting: ")+e.message,"error");}
+  };
+  const notificarClienteUscis=(caso)=>{
+    const cliente=clientes.find(c=>c.id===caso.clienteId);
+    const tel=(cliente?.telefono||"").replace(/[^0-9]/g,"");
+    if(!tel){showToastFn(t("El cliente vinculado no tiene teléfono registrado","Linked client has no phone on file"),"error");return;}
+    const desc=descEstatusUscis(caso.estatus);
+    const msg=encodeURIComponent(`Hola ${cliente.nombre}, le informamos que su caso ${caso.formulario} (recibo ${caso.recibo}) tiene una actualización de USCIS: "${caso.estatus}"${desc?` — ${desc}`:""}. Cualquier duda estamos a la orden. — ${officeData?.name||""}`);
+    window.open(`https://wa.me/${tel.length===10?"1"+tel:tel}?text=${msg}`,"_blank");
+  };
+  const abrirEnUscis=(recibo)=>{
+    if(recibo){try{navigator.clipboard.writeText(recibo);showToastFn(t("Recibo copiado — pégalo en la página de USCIS","Receipt copied — paste it on the USCIS page"));}catch(e){}}
+    window.open("https://egov.uscis.gov/casestatus/landing.do","_blank");
+  };
+
   // ── SIDEBAR NAV ITEMS ──────────────────────────────────────────────────────
   const navItems = [
     {id:"monitor",   label:t("Monitor Oficina","Office Monitor"),  icon:"🖥", onClick:()=>{setActiveNav("monitor");}},
@@ -1745,6 +1844,7 @@ const loadTeam=async()=>{
     {id:"actividad", label:t("Actividad","Activity"),               icon:"📊", show:isAdmin, onClick:()=>{setShowActividad(true);loadActividad();}},
     {id:"usuarios",  label:t("Usuarios","Users"),                  icon:"🔐", show:isAdmin, onClick:()=>setShowAddUser(true)},
     {id:"reportes",  label:t("Reportes","Reports"),                icon:"📈", show:isAdmin, onClick:()=>setShowPDF(true)},
+    {id:"uscis",     label:t("Verificador USCIS","USCIS Checker")+(uscisHabilitado?"":" 🔒"), icon:"🔎", onClick:()=>{setShowUSCIS(true);if(uscisHabilitado)loadCasosUscis();}},
     {id:"config",    label:t("Configuración","Settings"),          icon:"⚙️", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
     {id:"soporte",   label:t("Soporte","Support"),                 icon:"🎧", show:isAdmin, onClick:()=>{setShowSoporte(true);cargarMisTickets();}},
   ];
@@ -2696,6 +2796,126 @@ const loadTeam=async()=>{
 
 
     {/* ── PANEL DE ACTIVIDAD DEL EQUIPO ── */}
+    {showUSCIS&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:100,padding:"24px 16px",overflowY:"auto"}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:760,boxShadow:"0 24px 64px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
+          <div style={{padding:"16px 24px",borderBottom:"1px solid #F1F5F9",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"#fff",zIndex:5}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:20}}>🔎</span>
+              <div>
+                <div style={{fontSize:15,fontWeight:800,color:"#0F172A",display:"flex",alignItems:"center",gap:8}}>{t("Verificador de caso USCIS","USCIS case checker")}<span style={{background:"#EEEDFE",color:"#3C3489",fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:99}}>PREMIUM</span></div>
+                <div style={{fontSize:12,color:"#64748B"}}>{t("Registra y da seguimiento al estatus de cada recibo","Track the status of every receipt")}</div>
+              </div>
+            </div>
+            <button onClick={()=>setShowUSCIS(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{t("Cerrar","Close")}</button>
+          </div>
+
+          {!uscisHabilitado?(
+            <div style={{padding:"48px 32px",textAlign:"center"}}>
+              <div style={{fontSize:44,marginBottom:12}}>🔒</div>
+              <div style={{fontSize:17,fontWeight:800,color:"#0F172A",marginBottom:8}}>{t("Disponible en el Plan Premium","Available on the Premium plan")}</div>
+              <div style={{fontSize:13,color:"#64748B",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>{t("Lleva el control de todos tus casos con USCIS: recibo, estatus actual, historial de cambios, notas internas y notificación al cliente por WhatsApp — todo en un solo lugar.","Track all your USCIS cases: receipt, current status, change history, internal notes and WhatsApp client notifications — all in one place.")}</div>
+              <div style={{fontSize:13,color:"#0C447C",fontWeight:600}}>{t("Contacta a ImmigPath para activar el Plan Premium","Contact ImmigPath to activate the Premium plan")}</div>
+            </div>
+          ):(
+            <div style={{padding:"20px 24px"}}>
+              <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:12,padding:16,marginBottom:16}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>{t("Registrar / actualizar caso","Add / update case")}</div>
+                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10,marginBottom:10}}>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Número de recibo (13 caracteres)","Receipt number (13 characters)")}</label>
+                    <input value={uscisForm.recibo} onChange={e=>setUscisForm(f=>({...f,recibo:e.target.value.toUpperCase()}))} placeholder="IOE1234567890" maxLength={13} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,fontFamily:"monospace",letterSpacing:1,outline:"none"}}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Formulario","Form")}</label>
+                    <select value={uscisForm.formulario} onChange={e=>setUscisForm(f=>({...f,formulario:e.target.value}))} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none",background:"#fff"}}>
+                      {FORMULARIOS_USCIS.map(fo=><option key={fo} value={fo}>{fo}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Estatus actual (como lo muestra USCIS)","Current status (as shown by USCIS)")}</label>
+                    <select value={uscisForm.estatus} onChange={e=>setUscisForm(f=>({...f,estatus:e.target.value}))} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none",background:"#fff"}}>
+                      <option value="">{t("— Selecciona el estatus —","— Select status —")}</option>
+                      {ESTATUS_USCIS.map(s=><option key={s.en} value={s.en}>{lang==="es"?`${s.en} — ${s.es}`:s.en}</option>)}
+                      <option value="__otro__">{t("Otro (escribir manualmente)","Other (type manually)")}</option>
+                    </select>
+                    {uscisForm.estatus==="__otro__"&&(
+                      <input value={uscisForm.estatusOtro} onChange={e=>setUscisForm(f=>({...f,estatusOtro:e.target.value}))} placeholder={t("Escribe el estatus tal como aparece en USCIS","Type the status as shown on USCIS")} style={{width:"100%",marginTop:6,padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
+                    )}
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Vincular cliente (opcional)","Link client (optional)")}</label>
+                    <select value={uscisForm.clienteId} onChange={e=>setUscisForm(f=>({...f,clienteId:e.target.value}))} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none",background:"#fff"}}>
+                      <option value="">{t("— Sin vincular —","— Not linked —")}</option>
+                      {clientes.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{marginBottom:12}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase"}}>{t("Nota interna","Internal note")}</label>
+                  <input value={uscisForm.nota} onChange={e=>setUscisForm(f=>({...f,nota:e.target.value}))} placeholder={t("Ej: Cliente informado por WhatsApp","E.g.: Client notified via WhatsApp")} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none"}}/>
+                </div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <button onClick={guardarCasoUscis} disabled={uscisSaving} style={{background:"#0C447C",color:"#fff",border:"none",borderRadius:8,padding:"9px 18px",fontSize:13,fontWeight:700,cursor:"pointer",opacity:uscisSaving?0.6:1}}>{uscisSaving?t("Guardando...","Saving..."):t("💾 Guardar seguimiento","💾 Save tracking")}</button>
+                  <button onClick={()=>abrirEnUscis(uscisForm.recibo)} style={{background:"#fff",color:"#0C447C",border:"1px solid #0C447C",borderRadius:8,padding:"9px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{t("🔗 Ver en USCIS","🔗 View on USCIS")}</button>
+                </div>
+                <div style={{fontSize:11,color:"#94A3B8",marginTop:8}}>{t("Consulta el estatus en la página oficial de USCIS y regístralo aquí. Si el recibo ya existe, se actualiza y el estatus anterior pasa al historial.","Check the status on the official USCIS page and log it here. If the receipt exists, it updates and the previous status moves to history.")}</div>
+              </div>
+
+              <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>{t("Casos en seguimiento","Tracked cases")} ({casosUscis.length})</div>
+              {uscisLoading?<div style={{textAlign:"center",padding:24,color:"#64748B",fontSize:13}}>{t("Cargando...","Loading...")}</div>:
+               casosUscis.length===0?<div style={{textAlign:"center",padding:24,color:"#94A3B8",fontSize:13,background:"#F8FAFC",borderRadius:12}}>{t("Aún no hay casos registrados. Agrega el primero arriba.","No cases yet. Add the first one above.")}</div>:
+               casosUscis.map(caso=>(
+                <div key={caso.id} style={{border:"1px solid #E2E8F0",borderRadius:12,padding:"12px 16px",marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
+                    <div style={{flex:1,minWidth:200}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <span style={{fontFamily:"monospace",fontWeight:700,fontSize:14,color:"#0C447C"}}>{caso.recibo}</span>
+                        <span style={{fontSize:12,color:"#64748B"}}>{caso.formulario}</span>
+                        {caso.clienteNombre&&<span style={{fontSize:11,background:"#EFF6FF",color:"#1D4ED8",padding:"2px 8px",borderRadius:99}}>👤 {caso.clienteNombre}</span>}
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6}}>
+                        <span style={{width:9,height:9,borderRadius:"50%",background:colorEstatusUscis(caso.estatus),flexShrink:0}}></span>
+                        <span style={{fontSize:13,fontWeight:600,color:"#0F172A"}}>{caso.estatus}</span>
+                      </div>
+                      {lang==="es"&&descEstatusUscis(caso.estatus)&&<div style={{fontSize:11,color:"#64748B",marginLeft:15}}>{descEstatusUscis(caso.estatus)}</div>}
+                      {caso.nota&&<div style={{fontSize:12,color:"#64748B",marginTop:4}}>📝 {caso.nota}</div>}
+                      <div style={{fontSize:11,color:"#94A3B8",marginTop:4}}>{t("Revisado","Checked")}: {caso.revisadoAt?new Date(caso.revisadoAt).toLocaleDateString():"—"} {caso.revisadoPor?`· ${caso.revisadoPor}`:""}</div>
+                    </div>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      <button onClick={()=>setUscisForm({recibo:caso.recibo,formulario:caso.formulario,estatus:ESTATUS_USCIS.some(s=>s.en===caso.estatus)?caso.estatus:"__otro__",estatusOtro:ESTATUS_USCIS.some(s=>s.en===caso.estatus)?"":caso.estatus,nota:caso.nota||"",clienteId:caso.clienteId||""})} title={t("Cargar en el formulario para actualizar","Load into form to update")} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"6px 10px",fontSize:12,cursor:"pointer",fontWeight:600}}>✏️ {t("Actualizar","Update")}</button>
+                      <button onClick={()=>abrirEnUscis(caso.recibo)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"6px 10px",fontSize:12,cursor:"pointer",fontWeight:600}}>🔗 USCIS</button>
+                      {caso.clienteId&&<button onClick={()=>notificarClienteUscis(caso)} style={{background:"#DCFCE7",border:"none",borderRadius:8,padding:"6px 10px",fontSize:12,cursor:"pointer",fontWeight:600,color:"#166534"}}>💬 WhatsApp</button>}
+                      <button onClick={()=>setUscisExpandido(uscisExpandido===caso.id?null:caso.id)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"6px 10px",fontSize:12,cursor:"pointer",fontWeight:600}}>🕐 {t("Historial","History")}</button>
+                      {isAdmin&&<button onClick={()=>eliminarCasoUscis(caso)} style={{background:"#FEE2E2",border:"none",borderRadius:8,padding:"6px 10px",fontSize:12,cursor:"pointer",color:"#B91C1C",fontWeight:600}}>🗑</button>}
+                    </div>
+                  </div>
+                  {uscisExpandido===caso.id&&(
+                    <div style={{marginTop:12,paddingTop:12,borderTop:"1px dashed #E2E8F0"}}>
+                      {[...(caso.historial||[])].reverse().map((h,i)=>(
+                        <div key={i} style={{display:"flex",gap:10,marginBottom:i===(caso.historial||[]).length-1?0:10}}>
+                          <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+                            <span style={{width:10,height:10,borderRadius:"50%",background:colorEstatusUscis(h.estatus),marginTop:3,flexShrink:0}}></span>
+                            {i<(caso.historial||[]).length-1&&<span style={{width:2,flex:1,background:"#E2E8F0"}}></span>}
+                          </div>
+                          <div style={{paddingBottom:8}}>
+                            <div style={{fontSize:13,fontWeight:i===0?700:400,color:"#0F172A"}}>{h.estatus}{i===0&&<span style={{background:"#DCFCE7",color:"#166534",fontSize:10,fontWeight:700,padding:"1px 8px",borderRadius:99,marginLeft:8}}>{t("Actual","Current")}</span>}</div>
+                            <div style={{fontSize:11,color:"#94A3B8"}}>{h.fecha?new Date(h.fecha).toLocaleString():""} {h.por?`· ${h.por}`:""}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
     {showActividad&&isAdmin&&(
       <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:100,padding:"24px 16px",overflowY:"auto"}}>
         <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:680,boxShadow:"0 24px 64px rgba(0,0,0,0.2)",maxHeight:"90vh",overflowY:"auto"}}>
