@@ -17,6 +17,7 @@
     })();
   </script>
   <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -62,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-05-Z","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-05-AA","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -2931,7 +2932,7 @@ const loadTeam=async()=>{
           </div>
           <div style={{padding:"14px 22px",borderTop:"1px solid #F1F5F9",display:"flex",gap:10,flexWrap:"wrap"}}>
             <button onClick={()=>setShowI589Review(false)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer",fontSize:13,color:"#64748B"}}>{ t("Cerrar","Close") }</button>
-            {i589Cliente.i589Draft?.status==="aprobado"&&<button onClick={()=>window.descargarI589PDF(i589Cliente)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #BBF7D0",background:"#F0FDF4",color:"#16A34A",cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>📥 { t("Descargar PDF","Download PDF") } I-589</button>}
+            {i589Cliente.i589Draft&&<button onClick={()=>window.descargarI589PDF(i589Cliente)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #BBF7D0",background:"#F0FDF4",color:"#16A34A",cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>📥 { t("Descargar I-589 oficial","Download official I-589") }</button>}
             <div style={{flex:1}}/>
             <button disabled={i589Saving} onClick={async()=>{
               setI589Saving(true);
@@ -4564,7 +4565,65 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 
 // ── PDF I-589 ────────────────────────────────────────────────────────────────
-window.descargarI589PDF = function(cliente) {
+window.descargarI589PDF = async function(cliente) {
+  const d = cliente.i589Draft;
+  if(!d){ if(typeof showToastFn==='function') showToastFn('Este cliente no tiene datos del I-589','error'); return; }
+  if(typeof PDFLib==='undefined'){ if(typeof showToastFn==='function') showToastFn('Cargando librería PDF, intenta de nuevo en unos segundos','error'); return; }
+
+  if(typeof showToastFn==='function') showToastFn('Generando formulario oficial I-589...','info');
+
+  try {
+    // 1. Cargar el formulario base oficial (desbloqueado) desde GitHub
+    const P = 'form1[0].#subform[0].';  // prefijo de página 1
+    const baseUrl = 'https://privas31.github.io/ImmigPath/i589-base.pdf';
+    const resp = await fetch(baseUrl);
+    if(!resp.ok) throw new Error('No se encontró el formulario base. Súbelo a GitHub como i589-base.pdf');
+    const bytes = await resp.arrayBuffer();
+
+    const pdfDoc = await PDFLib.PDFDocument.load(bytes);
+    const form = pdfDoc.getForm();
+
+    // 2. Helper para llenar un campo de texto sin romper si no existe
+    const set = (nombre, valor) => {
+      if(!valor) return;
+      try { const f = form.getTextField(nombre); f.setText(String(valor).slice(0,150)); } catch(e){}
+    };
+    const setCheck = (nombre) => {
+      try { const c = form.getCheckBox(nombre); c.check(); } catch(e){}
+    };
+
+    // 3. Mapear datos del cliente (i589Draft) → campos del PDF oficial (PÁGINA 1)
+    set(P+'PtAILine1_ANumber[0]', d.alien || d.alienNum || cliente.alienNum);
+    set(P+'PtAILine4_LastName[0]', d.apellido);
+    set(P+'PtAILine5_FirstName[0]', d.nombre);
+    set(P+'PtAILine8_StreetNumandName[0]', d.direccion);
+    set(P+'PtAILine8_TelephoneNumber[0]', (d.telefono||'').replace(/[^0-9]/g,'').slice(-7));
+
+    // Sexo (checkbox): PartALine9Sex[0]=Male, [1]=Female
+    if(d.sexo==='M') setCheck(P+'PartALine9Sex[0]');
+    else if(d.sexo==='F') setCheck(P+'PartALine9Sex[1]');
+
+    // 4. Aplanar para que se vea en cualquier visor
+    form.flatten();
+
+    // 5. Descargar
+    const out = await pdfDoc.save();
+    const blob = new Blob([out], {type:'application/pdf'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const fname = ((d.nombre||'')+'-'+(d.apellido||'cliente')).replace(/[^a-zA-Z0-9]/g,'-');
+    a.href = url; a.download = 'I-589-'+fname+'.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    if(typeof showToastFn==='function') showToastFn('📥 Formulario I-589 oficial descargado (páginas 1-4 y 9). Completa la narrativa a mano.','success');
+  } catch(e){
+    console.error('Error I-589:',e);
+    if(typeof showToastFn==='function') showToastFn('Error: '+e.message,'error');
+  }
+};
+
+window.descargarI589Resumen = function(cliente) {
   const d = cliente.i589Draft;
   if(!d) return;
   const { jsPDF } = window.jspdf;
