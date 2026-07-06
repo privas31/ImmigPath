@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-05-AA","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-05-AB","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -2932,7 +2932,7 @@ const loadTeam=async()=>{
           </div>
           <div style={{padding:"14px 22px",borderTop:"1px solid #F1F5F9",display:"flex",gap:10,flexWrap:"wrap"}}>
             <button onClick={()=>setShowI589Review(false)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer",fontSize:13,color:"#64748B"}}>{ t("Cerrar","Close") }</button>
-            {i589Cliente.i589Draft&&<button onClick={()=>window.descargarI589PDF(i589Cliente)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #BBF7D0",background:"#F0FDF4",color:"#16A34A",cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>📥 { t("Descargar I-589 oficial","Download official I-589") }</button>}
+            {<button onClick={()=>window.descargarI589PDF(i589Cliente)} style={{padding:"9px 16px",borderRadius:9,border:"1px solid #BBF7D0",background:"#F0FDF4",color:"#16A34A",cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>📥 { t("Descargar I-589 oficial","Download official I-589") }</button>}
             <div style={{flex:1}}/>
             <button disabled={i589Saving} onClick={async()=>{
               setI589Saving(true);
