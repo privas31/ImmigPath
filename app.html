@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AF","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AG","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -585,6 +585,9 @@ function App(){
   },[]);
 
   useEffect(()=>{if(!user||!officeData)return;loadCases();loadTeam();loadBorradores();loadPagosConfig();loadSolicitudesServicio();},[user,officeData]);
+
+  // Exponer datos de oficina y usuario para el generador del I-589 (Parte E)
+  useEffect(()=>{ window._officeData = officeData; window._userData = userData; },[officeData, userData]);
 
   // Heartbeat: actualizar "última actividad" cada 2 minutos mientras el usuario está activo
   useEffect(()=>{
@@ -4695,9 +4698,12 @@ window.descargarI589PDF = async function(cliente, oficina, usuario) {
     }
 
     // ==== PÁGINA 9 — Parte E: Datos de la preparadora (auto-llenados; la firma queda a mano) ====
+    if(!oficina) oficina = window._officeData || null;
+    if(!usuario) usuario = window._userData || null;
     const prepNombre = (usuario && usuario.displayName) || (oficina && oficina.name) || '';
     const prepDir    = (oficina && oficina.address) || '';
     const prepTel    = ((oficina && oficina.phone) || '').replace(/[^0-9]/g,'');
+    console.log('I-589 Parte E → nombre:', prepNombre||'(vacío)', '| dirección:', prepDir||'(vacía)', '| tel:', prepTel||'(vacío)');
     if(prepNombre || prepDir || prepTel){
       // Marcar "Yes" en "¿Alguien más preparó esta solicitud?" (requiere completar Parte E)
       setCheck(N+'ckboxynd2[0]');
