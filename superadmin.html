@@ -67,6 +67,7 @@
   .mod-tax{background:rgba(16,185,129,.2);color:#6ee7b7;}
   .mod-ins{background:rgba(245,158,11,.2);color:#fcd34d;}
   .mod-not{background:rgba(139,92,246,.2);color:#c4b5fd;}
+  .mod-usc{background:rgba(56,138,221,.2);color:#7cc0f5;}
   .actions{display:flex;gap:6px;}
   .action-btn{padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all .15s;}
   .action-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
@@ -692,6 +693,7 @@
           <div class="module-toggle"><input type="checkbox" id="mod-tax" value="taxes"><label for="mod-tax">🧾 Taxes</label></div>
           <div class="module-toggle"><input type="checkbox" id="mod-ins" value="insurance"><label for="mod-ins">🛡️ Seguros</label></div>
           <div class="module-toggle"><input type="checkbox" id="mod-not" value="notary" checked><label for="mod-not">📋 Notaría</label></div>
+          <div class="module-toggle"><input type="checkbox" id="mod-usc" value="verificadorUSCIS"><label for="mod-usc">🔎 Verificador USCIS</label></div>
         </div>
       </div>
       <div class="form-group">
@@ -768,6 +770,7 @@ const firebaseConfig = {
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+console.log("%cImmigPath Superadmin — versión 2026-07-06-B","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -901,7 +904,7 @@ window.updatePlanModules = function(plan) {
   const desc = document.getElementById('plan-desc');
   if(desc) desc.textContent = descs[plan] || '';
   // Auto-seleccionar modulos segun el plan
-  const modMap = {immigration:'mod-imm', notary:'mod-not', taxes:'mod-tax', insurance:'mod-ins'};
+  const modMap = {immigration:'mod-imm', notary:'mod-not', taxes:'mod-tax', insurance:'mod-ins', verificadorUSCIS:'mod-usc'};
   Object.values(modMap).forEach(id => { const el=document.getElementById(id); if(el) el.checked=false; });
   (modules[plan]||[]).forEach(m => { const el=document.getElementById(modMap[m]); if(el) el.checked=true; });
 };
@@ -1246,8 +1249,8 @@ function renderOfficesFullTable(offices) {
 }
 
 function renderModulePills(modules) {
-  const map = {immigration:'mod-imm',taxes:'mod-tax',insurance:'mod-ins',notary:'mod-not'};
-  const labels = {immigration:'Imm',taxes:'Tax',insurance:'Seg',notary:'Not'};
+  const map = {immigration:'mod-imm',taxes:'mod-tax',insurance:'mod-ins',notary:'mod-not',verificadorUSCIS:'mod-usc'};
+  const labels = {immigration:'Imm',taxes:'Tax',insurance:'Seg',notary:'Not',verificadorUSCIS:'USCIS'};
   const planLabels = {basic:'$249',professional:'$697',premium:'$1,299'};
   return modules.map(m => `<span class="mod ${map[m]||''}">${labels[m]||m}</span>`).join('');
 }
@@ -1319,7 +1322,7 @@ window.editOfficeModules = function(officeId) {
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:360px;margin:0 auto">
       <div style="font-size:15px;font-weight:600;margin-bottom:16px">Módulos — ${office.name}</div>
       <div class="module-grid" style="margin-bottom:16px">
-        ${[['immigration','🏛️ Inmigración'],['taxes','🧾 Taxes'],['insurance','🛡️ Seguros'],['notary','📋 Notaría']].map(([val,label]) => `
+        ${[['immigration','🏛️ Inmigración'],['taxes','🧾 Taxes'],['insurance','🛡️ Seguros'],['notary','📋 Notaría'],['verificadorUSCIS','🔎 Verificador USCIS']].map(([val,label]) => `
           <div class="module-toggle">
             <input type="checkbox" id="edit-mod-${val}" value="${val}" ${modules.includes(val)?'checked':''}>
             <label for="edit-mod-${val}">${label}</label>
@@ -1332,7 +1335,7 @@ window.editOfficeModules = function(officeId) {
 };
 
 window.saveOfficeModules = async function(officeId) {
-  const allMods = ['immigration','taxes','insurance','notary'];
+  const allMods = ['immigration','taxes','insurance','notary','verificadorUSCIS'];
   const selected = allMods.filter(m => document.getElementById('edit-mod-'+m)?.checked);
   try {
     await updateDoc(doc(db,'offices',officeId), { enabledModules: selected });
@@ -1353,8 +1356,8 @@ window.createOffice = async function() {
   const pass  = document.getElementById('new-office-pass').value;
   if (!name||!owner||!email||!pass) { showToast('Completa todos los campos requeridos','error'); return; }
   if (pass.length < 8) { showToast('La contraseña debe tener mínimo 8 caracteres','error'); return; }
-  const modules = ['mod-imm','mod-tax','mod-ins','mod-not'].filter(id => document.getElementById(id).checked)
-    .map(id => ({'mod-imm':'immigration','mod-tax':'taxes','mod-ins':'insurance','mod-not':'notary'})[id]);
+  const modules = ['mod-imm','mod-tax','mod-ins','mod-not','mod-usc'].filter(id => document.getElementById(id)?.checked)
+    .map(id => ({'mod-imm':'immigration','mod-tax':'taxes','mod-ins':'insurance','mod-not':'notary','mod-usc':'verificadorUSCIS'})[id]);
   try {
     const userCred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid = userCred.user.uid;
@@ -2843,7 +2846,7 @@ window.verDetalleOficina = async function(officeId) {
   const precio = planPrices[o.plan]||0;
 
   // ── Módulos ──
-  const modLabels = {inmigracion:'Inmigración',notificaciones:'Notificaciones',reportes:'Reportes',facturacion:'Facturación',documentos:'Documentos',nomina:'Nómina'};
+  const modLabels = {immigration:'Inmigración',notary:'Notaría',taxes:'Taxes',insurance:'Seguros',verificadorUSCIS:'Verificador USCIS (add-on)',inmigracion:'Inmigración',notificaciones:'Notificaciones',reportes:'Reportes',facturacion:'Facturación',documentos:'Documentos',nomina:'Nómina'};
   const modActivos = o.enabledModules||[];
   const modHTML = modActivos.length>0
     ? modActivos.map(m=>`<div style="color:#cbd5e1">✅ ${modLabels[m]||m}</div>`).join('')
