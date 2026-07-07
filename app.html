@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AO","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AP","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -305,7 +305,11 @@ function LoginScreen({onLogin}){
               const od3=officeDoc.data();
               officeInfo={id:officeDoc.id,...od3};
               if(od3.logoUrl){setOfficeLogo(od3.logoUrl);window._officeLogo=od3.logoUrl;}
-              if(od3.enabledModules&&od3.enabledModules.length>0)setEnabledModules(od3.enabledModules);
+              if(od3.enabledModules&&od3.enabledModules.length>0){
+                const trials3=od3.addonTrials||{};const hoy3=new Date();
+                const modsActivos3=od3.enabledModules.filter(m=>!trials3[m]||new Date(trials3[m])>=hoy3);
+                setEnabledModules(modsActivos3);
+              }
             }
       }
       // Entrar primero (el login no debe esperar por el registro de actividad)
@@ -701,7 +705,19 @@ function App(){
               if(od.plan==="basic"){window.location.replace("app-basico.html"+window.location.search);return;}
               setOfficeData({id:officeDoc.id,...od});
               if(od.logoUrl){setOfficeLogo(od.logoUrl);window._officeLogo=od.logoUrl;}
-              if(od.enabledModules&&od.enabledModules.length>0)setEnabledModules(od.enabledModules);
+              if(od.enabledModules&&od.enabledModules.length>0){
+                // Verificar add-ons con fecha de prueba vencida
+                const trials = od.addonTrials || {};
+                const hoy = new Date();
+                const modsActivos = od.enabledModules.filter(m => {
+                  if(trials[m]){
+                    const vence = new Date(trials[m]);
+                    if(vence < hoy){ console.log(`Trial vencido: ${m} (venció ${vence.toLocaleDateString()})`); return false; }
+                  }
+                  return true;
+                });
+                setEnabledModules(modsActivos);
+              }
               // Registrar último acceso de la oficina (para el panel del superadmin)
               try{const{updateDoc:_upd,doc:_doc}=window._firebase;_upd(_doc(db,"offices",ud.officeId),{lastLogin:new Date().toISOString()});}catch(_e){}
             }
