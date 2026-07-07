@@ -772,7 +772,7 @@ const firebaseConfig = {
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-console.log("%cImmigPath Superadmin — versión 2026-07-06-C","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Superadmin — versión 2026-07-06-D","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -1320,14 +1320,46 @@ window.editOfficeModules = function(officeId) {
   const office = officesCache.find(o => o.id === officeId);
   if (!office) return;
   const modules = office.enabledModules || [];
+  const trials = office.addonTrials || {};
+  const hoy = new Date();
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('es-US',{day:'numeric',month:'short',year:'numeric'}) : '';
+  const trialStatus = (key) => {
+    if (!trials[key]) return '';
+    const vence = new Date(trials[key]);
+    const dias = Math.ceil((vence - hoy) / 86400000);
+    if (dias < 0) return `<span style="color:#E24B4A;font-size:10px;margin-left:4px">⏱ Prueba vencida</span>`;
+    return `<span style="color:#D97706;font-size:10px;margin-left:4px">⏱ Prueba: ${dias} día${dias!==1?'s':''} restante${dias!==1?'s':''}</span>`;
+  };
+  const addOnMods = ['verificadorUSCIS','controlEnvios'];
+  const addOnLabels = {'verificadorUSCIS':'🔎 Verificador USCIS','controlEnvios':'📦 Control de envíos'};
   const html = `
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:360px;margin:0 auto">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:400px;margin:0 auto">
       <div style="font-size:15px;font-weight:600;margin-bottom:16px">Módulos — ${office.name}</div>
       <div class="module-grid" style="margin-bottom:16px">
-        ${[['immigration','🏛️ Inmigración'],['taxes','🧾 Taxes'],['insurance','🛡️ Seguros'],['notary','📋 Notaría'],['verificadorUSCIS','🔎 Verificador USCIS'],['controlEnvios','📦 Control de envíos']].map(([val,label]) => `
+        ${[['immigration','🏛️ Inmigración'],['taxes','🧾 Taxes'],['insurance','🛡️ Seguros'],['notary','📋 Notaría']].map(([val,label]) => `
           <div class="module-toggle">
             <input type="checkbox" id="edit-mod-${val}" value="${val}" ${modules.includes(val)?'checked':''}>
             <label for="edit-mod-${val}">${label}</label>
+          </div>`).join('')}
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Add-ons Premium</div>
+        ${addOnMods.map(val => `
+          <div style="background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <input type="checkbox" id="edit-mod-${val}" value="${val}" ${modules.includes(val)?'checked':''}
+                  onchange="document.getElementById('trial-btn-${val}').style.display=this.checked?'none':'flex'">
+                <label for="edit-mod-${val}" style="font-size:13px;font-weight:600">${addOnLabels[val]}</label>
+              </div>
+              ${trialStatus(val)}
+            </div>
+            <div id="trial-btn-${val}" style="display:${modules.includes(val)?'none':'flex'};gap:6px;flex-wrap:wrap;align-items:center">
+              <button onclick="activarTrial('${officeId}','${val}',15)" style="background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer">⏱ Prueba 15 días</button>
+              <button onclick="activarTrial('${officeId}','${val}',7)" style="background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer">⏱ Prueba 7 días</button>
+              ${trials[val]?`<span style="font-size:10px;color:#94A3B8">Última prueba: ${fmtDate(trials[val])}</span>`:''}
+            </div>
+            ${modules.includes(val)&&trials[val]?`<div style="font-size:10px;color:#16A34A;margin-top:4px">✅ Activo permanente (tuvo prueba hasta ${fmtDate(trials[val])})</div>`:''}
           </div>`).join('')}
       </div>
       <button class="btn btn-primary" style="width:100%" onclick="saveOfficeModules('${officeId}')">Guardar módulos</button>
@@ -1336,11 +1368,44 @@ window.editOfficeModules = function(officeId) {
   document.getElementById('modal-modules').classList.remove('hidden');
 };
 
+window.activarTrial = async function(officeId, modKey, dias) {
+  const office = officesCache.find(o => o.id === officeId);
+  if (!office) return;
+  const vence = new Date();
+  vence.setDate(vence.getDate() + dias);
+  const venceStr = vence.toISOString();
+  try {
+    const trials = office.addonTrials || {};
+    trials[modKey] = venceStr;
+    // Activar el módulo en enabledModules si no está
+    const mods = [...(office.enabledModules || [])];
+    if (!mods.includes(modKey)) mods.push(modKey);
+    await updateDoc(doc(db,'offices',officeId), {
+      enabledModules: mods,
+      addonTrials: trials
+    });
+    // Actualizar caché
+    office.enabledModules = mods;
+    office.addonTrials = trials;
+    showToast(`✓ Prueba de ${dias} días activada — vence el ${vence.toLocaleDateString('es-US',{day:'numeric',month:'long',year:'numeric'})}`, 'success');
+    editOfficeModules(officeId); // refrescar el modal
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+};
+
 window.saveOfficeModules = async function(officeId) {
   const allMods = ['immigration','taxes','insurance','notary','verificadorUSCIS','controlEnvios'];
   const selected = allMods.filter(m => document.getElementById('edit-mod-'+m)?.checked);
   try {
-    await updateDoc(doc(db,'offices',officeId), { enabledModules: selected });
+    // Si se desactiva un add-on con trial activo, limpiar la fecha de trial
+    const office = officesCache.find(o => o.id === officeId);
+    const trials = {...(office?.addonTrials || {})};
+    ['verificadorUSCIS','controlEnvios'].forEach(key => {
+      if (!selected.includes(key)) delete trials[key];
+    });
+    await updateDoc(doc(db,'offices',officeId), {
+      enabledModules: selected,
+      addonTrials: trials
+    });
     showToast('✓ Módulos actualizados', 'success');
     document.getElementById('modal-modules').classList.add('hidden');
     loadDashboard();
