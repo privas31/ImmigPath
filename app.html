@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AQ","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AR","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -1906,10 +1906,9 @@ const loadTeam=async()=>{
       const existente=casosUscis.find(c=>c.recibo===recibo);
       if(existente){
         const cambios={formulario:uscisForm.formulario,nota:uscisForm.nota||"",clienteId:uscisForm.clienteId||existente.clienteId||"",clienteNombre:cliente?cliente.nombre:(existente.clienteNombre||""),updatedAt:ahora,revisadoAt:ahora,revisadoPor:por};
-        if(estatusFinal!==existente.estatus){
-          cambios.estatus=estatusFinal;
-          cambios.historial=[...(existente.historial||[]),{estatus:estatusFinal,fecha:ahora,por}];
-        }
+        // Registrar en historial SIEMPRE que se guarda, aunque el estatus no cambie
+        cambios.estatus=estatusFinal;
+        cambios.historial=[...(existente.historial||[]),{estatus:estatusFinal,fecha:ahora,por}];
         await updateDoc(doc(db,"casos_uscis",existente.id),cambios);
         showToastFn(t("Caso actualizado ✓","Case updated ✓"));
         registrarActividad("uscis",t("Caso USCIS actualizado","USCIS case updated"),`${recibo} · ${estatusFinal}`);
