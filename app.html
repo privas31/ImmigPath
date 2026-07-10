@@ -1752,7 +1752,19 @@ const loadTeam=async()=>{
     const sinDocumentos=clientes.filter(c=>(c.casos||[]).some(ca=>!ca.receiptNum&&!ca.foiaTracking&&ca.sistema==="uscis"));
     const relojActivo=clientes.filter(c=>(c.casos||[]).some(ca=>ca.fechaAsilo&&!ca.relojDetenido));
     const relojDetenidoList=clientes.filter(c=>(c.casos||[]).some(ca=>ca.relojDetenido===true));
-    return{alertas,alertas1dia,alertas3dias,alertas7dias,vencidos,totalCobrar,totalCobrado,pendiente,eadElegibles,eadPróximos,pagadoCompleto,conSaldo,sinPago,sinFecha,sinDocumentos,relojActivo,relojDetenidoList};
+    // Huellas: USCIS status dice biometrics OR campo manual esperandoHuellas=true
+    const huellasList=clientes.filter(c=>{
+      const casos=c.casos||[];
+      // Manual flag
+      if(casos.some(ca=>ca.esperandoHuellas===true)) return true;
+      // Auto: estatus USCIS contiene "biometric" o "fingerprint"
+      const casosUscisCliente=casosUscis.filter(x=>x.clienteId===c.id);
+      return casosUscisCliente.some(cu=>{
+        const est=(cu.estatus||"").toLowerCase();
+        return est.includes("biometric")||est.includes("fingerprint");
+      });
+    });
+    return{alertas,alertas1dia,alertas3dias,alertas7dias,vencidos,totalCobrar,totalCobrado,pendiente,eadElegibles,eadPróximos,pagadoCompleto,conSaldo,sinPago,sinFecha,sinDocumentos,relojActivo,relojDetenidoList,huellasList};
   },[clientes]);
 
   const generatePDF=()=>{
@@ -4207,13 +4219,14 @@ const loadTeam=async()=>{
           <div style={{padding:"14px 20px",borderBottom:"1px solid #F1F5F9"}}>
             {(()=>{
               const filters=[
-                {id:"todas",    label:t("Todas","All"),             icon:"🔔", cnt:stats.vencidos.length+stats.alertas.length+stats.eadElegibles.length+stats.relojActivo.length+stats.relojDetenidoList.length+stats.sinFecha.length, bg:"#FEF2F2", border:"#EF4444", color:"#DC2626"},
+                {id:"todas",    label:t("Todas","All"),             icon:"🔔", cnt:stats.vencidos.length+stats.alertas.length+stats.eadElegibles.length+stats.relojActivo.length+stats.relojDetenidoList.length+stats.sinFecha.length+stats.huellasList.length, bg:"#FEF2F2", border:"#EF4444", color:"#DC2626"},
                 {id:"vencidas", label:t("Vencidas","Overdue"),      icon:"📅", cnt:stats.vencidos.length,          bg:"#FEF2F2", border:"#EF4444", color:"#DC2626"},
                 {id:"7dias",    label:t("Próximos 7 días","Next 7 days"), icon:"⏰", cnt:stats.alertas.length,     bg:"#FFFBEB", border:"#F59E0B", color:"#D97706"},
                 {id:"ead",      label:t("Elegibles EAD","EAD Eligible"), icon:"✅", cnt:stats.eadElegibles.length, bg:"#F0FDF4", border:"#22C55E", color:"#16A34A"},
                 {id:"proxead",  label:t("Próximos a EAD","Near EAD"),    icon:"⌛", cnt:stats.eadPróximos.length,  bg:"#EFF6FF", border:"#3B82F6", color:"#1D4ED8"},
                 {id:"reloj",    label:t("Reloj activo","Active clock"),   icon:"🟢", cnt:stats.relojActivo.length,  bg:"#EFF6FF", border:"#3B82F6", color:"#1D4ED8"},
                 {id:"detenido", label:t("Reloj detenido","Clock paused"), icon:"🔴", cnt:stats.relojDetenidoList.length, bg:"#FEF2F2", border:"#EF4444", color:"#991B1B"},
+                {id:"huellas",  label:t("Esperando huellas","Awaiting biometrics"), icon:"🫆", cnt:stats.huellasList.length, bg:"#FDF4FF", border:"#A855F7", color:"#7C3AED"},
                 {id:"sinfecha", label:t("Sin próxima fecha","No date"),   icon:"📭", cnt:stats.sinFecha.length,    bg:"#F8FAFC", border:"#94A3B8", color:"#475569"},
               ];
               const row1=filters.slice(0,4);
@@ -4315,6 +4328,16 @@ const loadTeam=async()=>{
               if(alertFilter==="todas"||alertFilter==="sinfecha"){
                 stats.sinFecha.forEach(c=>{
                   items.push({c,label:(c.casos||[]).map(ca=>ca.sistema?.toUpperCase()).filter(Boolean).join(", ")+" — Sin próxima fecha",fecha:null,dias:"Pendiente",dot:"#94A3B8",tipo:"sinfecha"});
+                });
+              }
+              if(alertFilter==="todas"||alertFilter==="huellas"){
+                stats.huellasList.forEach(c=>{
+                  const casoManual=(c.casos||[]).find(ca=>ca.esperandoHuellas===true);
+                  const casoUscis=casosUscis.find(x=>x.clienteId===c.id&&((x.estatus||"").toLowerCase().includes("biometric")||(x.estatus||"").toLowerCase().includes("fingerprint")));
+                  const origen=casoManual?"Marcado manualmente":casoUscis?`USCIS: ${casoUscis.estatus}`:"Biométricos pendientes";
+                  const fechaHuellas=(c.casos||[]).find(ca=>ca.fechaHuellas)?.fechaHuellas||null;
+                  const diasLabel=fechaHuellas?`Cita: ${fechaHuellas}`:"Sin fecha de cita";
+                  items.push({c,label:`🫆 Esperando huellas — ${origen}`,fecha:fechaHuellas,dias:diasLabel,dot:"#7C3AED",tipo:"huellas"});
                 });
               }
 
@@ -5399,6 +5422,18 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
         {caso.tipoCita==="huellas"&&<div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>📅 Fecha Biométricos</label><input type="date" value={caso.fechaHuellas||""} onChange={e=>onChange({...caso,fechaHuellas:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div>}
         {caso.tipoCita==="entrevista"&&<div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>🎤 Fecha de Entrevista</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div>}
         {caso.tipoCita==="ambas"&&<><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}> Fecha Biométricos</label><input type="date" value={caso.fechaHuellas||""} onChange={e=>onChange({...caso,fechaHuellas:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div><div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#374151",marginBottom:3,textTransform:"uppercase"}}>🎤 Fecha de Entrevista</label><input type="date" value={caso.fechaCorte||""} onChange={e=>onChange({...caso,fechaCorte:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #BFDBFE",fontSize:13,outline:"none"}}/></div></>}
+        <div style={{marginBottom:8,background:caso.esperandoHuellas?"#FDF4FF":"#F8FAFC",border:caso.esperandoHuellas?"1px solid #A855F7":"1px solid #E2E8F0",borderRadius:8,padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}} onClick={()=>onChange({...caso,esperandoHuellas:!caso.esperandoHuellas})}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:16}}>🫆</span>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:caso.esperandoHuellas?"#7C3AED":"#374151"}}>Esperando huellas (biométricos)</div>
+              <div style={{fontSize:11,color:"#94A3B8"}}>Activa la alerta en el Centro de Alertas</div>
+            </div>
+          </div>
+          <div style={{width:36,height:20,borderRadius:10,background:caso.esperandoHuellas?"#7C3AED":"#D1D5DB",display:"flex",alignItems:"center",padding:2,transition:"all 0.2s"}}>
+            <div style={{width:16,height:16,borderRadius:"50%",background:"#fff",transform:caso.esperandoHuellas?"translateX(16px)":"translateX(0)",transition:"all 0.2s"}}/>
+          </div>
+        </div>
         
         <div style={{marginBottom:8}}><label style={{display:"block",fontSize:11,fontWeight:600,color:"#A5B4FC",marginBottom:3,textTransform:"uppercase"}}>⏱️ Fecha en que se ingresó el asilo</label><input type="date" value={caso.fechaAsilo||""} onChange={e=>onChange({...caso,fechaAsilo:e.target.value})} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid #4338CA",background:"#1E1B4B",color:"#fff",fontSize:13,outline:"none"}}/></div>
         {caso.fechaAsilo&&(()=>{const inicio=new Date(caso.fechaAsilo+"T00:00:00");const hoy=new Date();hoy.setHours(0,0,0,0);const dias=Math.floor((hoy-inicio)/86400000);const pct=Math.min(100,Math.round((dias/180)*100));const color=dias>=180?"#4ADE80":dias>=120?"#FACC15":"#60A5FA";return(<div style={{background:"#1E1B4B",border:"1px solid #4338CA",borderRadius:8,padding:"10px 12px"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{textAlign:"center",minWidth:50}}><div style={{fontSize:28,fontWeight:800,color,lineHeight:1}}>{dias}</div><div style={{fontSize:10,color:"#A5B4FC"}}>{t("días","days")}</div></div><div style={{flex:1}}><div style={{background:"#312E81",borderRadius:20,height:8,overflow:"hidden",marginBottom:4}}><div style={{height:"100%",borderRadius:20,background:color,width:`${pct}%`}}/></div><div style={{fontSize:11,color,fontWeight:600}}>{dias>=180?(dias>=180?"✅ Elegible para EAD":"✅ Eligible for EAD")+" — "+dias+(_lang==="es"?" días":" days"):(_lang==="es"?`⏳ Faltan ${180-dias} días para EAD`:`⏳ ${180-dias} days until EAD`)}</div></div></div></div>);})()} 
