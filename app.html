@@ -83,6 +83,7 @@ function getStatusConfig(){return{
   urgente:{label:t("Urgente","Urgent"),color:"#D97706",bg:"#FFFBEB",border:"#FDE68A",icon:"🟡"},
   proximo:{label:t("Próxima","Upcoming"),color:"#2563EB",bg:"#EFF6FF",border:"#BFDBFE",icon:"🔵"},
   ok:{label:t("Al día","On Track"),color:"#16A34A",bg:"#F0FDF4",border:"#BBF7D0",icon:"🟢"},
+  deportado:{label:t("Deportado/Removido","Deported/Removed"),color:"#DC2626",bg:"#FEE2E2",border:"#FECACA",icon:"🚫"},
   pendiente:{label:t("Pendiente","Pending"),color:"#6B7280",bg:"#F9FAFB",border:"#E5E7EB",icon:"⚪"},
 };}
 const STATUS_CONFIG = getStatusConfig();
@@ -105,7 +106,7 @@ function getWPPagado(ca){return((ca&&ca.wpDependientes)||[]).reduce((s,w)=>s+par
 function getTotalCaso(ca){return getTotalProcesos((ca&&ca.procesos)||[])+getWPTotal(ca);}
 function getPagadoCaso(ca){return getTotalPagado((ca&&ca.procesos)||[])+getWPPagado(ca);}
 function getPróximaFecha(cliente){const fechas=[];(cliente.casos||[]).forEach(c=>{if(c.fechaCorte)fechas.push(c.fechaCorte);if(c.fechaHuellas)fechas.push(c.fechaHuellas);});if(!fechas.length)return null;const hoy=new Date();hoy.setHours(0,0,0,0);const futuras=fechas.filter(f=>new Date(f+"T00:00:00")>=hoy).sort();if(futuras.length)return futuras[0];return fechas.sort().reverse()[0];}
-function getStatusCliente(cliente){const pf=getPróximaFecha(cliente);if(!pf)return"pendiente";return getStatus(pf);}
+function getStatusCliente(cliente){if(cliente.deportado===true)return"deportado";const pf=getPróximaFecha(cliente);if(!pf)return"pendiente";return getStatus(pf);}
 
 const PAISES=["Afghanistan","Albania","Algeria","Angola","Argentina","Armenia","Azerbaijan","Bahamas","Bangladesh","Belarus","Belize","Bolivia","Brazil","Bulgaria","Burkina Faso","Burma (Myanmar)","Burundi","Cambodia","Cameroon","Chad","Chile","China","Colombia","Congo (DRC)","Costa Rica","Cuba","Dominican Republic","Ecuador","Egypt","El Salvador","Eritrea","Ethiopia","Georgia","Ghana","Guatemala","Guinea","Haiti","Honduras","India","Indonesia","Iran","Iraq","Jamaica","Jordan","Kazakhstan","Kenya","Kosovo","Kyrgyzstan","Lebanon","Liberia","Libya","Mali","Mauritania","Mexico","Moldova","Morocco","Mozambique","Nepal","Nicaragua","Niger","Nigeria","Pakistan","Panama","Paraguay","Peru","Philippines","Romania","Russia","Rwanda","Senegal","Sierra Leone","Somalia","South Sudan","Sri Lanka","Sudan","Syria","Tajikistan","Tanzania","Togo","Trinidad and Tobago","Turkey","Turkmenistan","Uganda","Ukraine","Uzbekistan","Venezuela","Vietnam","Yemen","Zimbabwe","Other"].sort();
 const COUNTRY_CODE={"Mexico":"mx","Guatemala":"gt","Honduras":"hn","El Salvador":"sv","Cuba":"cu","Haiti":"ht","Venezuela":"ve","Colombia":"co","Ecuador":"ec","Peru":"pe","Nicaragua":"ni","Dominican Republic":"do","Brazil":"br","Bolivia":"bo","Argentina":"ar","Chile":"cl","Jamaica":"jm","China":"cn","India":"in","Pakistan":"pk","Philippines":"ph","Vietnam":"vn","Ukraine":"ua","Russia":"ru","Ethiopia":"et","Somalia":"so","Nigeria":"ng","Ghana":"gh","Cameroon":"cm","Senegal":"sn","Syria":"sy","Iraq":"iq","Iran":"ir","Afghanistan":"af"};
@@ -1690,6 +1691,28 @@ const loadTeam=async()=>{
   };
 
   const handleDelete=async(id)=>{try{const{db,doc,deleteDoc}=window._firebase;await deleteDoc(doc(db,"clientes",id));setClientes(prev=>prev.filter(c=>c.id!==id));showToastFn("Cliente eliminado");}catch(e){showToastFn("Error","error");}setConfirmDelete(null);};
+  React.useEffect(()=>{
+    window._markDeportado=async(id)=>{
+      if(!window.confirm(t("¿Marcar este cliente como deportado/removido? El caso saldrá de las alertas activas.","Mark this client as deported/removed? The case will be removed from active alerts.")))return;
+      try{
+        const{db,doc,updateDoc}=window._firebase;
+        const hoy=new Date().toISOString().split("T")[0];
+        const por=userData?.displayName||user?.email||"sistema";
+        await updateDoc(doc(db,"clientes",id),{deportado:true,fechaDeportacion:hoy,deportadoPor:por});
+        setClientes(prev=>prev.map(c=>c.id===id?{...c,deportado:true,fechaDeportacion:hoy,deportadoPor:por}:c));
+        showToastFn(t("Cliente marcado como deportado ✓","Client marked as deported ✓"));
+      }catch(e){showToastFn(t("Error al actualizar","Update error"),"error");}
+    };
+    window._unmarkDeportado=async(id)=>{
+      if(!window.confirm(t("¿Reactivar este cliente y quitar el estatus de deportado?","Reactivate this client and remove deported status?")))return;
+      try{
+        const{db,doc,updateDoc}=window._firebase;
+        await updateDoc(doc(db,"clientes",id),{deportado:false,fechaDeportacion:null,deportadoPor:null});
+        setClientes(prev=>prev.map(c=>c.id===id?{...c,deportado:false,fechaDeportacion:null,deportadoPor:null}:c));
+        showToastFn(t("Cliente reactivado ✓","Client reactivated ✓"));
+      }catch(e){showToastFn(t("Error al actualizar","Update error"),"error");}
+    };
+  },[userData,user]);
   const handleAddUser=async()=>{
     if(!newUserEmail||!newUserPass||!newUserName){setAddUserMsg("❌ Completa todos los campos");return;}
     setAddUserLoading(true);setAddUserMsg("");
@@ -1735,7 +1758,7 @@ const loadTeam=async()=>{
   const stats=React.useMemo(()=>{
     const hoy=new Date();hoy.setHours(0,0,0,0);
     const en7dias=new Date(hoy);en7dias.setDate(en7dias.getDate()+7);
-    const alertas=clientes.filter(c=>{const pf=getPróximaFecha(c);if(!pf)return false;const d=new Date(pf+"T00:00:00");return d>=hoy&&d<=en7dias;});
+    const alertas=clientes.filter(c=>{if(c.deportado)return false;const pf=getPróximaFecha(c);if(!pf)return false;const d=new Date(pf+"T00:00:00");return d>=hoy&&d<=en7dias;});
     const alertas1dia=alertas.filter(c=>{const pf=getPróximaFecha(c);return getDias(pf)===0||getDias(pf)===1;});
     const alertas3dias=alertas.filter(c=>{const pf=getPróximaFecha(c);const d=getDias(pf);return d>1&&d<=3;});
     const alertas7dias=alertas.filter(c=>{const pf=getPróximaFecha(c);const d=getDias(pf);return d>3&&d<=7;});
@@ -2406,11 +2429,19 @@ const loadTeam=async()=>{
             const pct=getPct(totalP,pagadoP);const pc=pagoColor(pct);
             const casoTab=activeCasoTab[c.id]||0;
             return(
-              <div key={c.id} style={{background:"#fff",borderRadius:14,border:"0.5px solid #E2E8F0",boxShadow:"0 1px 4px rgba(0,0,0,0.04)",overflow:"hidden",transition:"box-shadow 0.15s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.08)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.04)"}>
+              <div key={c.id} style={{background:"#fff",borderRadius:14,border:c.deportado?"1.5px solid #FECACA":"0.5px solid #E2E8F0",borderLeft:c.deportado?"4px solid #DC2626":undefined,background:c.deportado?"#FFF8F8":"#fff",boxShadow:"0 1px 4px rgba(0,0,0,0.04)",overflow:"hidden",transition:"box-shadow 0.15s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.08)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.04)"}>
                 <div style={{padding:"14px 16px 10px"}}>
+                  {c.deportado&&<div style={{background:"#FEE2E2",borderBottom:"1px solid #FECACA",padding:"8px 16px",display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:18}}>🚫</span>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#DC2626"}}>{t("Cliente deportado/removido — Caso cerrado","Client deported/removed — Case closed")}</div>
+                      <div style={{fontSize:11,color:"#EF4444"}}>{c.fechaDeportacion?t(`Registrado el ${c.fechaDeportacion}`,"Registered: "+c.fechaDeportacion):""}{c.deportadoPor?` · ${c.deportadoPor}`:""} · {t("Este caso no genera alertas activas","This case generates no active alerts")}</div>
+                    </div>
+                    <button onClick={e=>{e.stopPropagation();if(window.confirm(t("¿Desmarcar como deportado?","Unmark as deported?")))window._unmarkDeportado(c.id);}} style={{marginLeft:"auto",background:"#fff",border:"1px solid #FECACA",color:"#DC2626",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>{t("Desmarcar","Unmark")}</button>
+                  </div>}
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>{const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}}>
-                      <div style={{width:44,height:44,borderRadius:"50%",background:"#E6F1FB",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,fontSize:14,color:"#0C447C",flexShrink:0}}>
+                      <div style={{width:44,height:44,borderRadius:"50%",background:c.deportado?"#FEE2E2":"#E6F1FB",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,fontSize:14,color:c.deportado?"#DC2626":"#0C447C",flexShrink:0}}>
                         {c.nombre.split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
@@ -2446,6 +2477,8 @@ const loadTeam=async()=>{
                       <button onClick={e=>{e.stopPropagation();const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}} style={{background:"#0C447C",color:"#E6F1FB",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:500,cursor:"pointer",whiteSpace:"nowrap"}}>📂 Ver ficha completa</button>
                       <button onClick={e=>{e.stopPropagation();const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}const nombre=c.nombre||"cliente";const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigración";const oficina=officeData?.name||"nuestra oficina";const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualización. — "+oficina;window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{border:"0.5px solid #BBF7D0",background:"#F0FDF4",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#16A34A",whiteSpace:"nowrap"}}>💬 WhatsApp</button>
                       <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setCobrarProcesoSel("");setShowCobrar(true);}} style={{border:"0.5px solid #BFDBFE",background:"#EFF6FF",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#0C447C",whiteSpace:"nowrap"}}>💳 Cobrar</button>
+                      {isAdmin&&!c.deportado&&<button onClick={e=>{e.stopPropagation();window._markDeportado(c.id);}} style={{border:"0.5px solid #FECACA",background:"#FEF2F2",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#DC2626",whiteSpace:"nowrap"}}>🚫 {t("Deportado","Deported")}</button>}
+                      {isAdmin&&c.deportado&&<button onClick={e=>{e.stopPropagation();window._unmarkDeportado(c.id);}} style={{border:"0.5px solid #D1FAE5",background:"#F0FDF4",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#16A34A",whiteSpace:"nowrap"}}>↩️ {t("Reactivar","Reactivate")}</button>}
                       {isAdmin&&<button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);}} style={{border:"0.5px solid #FECACA",background:"#FEF2F2",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#DC2626",whiteSpace:"nowrap"}}>🗑 Eliminar</button>}
                     </div>}
                     <div style={{flexShrink:0,background:pf?`${scfg.color}11`:"#F8FAFC",border:`0.5px solid ${pf?scfg.color+"44":"#E2E8F0"}`,borderRadius:10,padding:"8px 14px",textAlign:"right",minWidth:130}}>
