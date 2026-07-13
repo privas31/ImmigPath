@@ -1742,9 +1742,10 @@ const loadTeam=async()=>{
   };
 
   const filtered=clientes.filter(c=>{
+    if(filtroSistema==="deportado")return c.deportado===true;
+    if(c.deportado)return false;
     const st=getStatusCliente(c);
     if(filtroStatus!=="todos"&&st!==filtroStatus)return false;
-    if(filtroSistema==="deportado")return c.deportado===true;
     if(filtroSistema!=="todos"&&!(c.casos||[]).some(ca=>ca.sistema===filtroSistema))return false;
     const q=búsqueda.toLowerCase();
     return!q||c.nombre.toLowerCase().includes(q)||(c.alienNum||"").replace(/\D/g,"").includes(q.replace(/\D/g,""))||(c.encargada||"").toLowerCase().includes(q)||(c.paisOrigen||"").toLowerCase().includes(q)||(c.expediente||"").toLowerCase().includes(q)||(c.casos||[]).some(ca=>(ca.receiptNum||"").toLowerCase().includes(q)||(ca.foiaTracking||"").toLowerCase().includes(q));
@@ -1753,7 +1754,7 @@ const loadTeam=async()=>{
     return a.nombre.localeCompare(b.nombre);
   });
 
-  const cnt=(s,sys="todos")=>clientes.filter(c=>{if(sys==="deportado")return c.deportado===true;return(sys==="todos"||(c.casos||[]).some(ca=>ca.sistema===sys))&&(s==="todos"||getStatusCliente(c)===s);}).length;
+  const cnt=(s,sys="todos")=>clientes.filter(c=>(sys==="todos"||(c.casos||[]).some(ca=>ca.sistema===sys))&&(s==="todos"||getStatusCliente(c)===s)).length;
 
   const STATUS_CONFIG=getStatusConfig();
   const stats=React.useMemo(()=>{
@@ -2306,11 +2307,11 @@ const loadTeam=async()=>{
     <div style={{marginLeft:240,flex:1,minWidth:0}}>
       <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"0 32px",display:"flex",alignItems:"center",gap:12,height:64,position:"sticky",top:0,zIndex:30}}>
         <div style={{display:"flex",gap:0,marginRight:8}}>
-          {[{key:"todos",label:t("Todos","All"),icon:"🗂"},{key:"uscis",label:"USCIS",icon:"🏛"},{key:"eoir",label:"EOIR",icon:"⚖️"},{key:"foia",label:"FOIA",icon:"📂"},{key:"deportado",label:t("Deportados","Deported"),icon:"🚫"}].map(tab=>(
-            <button key={tab.key} onClick={()=>setFiltroSistema(tab.key)} style={{background:"transparent",border:"none",borderBottom:filtroSistema===tab.key?`2px solid ${tab.key==="deportado"?"#DC2626":"#2563EB"}`:"2px solid transparent",color:filtroSistema===tab.key?(tab.key==="deportado"?"#DC2626":"#2563EB"):"#94A3B8",fontWeight:filtroSistema===tab.key?600:400,fontSize:13,padding:"0 14px",height:64,cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5}}>
+          {[{key:"todos",label:t("Todos","All"),icon:"🗂"},{key:"uscis",label:"USCIS",icon:"🏛"},{key:"eoir",label:"EOIR",icon:"⚖️"},{key:"foia",label:"FOIA",icon:"📂"}].map(tab=>(
+            <button key={tab.key} onClick={()=>{setFiltroSistema(tab.key);if(tab.key==="deportado")setFiltroStatus("todos");}} style={{background:"transparent",border:"none",borderBottom:filtroSistema===tab.key?"2px solid #2563EB":"2px solid transparent",color:filtroSistema===tab.key?"#2563EB":"#94A3B8",fontWeight:filtroSistema===tab.key?600:400,fontSize:13,padding:"0 14px",height:64,cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5}}>
               <span>{tab.icon}</span>
               <span>{tab.label}</span>
-              <span style={{background:filtroSistema===tab.key?(tab.key==="deportado"?"#FEE2E2":"#EFF6FF"):"#F1F5F9",color:filtroSistema===tab.key?(tab.key==="deportado"?"#DC2626":"#2563EB"):"#94A3B8",borderRadius:20,padding:"1px 7px",fontSize:11,fontWeight:600}}>{cnt("todos",tab.key==="todos"?"todos":tab.key)}</span>
+              <span style={{background:filtroSistema===tab.key?"#EFF6FF":"#F1F5F9",color:filtroSistema===tab.key?"#2563EB":"#94A3B8",borderRadius:20,padding:"1px 7px",fontSize:11,fontWeight:600}}>{cnt("todos",tab.key==="todos"?"todos":tab.key)}</span>
             </button>
           ))}
         </div>
