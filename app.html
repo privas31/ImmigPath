@@ -1754,7 +1754,7 @@ const loadTeam=async()=>{
     return a.nombre.localeCompare(b.nombre);
   });
 
-  const cnt=(s,sys="todos")=>clientes.filter(c=>(sys==="todos"||(c.casos||[]).some(ca=>ca.sistema===sys))&&(s==="todos"||getStatusCliente(c)===s)).length;
+  const cnt=(s,sys="todos")=>clientes.filter(c=>{if(sys==="deportado")return c.deportado===true;return(sys==="todos"||(c.casos||[]).some(ca=>ca.sistema===sys))&&(s==="todos"||getStatusCliente(c)===s);}).length;
 
   const STATUS_CONFIG=getStatusConfig();
   const stats=React.useMemo(()=>{
