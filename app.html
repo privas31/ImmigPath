@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AW","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AX","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -1992,7 +1992,8 @@ const loadTeam=async()=>{
       const existente=snap.docs.length>0?{id:snap.docs[0].id,...snap.docs[0].data()}:null;
       if(existente){
         const cambios={corte:eoirForm.corte||existente.corte||"",juez:eoirForm.juez||existente.juez||"",nota:eoirForm.nota||"",clienteId:eoirForm.clienteId||existente.clienteId||"",clienteNombre:cliente?cliente.nombre:(existente.clienteNombre||""),updatedAt:ahora,revisadoAt:ahora,revisadoPor:por};
-        if(estatusFinal&&estatusFinal!==existente.estatus){cambios.estatus=estatusFinal;cambios.historial=[...(existente.historial||[]),{estatus:estatusFinal,fecha:ahora,por,corte:eoirForm.corte||"",juez:eoirForm.juez||""}];}
+        // Registrar en historial SIEMPRE que se guarda, aunque el estatus no cambie
+        if(estatusFinal){cambios.estatus=estatusFinal;cambios.historial=[...(existente.historial||[]),{estatus:estatusFinal,fecha:ahora,por,corte:eoirForm.corte||"",juez:eoirForm.juez||""}];}
         if(eoirForm.fechaAudiencia)cambios.fechaAudiencia=eoirForm.fechaAudiencia;
         await updateDoc(doc(db,"casos_eoir",existente.id),cambios);
       }else{
