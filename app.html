@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AR","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AU","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -544,7 +544,7 @@ function DocPanel({clienteId, clienteNombre, officeData, userData, docsCliente, 
           📂 No hay documentos subidos todavía para este cliente.
         </div>
       ):(
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",flexDirection:"column",gap:24}}>
           <div style={{fontSize:11,fontWeight:600,color:"#64748B",marginBottom:4}}>{docs.length} DOCUMENTO(S) REGISTRADO(S)</div>
           {docs.map(d=>{
             const vencido = d.fechaVence&&d.fechaVence<hoy;
@@ -623,6 +623,7 @@ function App(){
   const[clientes,setClientes]=useState([]);const[loading,setLoading]=useState(false);const[solicitudesServicio,setSolicitudesServicio]=useState([]);
   const[showModal,setShowModal]=useState(false);const[editId,setEditId]=useState(null);const[formCliente,setFormCliente]=useState(emptyCliente);
   const[filtroStatus,setFiltroStatus]=useState("todos");const[filtroSistema,setFiltroSistema]=useState("todos");
+  const[showDropdownFiltro,setShowDropdownFiltro]=useState(false);
   const[búsqueda,setBúsqueda]=useState("");const[busquedaActiva,setBusquedaActiva]=useState("");const[saving,setSaving]=useState(false);
   const[toast,setToast]=useState(null);const[sortBy,setSortBy]=useState("fecha");
   const[confirmDelete,setConfirmDelete]=useState(null);const[expandedId,setExpandedId]=useState(null);const[activeCasoTab,setActiveCasoTab]=useState({});
@@ -2305,48 +2306,54 @@ const loadTeam=async()=>{
       </div>
     </div>
     <div style={{marginLeft:240,flex:1,minWidth:0}}>
-      <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"0 32px",display:"flex",alignItems:"center",gap:12,height:64,position:"sticky",top:0,zIndex:30}}>
-        <div style={{display:"flex",gap:0,marginRight:8}}>
-          {[{key:"todos",label:t("Todos","All"),icon:"🗂"},{key:"uscis",label:"USCIS",icon:"🏛"},{key:"eoir",label:"EOIR",icon:"⚖️"},{key:"foia",label:"FOIA",icon:"📂"},{key:"deportado",label:t("Deportados","Deported"),icon:"🚫"}].map(tab=>(
-            <button key={tab.key} onClick={()=>{setFiltroSistema(tab.key);if(tab.key==="deportado")setFiltroStatus("todos");}} style={{background:"transparent",border:"none",borderBottom:filtroSistema===tab.key?`2px solid ${tab.key==="deportado"?"#DC2626":"#2563EB"}`:"2px solid transparent",color:filtroSistema===tab.key?(tab.key==="deportado"?"#DC2626":"#2563EB"):"#94A3B8",fontWeight:filtroSistema===tab.key?600:400,fontSize:13,padding:"0 14px",height:64,cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5}}>
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
-              <span style={{background:filtroSistema===tab.key?(tab.key==="deportado"?"#FEE2E2":"#EFF6FF"):"#F1F5F9",color:filtroSistema===tab.key?(tab.key==="deportado"?"#DC2626":"#2563EB"):"#94A3B8",borderRadius:20,padding:"1px 7px",fontSize:11,fontWeight:600}}>{cnt("todos",tab.key==="todos"?"todos":tab.key)}</span>
-            </button>
-          ))}
+      <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"0 24px",display:"flex",alignItems:"center",gap:10,height:64,position:"sticky",top:0,zIndex:30}} onClick={e=>{if(!e.target.closest('#dropdown-filtro')&&!e.target.closest('#btn-dropdown-filtro'))setShowDropdownFiltro(false);}}>
+        {/* ── Dropdown unificado de filtros ── */}
+        <div style={{position:"relative",flexShrink:0}} id="dropdown-filtro">
+          <button id="btn-dropdown-filtro" onClick={()=>setShowDropdownFiltro(v=>!v)} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:8,fontSize:13,fontWeight:600,background:filtroSistema!=="todos"||filtroStatus!=="todos"?"#EFF6FF":"#F8FAFC",color:filtroSistema!=="todos"||filtroStatus!=="todos"?"#1E40AF":"#374151",border:filtroSistema!=="todos"||filtroStatus!=="todos"?"1px solid #BFDBFE":"1px solid #E2E8F0",cursor:"pointer",whiteSpace:"nowrap"}}>
+            <span style={{fontSize:14}}>{filtroSistema==="todos"?"🗂":filtroSistema==="uscis"?"🏛":filtroSistema==="eoir"?"⚖️":filtroSistema==="foia"?"📂":"🚫"}</span>
+            <span>{filtroSistema==="todos"?t("Todos los clientes","All clients"):filtroSistema==="uscis"?"USCIS":filtroSistema==="eoir"?"EOIR":filtroSistema==="foia"?"FOIA":t("Deportados","Deported")}</span>
+            {filtroStatus!=="todos"&&<span style={{background:"#BFDBFE",color:"#1E40AF",fontSize:10,padding:"1px 7px",borderRadius:99,fontWeight:600}}>{filtroStatus==="vencido"?t("Vencidas","Overdue"):filtroStatus==="hoy"?t("Hoy","Today"):filtroStatus==="urgente"?t("Urgentes","Urgent"):filtroStatus==="proximo"?t("Próximas","Upcoming"):filtroStatus==="ok"?t("Al día","On track"):t("Sin fecha","No date")}</span>}
+            <span style={{fontSize:11,color:"#94A3B8"}}>▼</span>
+          </button>
+          {showDropdownFiltro&&(
+            <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:8,minWidth:230,zIndex:50,boxShadow:"0 8px 24px rgba(0,0,0,0.10)"}}>
+              {/* Sistema */}
+              <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",padding:"4px 8px 6px"}}>{t("Sistema","System")}</div>
+              {[{key:"todos",label:t("Todos los clientes","All clients"),icon:"🗂"},{key:"uscis",label:"USCIS",icon:"🏛"},{key:"eoir",label:"EOIR",icon:"⚖️"},{key:"foia",label:"FOIA",icon:"📂"},{key:"deportado",label:t("Deportados","Deported"),icon:"🚫"}].map(tab=>(
+                <button key={tab.key} onClick={()=>{setFiltroSistema(tab.key);if(tab.key==="deportado")setFiltroStatus("todos");setShowDropdownFiltro(false);}} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"8px 10px",border:"none",background:filtroSistema===tab.key?"#EFF6FF":"transparent",borderRadius:8,fontSize:13,cursor:"pointer",color:filtroSistema===tab.key?"#1E40AF":"#374151",fontWeight:filtroSistema===tab.key?600:400,marginBottom:2}}>
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  <span style={{marginLeft:"auto",fontSize:11,color:filtroSistema===tab.key?"#1E40AF":"#94A3B8",fontWeight:600}}>{cnt("todos",tab.key==="todos"?"todos":tab.key)}</span>
+                </button>
+              ))}
+              {/* Estado */}
+              <div style={{borderTop:"1px solid #F1F5F9",margin:"6px 0"}}/>
+              <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",padding:"4px 8px 6px"}}>{t("Estado","Status")}</div>
+              {[{key:"vencido",label:t("Vencidas","Overdue"),color:"#DC2626"},{key:"hoy",label:t("Hoy","Today"),color:"#EA580C"},{key:"urgente",label:t("Urgentes","Urgent"),color:"#D97706"},{key:"proximo",label:t("Próximas","Upcoming"),color:"#2563EB"},{key:"ok",label:t("Al día","On track"),color:"#16A34A"},{key:"pendiente",label:t("Sin fecha","No date"),color:"#94A3B8"}].map(st=>(
+                <button key={st.key} onClick={()=>{setFiltroStatus(filtroStatus===st.key?"todos":st.key);setShowDropdownFiltro(false);}} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"8px 10px",border:"none",background:filtroStatus===st.key?"#F8FAFC":"transparent",borderRadius:8,fontSize:13,cursor:"pointer",color:"#374151",marginBottom:2}}>
+                  <span style={{width:8,height:8,borderRadius:"50%",background:st.color,flexShrink:0}}></span>
+                  <span>{st.label}</span>
+                  <span style={{marginLeft:"auto",fontSize:11,color:"#94A3B8",fontWeight:600}}>{cnt(st.key,filtroSistema==="todos"?"todos":filtroSistema)}</span>
+                </button>
+              ))}
+              {(filtroSistema!=="todos"||filtroStatus!=="todos")&&(
+                <button onClick={()=>{setFiltroSistema("todos");setFiltroStatus("todos");setShowDropdownFiltro(false);}} style={{display:"flex",alignItems:"center",gap:6,width:"100%",padding:"8px 10px",border:"none",background:"transparent",borderRadius:8,fontSize:12,cursor:"pointer",color:"#94A3B8",marginTop:4,borderTop:"1px solid #F1F5F9"}}>
+                  ✕ {t("Limpiar filtros","Clear filters")}
+                </button>
+              )}
+            </div>
+          )}
         </div>
-        <div style={{flex:1,display:"flex",gap:8,alignItems:"center"}}>
-          <div style={{flex:1,position:"relative"}}>
+        {/* ── Búsqueda ── */}
+        <div style={{flex:1,position:"relative"}}>
           <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#94A3B8",fontSize:14}}>🔍</span>
-          <input
-              value={búsqueda}
-              onChange={e=>setBúsqueda(e.target.value)}
-              onKeyDown={e=>e.key==="Enter"&&setBusquedaActiva(búsqueda)}
-              placeholder={t("Nombre del cliente o A#...","Client name or A#...")}
-              style={{flex:1,padding:"9px 14px 9px 36px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#F8FAFC",outline:"none",boxSizing:"border-box"}}
-            />
-          </div>
-          <button
-            onClick={()=>setBusquedaActiva(búsqueda)}
-            style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}
-          >{t("Buscar","Search")}</button>
-          {busquedaActiva&&<button
-            onClick={()=>{setBúsqueda("");setBusquedaActiva("");}}
-            style={{padding:"9px 14px",borderRadius:8,border:"1px solid #E2E8F0",background:"#fff",color:"#374151",fontSize:13,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}
-          >{t("Ver todos","Show all")}</button>}
+          <input value={búsqueda} onChange={e=>setBúsqueda(e.target.value)} onKeyDown={e=>e.key==="Enter"&&setBusquedaActiva(búsqueda)} placeholder={t("Nombre del cliente o A#...","Client name or A#...")} style={{width:"100%",padding:"9px 14px 9px 36px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#F8FAFC",outline:"none",boxSizing:"border-box"}}/>
         </div>
-        <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#fff",cursor:"pointer",color:"#374151"}}>
+        <button onClick={()=>setBusquedaActiva(búsqueda)} style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>{t("Buscar","Search")}</button>
+        {busquedaActiva&&<button onClick={()=>{setBúsqueda("");setBusquedaActiva("");}} style={{padding:"9px 14px",borderRadius:8,border:"1px solid #E2E8F0",background:"#fff",color:"#374151",fontSize:13,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>{t("Ver todos","Show all")}</button>}
+        <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#fff",cursor:"pointer",color:"#374151",flexShrink:0}}>
           <option value="fecha">{t("Por fecha","By date")}</option>
           <option value="nombre">{t("Por nombre","By name")}</option>
-        </select>
-        <select value={filtroStatus} onChange={e=>setFiltroStatus(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#fff",cursor:"pointer",color:"#374151"}}>
-          <option value="todos">{t("Todos los estados","All statuses")}</option>
-          <option value="vencido">🔴 {t("Vencidas","Overdue")}</option>
-          <option value="hoy">🟠 {t("Hoy","Today")}</option>
-          <option value="urgente">🟡 {t("Urgentes","Urgent")}</option>
-          <option value="proximo">🔵 {t("Próximas","Upcoming")}</option>
-          <option value="ok">🟢 {t("Al día","On Track")}</option>
-          <option value="pendiente">⚪ {t("Sin fecha","No Date")}</option>
         </select>
         <div style={{display:"flex",alignItems:"center",gap:5,background:"#F1F5F9",borderRadius:8,padding:"7px 12px",fontSize:12,fontWeight:600,color:"#475569",flexShrink:0}}>
           👥 {clientes.length} {t("clientes","clients")}
@@ -2360,16 +2367,7 @@ const loadTeam=async()=>{
           + {t("Nuevo Cliente","New Client")}
         </button>
       </div>
-      <div style={{background:"#fff",borderBottom:"1px solid #F1F5F9",padding:"0 32px",display:"flex",gap:6,overflowX:"auto"}}>
-        {[["vencido","🔴",t("Vencidas","Overdue"),"#FEF2F2","#DC2626"],["hoy","🟠",t("Hoy","Today"),"#FFF7ED","#EA580C"],["urgente","🟡",t("Urgentes","Urgent"),"#FFFBEB","#D97706"],["proximo","🔵",t("Próximas","Upcoming"),"#EFF6FF","#2563EB"],["ok","🟢",t("Al día","On Track"),"#F0FDF4","#16A34A"],["pendiente","⚪",t("Sin fecha","No Date"),"#F8FAFC","#64748B"]].map(([k,icon,label,bg,color])=>(
-          <button key={k} onClick={()=>setFiltroStatus(filtroStatus===k?"todos":k)} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:filtroStatus===k?bg:"transparent",border:"none",borderBottom:filtroStatus===k?"2px solid "+color:"2px solid transparent",color:filtroStatus===k?color:"#94A3B8",cursor:"pointer",fontSize:12,fontWeight:filtroStatus===k?700:400,whiteSpace:"nowrap",flexShrink:0}}>
-            <span>{icon}</span>
-            <span style={{fontWeight:700,fontSize:14}}>{cnt(k,filtroSistema==="todos"?"todos":filtroSistema)}</span>
-            <span>{label}</span>
-          </button>
-        ))}
-      </div>
-      <div style={{padding:"24px 32px 48px"}}>
+      <div style={{padding:"32px 32px 48px"}}>
 
       {!loading&&!busquedaActiva&&showBanners&&(stats.vencidos.length>0||stats.alertas1dia.length>0||stats.alertas3dias.length>0)&&(
         <div style={{marginBottom:16,borderRadius:12,overflow:"hidden",border:"1px solid #FECACA",background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
@@ -2420,7 +2418,7 @@ const loadTeam=async()=>{
           <button onClick={openAdd} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:14,cursor:"pointer",fontWeight:600}}>+ {t("Agregar primer cliente","Add first client")}</button>
         </div>
       ):(
-        <div style={{display:"grid",gap:8}}>
+        <div style={{display:"grid",gap:24}}>
           {(busquedaActiva.trim()
             ? clientes.filter(c=>c.nombre.toLowerCase().includes(busquedaActiva.trim().toLowerCase())||(c.alienNum||"").toLowerCase().includes(busquedaActiva.trim().toLowerCase()))
             : filtered
@@ -3368,7 +3366,7 @@ const loadTeam=async()=>{
                   <div style={{fontSize:12,marginTop:4}}>{t("Ve a Usuarios para crear acceso","Go to Users to create access")}</div>
                 </div>
               ):(
-                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                <div style={{display:"flex",flexDirection:"column",gap:24}}>
                   {officeUsers.map(u=>(
                     <div key={u.id} style={{display:"flex",alignItems:"center",gap:12,background:"#F8FAFC",borderRadius:10,padding:"11px 14px",border:"1px solid #E2E8F0"}}>
                       <div style={{width:36,height:36,borderRadius:"50%",background:u.role==="admin"?"#1E40AF":"#7C3AED",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#fff",flexShrink:0}}>
@@ -3891,7 +3889,7 @@ const loadTeam=async()=>{
                         <span style={{width:8,height:8,borderRadius:"50%",background:online?"#16A34A":"#CBD5E1",flexShrink:0}}/>
                       </div>
                       {eventos.length>0&&(
-                        <div style={{marginLeft:42,borderLeft:"1.5px solid #E2E8F0",paddingLeft:14,display:"flex",flexDirection:"column",gap:8}}>
+                        <div style={{marginLeft:42,borderLeft:"1.5px solid #E2E8F0",paddingLeft:14,display:"flex",flexDirection:"column",gap:24}}>
                           {eventos.map((ev,i)=>(
                             <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
                               <span style={{fontSize:11,color:"#94A3B8",minWidth:50,flexShrink:0}}>{new Date(ev.fecha).toLocaleTimeString(lang==="es"?"es-ES":"en-US",{hour:"numeric",minute:"2-digit"})}</span>
@@ -4918,7 +4916,7 @@ const loadTeam=async()=>{
 
           {misTickets.length>0&&<div>
             <div style={{fontSize:11,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",marginBottom:8,borderTop:"1px solid #F1F5F9",paddingTop:14}}>{t("Mis tickets enviados","My sent tickets")}</div>
-            <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:200,overflowY:"auto"}}>
+            <div style={{display:"flex",flexDirection:"column",gap:24,maxHeight:200,overflowY:"auto"}}>
               {misTickets.map(tk=>{
                 const estCol={abierto:["#FEF2F2","#DC2626",t("Abierto","Open")],progreso:["#FFFBEB","#D97706",t("En progreso","In progress")],resuelto:["#F0FDF4","#16A34A",t("Resuelto","Resolved")]}[tk.estado]||["#F1F5F9","#64748B",tk.estado];
                 return(<div key={tk.id} style={{border:"0.5px solid #E2E8F0",borderRadius:8,padding:"9px 11px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
@@ -5503,7 +5501,7 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
                 <button onClick={addDep} style={{background:"#7C3AED",color:"#fff",border:"none",borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>+ {t("Agregar","Add")}</button>
               </div>
               {deps.length===0&&<div style={{textAlign:"center",padding:"14px 0",color:"#94A3B8",fontSize:12,background:"#fff",borderRadius:6,border:"1px dashed #E9D5FF"}}>{t("Sin dependientes agregados aún","No dependents added yet")}</div>}
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <div style={{display:"flex",flexDirection:"column",gap:24}}>
                 {deps.map((dep,i)=>(
                   <div key={dep.id||i} style={{background:"#fff",border:"1px solid #E9D5FF",borderRadius:7,padding:"10px 12px"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -5643,7 +5641,7 @@ function CasoEditorSimple({caso,onChange,onDelete,isAdmin=true,equipo=[],cliente
               <button onClick={addWD} style={{background:"#0F6E56",color:"#fff",border:"none",borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>+ {t("Agregar dependiente","Add dependent")}</button>
             </div>
             {wdeps.length===0&&<div style={{textAlign:"center",padding:"12px 0",color:"#94A3B8",fontSize:12,background:"#fff",borderRadius:6,border:"1px dashed #C0DD97"}}>{t("Sin dependientes agregados aún","No dependents added yet")}</div>}
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{display:"flex",flexDirection:"column",gap:24}}>
               {wdeps.map((wd,i)=>{
                 const pr=parseMoney(wd.precio),pg=parseMoney(wd.pagado),pct=pr>0?Math.round((pg/pr)*100):0;
                 return(<div key={wd.id||i} style={{background:"#fff",border:"1px solid #9FE1CB",borderRadius:7,padding:"10px 12px"}}>
