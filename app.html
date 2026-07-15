@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AV","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-06-AW","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -139,6 +139,7 @@ const ESTATUS_USCIS_POR_FORM={
   "I-589 Asilo":[
     {en:"Case Was Received",es:"Asilo recibido",p:"normal"},
     {en:"Case Is Pending",es:"Caso pendiente",p:"normal"},
+    {en:"Biometrics Appointment Was Scheduled",es:"Biométricos programados",p:"atencion"},
     {en:"Next Step Is An Interview",es:"Próximo paso: entrevista",p:"atencion"},
     {en:"Interview Was Scheduled",es:"Entrevista de asilo programada",p:"urgente"},
     {en:"Interview Was Rescheduled",es:"Entrevista reprogramada",p:"urgente"},
@@ -2548,8 +2549,8 @@ const loadTeam=async()=>{
                                 <button onClick={()=>abrirEnUscis(caso.recibo)} style={{background:"#EFF6FF",color:"#1D4ED8",border:"1px solid #BFDBFE",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>{t("Ver en USCIS","View on USCIS")} ↗</button>
                               </div>
                               <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr 0.9fr",gap:12}}>
-                                <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:14,maxHeight:260,overflowY:"auto"}}>
-                                  <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10,position:"sticky",top:0,background:"#fff",paddingBottom:4}}>{t("Historial USCIS del caso","USCIS case history")}</div>
+                                <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:14}}>
+                                  <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>{t("Historial USCIS del caso","USCIS case history")}</div>
                                   {[...(caso.historial||[])].reverse().map((h,i,arr)=>(
                                     <div key={i} style={{display:"flex",gap:10}}>
                                       <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
