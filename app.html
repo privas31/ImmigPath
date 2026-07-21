@@ -63,7 +63,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-console.log("%cImmigPath Profesional — versión 2026-07-06-AX","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
+console.log("%cImmigPath Profesional — versión 2026-07-21-AY","background:#0C447C;color:#fff;padding:3px 10px;border-radius:6px;font-weight:bold");
 const { useState, useEffect, useCallback } = React;
 
 //  Configuracin 
@@ -706,7 +706,10 @@ function App(){
   const[showEOIR,setShowEOIR]=useState(false);
   const[casosEoir,setCasosEoir]=useState([]);
   const[eoirLoading,setEoirLoading]=useState(false);
-  const[eoirForm,setEoirForm]=useState({alienNum:"",estatus:"",estatusOtro:"",nota:"",clienteId:"",corte:"",juez:"",fechaAudiencia:""});
+  const[eoirForm,setEoirForm]=useState({alienNum:"",estatus:"",estatusOtro:"",nota:"",clienteId:"",corte:"",juez:"",fechaAudiencia:"",natCode:"",alertasActivas:false});
+  const[alertasEoir,setAlertasEoir]=useState([]);
+  const[alertasNoLeidas,setAlertasNoLeidas]=useState(0);
+  const[showAlertasPanel,setShowAlertasPanel]=useState(false);
   const[eoirSaving,setEoirSaving]=useState(false);
   const[eoirExpandido,setEoirExpandido]=useState(null);
   // Control de envíos y tracking (Premium / Add-on)
@@ -770,7 +773,7 @@ function App(){
     });
   },[]);
 
-  useEffect(()=>{if(!user||!officeData)return;loadCases();loadTeam();loadBorradores();loadPagosConfig();loadSolicitudesServicio();},[user,officeData]);
+  useEffect(()=>{if(!user||!officeData)return;loadCases();loadTeam();loadBorradores();loadPagosConfig();loadSolicitudesServicio();loadAlertasEoir();},[user,officeData]);
 
   // Exponer datos de oficina y usuario para el generador del I-589 (Parte E)
   useEffect(()=>{ window._officeData = officeData; window._userData = userData; },[officeData, userData]);
@@ -1976,6 +1979,25 @@ const loadTeam=async()=>{
     }catch(e){console.error("loadCasosEoir error:",e);}
     setEoirLoading(false);
   };
+  const loadAlertasEoir=async()=>{
+    if(!officeId)return;
+    try{
+      const{db,collection,getDocs,query,where}=window._firebase;
+      const q=query(collection(db,"alertas_eoir"),where("officeId","==",officeId),where("leida","==",false));
+      const snap=await getDocs(q);
+      const lista=snap.docs.map(d=>({id:d.id,...d.data()}));
+      setAlertasEoir(lista);
+      setAlertasNoLeidas(lista.length);
+    }catch(e){console.error("loadAlertasEoir:",e);}
+  };
+  const marcarAlertaLeida=async(alertaId)=>{
+    try{
+      const{db,doc,updateDoc}=window._firebase;
+      await updateDoc(doc(db,"alertas_eoir",alertaId),{leida:true});
+      setAlertasEoir(prev=>prev.filter(a=>a.id!==alertaId));
+      setAlertasNoLeidas(prev=>Math.max(0,prev-1));
+    }catch(e){console.error(e);}
+  };
   const guardarCasoEoir=async()=>{
     const alienNum=(eoirForm.alienNum||"").replace(/[^0-9]/g,"");
     if(!alienNum&&!eoirForm.clienteId)return;
@@ -1991,13 +2013,13 @@ const loadTeam=async()=>{
       const snap=await getDocs(q);
       const existente=snap.docs.length>0?{id:snap.docs[0].id,...snap.docs[0].data()}:null;
       if(existente){
-        const cambios={corte:eoirForm.corte||existente.corte||"",juez:eoirForm.juez||existente.juez||"",nota:eoirForm.nota||"",clienteId:eoirForm.clienteId||existente.clienteId||"",clienteNombre:cliente?cliente.nombre:(existente.clienteNombre||""),updatedAt:ahora,revisadoAt:ahora,revisadoPor:por};
+        const cambios={corte:eoirForm.corte||existente.corte||"",juez:eoirForm.juez||existente.juez||"",nota:eoirForm.nota||"",clienteId:eoirForm.clienteId||existente.clienteId||"",clienteNombre:cliente?cliente.nombre:(existente.clienteNombre||""),updatedAt:ahora,revisadoAt:ahora,revisadoPor:por,natCode:eoirForm.natCode||existente.natCode||"",alertasActivas:eoirForm.alertasActivas!==undefined?eoirForm.alertasActivas:(existente.alertasActivas||false)};
         // Registrar en historial SIEMPRE que se guarda, aunque el estatus no cambie
         if(estatusFinal){cambios.estatus=estatusFinal;cambios.historial=[...(existente.historial||[]),{estatus:estatusFinal,fecha:ahora,por,corte:eoirForm.corte||"",juez:eoirForm.juez||""}];}
         if(eoirForm.fechaAudiencia)cambios.fechaAudiencia=eoirForm.fechaAudiencia;
         await updateDoc(doc(db,"casos_eoir",existente.id),cambios);
       }else{
-        await addDoc(collection(db,"casos_eoir"),{officeId,alienNum,estatus:estatusFinal,corte:eoirForm.corte||"",juez:eoirForm.juez||"",nota:eoirForm.nota||"",fechaAudiencia:eoirForm.fechaAudiencia||"",clienteId:eoirForm.clienteId||"",clienteNombre:cliente?cliente.nombre:"",historial:[{estatus:estatusFinal,fecha:ahora,por,corte:eoirForm.corte||"",juez:eoirForm.juez||""}],createdAt:ahora,updatedAt:ahora,revisadoAt:ahora,revisadoPor:por});
+        await addDoc(collection(db,"casos_eoir"),{officeId,alienNum,estatus:estatusFinal,corte:eoirForm.corte||"",juez:eoirForm.juez||"",nota:eoirForm.nota||"",fechaAudiencia:eoirForm.fechaAudiencia||"",natCode:eoirForm.natCode||"",alertasActivas:eoirForm.alertasActivas||false,clienteId:eoirForm.clienteId||"",clienteNombre:cliente?cliente.nombre:"",historial:[{estatus:estatusFinal,fecha:ahora,por,corte:eoirForm.corte||"",juez:eoirForm.juez||""}],createdAt:ahora,updatedAt:ahora,revisadoAt:ahora,revisadoPor:por});
       }
       await loadCasosEoir();
       showToastFn(t("Caso EOIR guardado ✓","EOIR case saved ✓"));
@@ -2287,6 +2309,17 @@ const loadTeam=async()=>{
           );
         })}
       </nav>
+      {alertasNoLeidas>0&&(
+        <div style={{padding:"8px 12px",margin:"0 12px 8px",background:"#FEF3C7",border:"1px solid #FCD34D",borderRadius:10,cursor:"pointer"}} onClick={()=>{loadAlertasEoir();setShowAlertasPanel(true);}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:18}}>🔔</span>
+            <div>
+              <div style={{fontSize:12,fontWeight:700,color:"#92400E"}}>{alertasNoLeidas} {t("alerta(s) EOIR nueva(s)","new EOIR alert(s)")}</div>
+              <div style={{fontSize:10,color:"#B45309"}}>{t("Toca para ver los cambios","Tap to see changes")}</div>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{padding:"16px 20px",borderTop:"1px solid #F1F5F9"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
           <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#3B82F6,#7C3AED)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:700,flexShrink:0}}>
@@ -2633,7 +2666,7 @@ const loadTeam=async()=>{
                                 </div>
                                 <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:14}}>
                                   <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:10}}>⚡ {t("Acciones rápidas","Quick actions")}</div>
-                                  <button onClick={()=>{setEoirForm({alienNum:caso.alienNum||"",estatus:ESTATUS_EOIR.some(s=>s.en===caso.estatus)?caso.estatus:"__otro__",estatusOtro:ESTATUS_EOIR.some(s=>s.en===caso.estatus)?"":caso.estatus,nota:caso.nota||"",clienteId:caso.clienteId||"",corte:caso.corte||"",juez:caso.juez||"",fechaAudiencia:caso.fechaAudiencia||""});setShowEOIR(true);}} style={{width:"100%",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"9px 12px",fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:6,textAlign:"left"}}>💾 {t("Guardar seguimiento","Save tracking")}</button>
+                                  <button onClick={()=>{setEoirForm({alienNum:caso.alienNum||"",estatus:ESTATUS_EOIR.some(s=>s.en===caso.estatus)?caso.estatus:"__otro__",estatusOtro:ESTATUS_EOIR.some(s=>s.en===caso.estatus)?"":caso.estatus,nota:caso.nota||"",clienteId:caso.clienteId||"",corte:caso.corte||"",juez:caso.juez||"",fechaAudiencia:caso.fechaAudiencia||"",natCode:caso.natCode||"",alertasActivas:caso.alertasActivas||false});setShowEOIR(true);}} style={{width:"100%",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"9px 12px",fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:6,textAlign:"left"}}>💾 {t("Guardar seguimiento","Save tracking")}</button>
                                   <button onClick={()=>window.open("https://acis.eoir.justice.gov/en/caseInformation","_blank")} style={{width:"100%",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"9px 12px",fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:10,textAlign:"left"}}>🔗 {t("Abrir en EOIR","Open on EOIR")}</button>
                                   <div style={{background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:8,padding:"10px 12px",fontSize:11,color:"#7C3AED",lineHeight:1.5}}>ℹ️ {t("Historial EOIR registrado manualmente desde el portal de cortes de inmigración.","EOIR history manually logged from the immigration court portal.")}</div>
                                 </div>
@@ -3626,9 +3659,51 @@ const loadTeam=async()=>{
             <button onClick={()=>setShowEOIR(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{t("Cerrar","Close")}</button>
           </div>
           <div style={{padding:24,display:"flex",flexDirection:"column",gap:16}}>
-            <div>
-              <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:6}}>A-Number</div>
-              <input value={eoirForm.alienNum} onChange={e=>setEoirForm(f=>({...f,alienNum:e.target.value.replace(/[^0-9]/g,"")}))} placeholder="123456789" maxLength={9} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,fontFamily:"monospace",letterSpacing:1,outline:"none"}}/>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div>
+                <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:6}}>A-Number</div>
+                <input value={eoirForm.alienNum} onChange={e=>setEoirForm(f=>({...f,alienNum:e.target.value.replace(/[^0-9]/g,"")}))} placeholder="123456789" maxLength={9} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:14,fontFamily:"monospace",letterSpacing:1,outline:"none"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:6}}>{t("Nacionalidad","Nationality")} <span style={{color:"#EF4444"}}>*</span></div>
+                <select value={eoirForm.natCode} onChange={e=>setEoirForm(f=>({...f,natCode:e.target.value}))} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #D1D5DB",fontSize:13,outline:"none",background:"#fff"}}>
+                  <option value="">{t("Seleccionar...","Select...")}</option>
+                  <option value="MX">🇲🇽 México (MX)</option>
+                  <option value="GT">🇬🇹 Guatemala (GT)</option>
+                  <option value="HN">🇭🇳 Honduras (HN)</option>
+                  <option value="SV">🇸🇻 El Salvador (SV)</option>
+                  <option value="NI">🇳🇮 Nicaragua (NI)</option>
+                  <option value="CU">🇨🇺 Cuba (CU)</option>
+                  <option value="VE">🇻🇪 Venezuela (VE)</option>
+                  <option value="CO">🇨🇴 Colombia (CO)</option>
+                  <option value="EC">🇪🇨 Ecuador (EC)</option>
+                  <option value="PE">🇵🇪 Perú (PE)</option>
+                  <option value="BR">🇧🇷 Brasil (BR)</option>
+                  <option value="DO">🇩🇴 Rep. Dominicana (DO)</option>
+                  <option value="HT">🇭🇹 Haití (HT)</option>
+                  <option value="JM">🇯🇲 Jamaica (JM)</option>
+                  <option value="CN">🇨🇳 China (CN)</option>
+                  <option value="IN">🇮🇳 India (IN)</option>
+                  <option value="PH">🇵🇭 Filipinas (PH)</option>
+                  <option value="ET">🇪🇹 Etiopía (ET)</option>
+                  <option value="ER">🇪🇷 Eritrea (ER)</option>
+                  <option value="SO">🇸🇴 Somalia (SO)</option>
+                  <option value="XX">{t("Otro","Other")}</option>
+                </select>
+              </div>
+            </div>
+            <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#166534"}}>🔔 {t("Alertas automáticas ACIS","Automatic ACIS alerts")}</div>
+                <div style={{fontSize:11,color:"#15803D",marginTop:2}}>{t("El sistema revisará EOIR 2 veces al día y te avisará si hay cambios","System checks EOIR twice daily and alerts you on changes")}</div>
+              </div>
+              <label style={{position:"relative",display:"inline-block",width:44,height:24,flexShrink:0,cursor:"pointer"}}>
+                <input type="checkbox" checked={eoirForm.alertasActivas||false} onChange={e=>setEoirForm(f=>({...f,alertasActivas:e.target.checked}))} style={{opacity:0,width:0,height:0,position:"absolute"}}/>
+                <span style={{position:"absolute",inset:0,borderRadius:24,background:eoirForm.alertasActivas?"#16A34A":"#D1D5DB",transition:"background 0.2s"}}></span>
+                <span style={{position:"absolute",top:3,left:eoirForm.alertasActivas?22:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}></span>
+              </label>
+            </div>
+
             </div>
             <div>
               <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:6}}>{t("Corte asignada","Assigned court")}</div>
@@ -3669,6 +3744,43 @@ const loadTeam=async()=>{
               <button onClick={()=>window.open("https://acis.eoir.justice.gov/en/caseInformation","_blank")} style={{background:"#fff",color:"#7C3AED",border:"1px solid #7C3AED",borderRadius:8,padding:"9px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{t("🔗 Ver en EOIR","🔗 View on EOIR")}</button>
             </div>
             <div style={{fontSize:11,color:"#94A3B8",lineHeight:1.5}}>ℹ️ {t("Consulta el estatus en acis.eoir.justice.gov y regístralo aquí. Cada cambio de estatus queda guardado en el historial del caso.","Check the status at acis.eoir.justice.gov and log it here. Each status change is saved to the case history.")}</div>
+          </div>
+        </div>
+      </div>
+    )}
+    {showAlertasPanel&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:1100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:520,maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+          <div style={{padding:"18px 24px",borderBottom:"1px solid #E2E8F0",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"#fff",zIndex:5}}>
+            <div style={{fontSize:16,fontWeight:800,color:"#0F172A"}}>🔔 {t("Alertas EOIR","EOIR Alerts")} {alertasNoLeidas>0&&<span style={{background:"#EF4444",color:"#fff",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:700,marginLeft:6}}>{alertasNoLeidas}</span>}</div>
+            <button onClick={()=>setShowAlertasPanel(false)} style={{background:"#F1F5F9",border:"none",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontWeight:600}}>{t("Cerrar","Close")}</button>
+          </div>
+          <div style={{padding:16,display:"flex",flexDirection:"column",gap:10}}>
+            {alertasEoir.length===0?(
+              <div style={{textAlign:"center",padding:"32px 16px",color:"#94A3B8"}}>
+                <div style={{fontSize:32,marginBottom:8}}>✅</div>
+                <div style={{fontSize:14,fontWeight:600}}>{t("Sin alertas nuevas","No new alerts")}</div>
+                <div style={{fontSize:12,marginTop:4}}>{t("El sistema revisará EOIR 2 veces al día","System checks EOIR twice daily")}</div>
+              </div>
+            ):alertasEoir.map(alerta=>(
+              <div key={alerta.id} style={{background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:12,padding:"12px 14px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#92400E"}}>{alerta.clienteNombre||"A-"+alerta.alienNum}</div>
+                    <div style={{fontSize:11,color:"#B45309"}}>A-{alerta.alienNum} · {new Date(alerta.createdAt).toLocaleDateString("es-US")}</div>
+                  </div>
+                  <button onClick={()=>marcarAlertaLeida(alerta.id)} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>{t("✓ Leída","✓ Read")}</button>
+                </div>
+                {(alerta.cambios||[]).map((c,i)=>(
+                  <div key={i} style={{background:"#fff",borderRadius:8,padding:"6px 10px",marginBottom:4,fontSize:12}}>
+                    <span style={{color:"#64748B"}}>{c.etiqueta}: </span>
+                    <span style={{color:"#94A3B8",textDecoration:"line-through"}}>{c.anterior}</span>
+                    <span style={{color:"#0F172A",fontWeight:700,marginLeft:6}}>→ {c.nuevo}</span>
+                  </div>
+                ))}
+                {alerta.fechaAudiencia&&<div style={{marginTop:6,background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:6,padding:"5px 10px",fontSize:11,color:"#166534",fontWeight:600}}>📅 {t("Próxima audiencia","Next hearing")}: {alerta.fechaAudiencia}</div>}
+              </div>
+            ))}
           </div>
         </div>
       </div>
