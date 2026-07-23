@@ -58,6 +58,7 @@
     })();
   </script>
   <style>* { box-sizing:border-box; margin:0; padding:0; } body { font-family:'Segoe UI',Inter,sans-serif; background:#F1F5F9; } ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
 </head>
 <body>
 <div id="root"></div>
@@ -1712,14 +1713,14 @@ const loadTeam=async()=>{
   // ── SIDEBAR NAV ITEMS (Básico) ────────────────────────────────────────────
   const navItems = [
     {id:"monitor",    label:t("Monitor Oficina","Office Monitor"),  icon:"🖥"},
-    {id:"dashboard",  label:t("Dashboard","Dashboard"),             icon:"📊", badge:isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
-    {id:"formularios",label:t("Formularios","Forms"),               icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
+    {id:"dashboard",  label:t("Dashboard","Dashboard"),             icon:"ti-chart-bar", badge:isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
+    {id:"formularios",label:t("Formularios","Forms"),               icon:"ti-file-description", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
     {id:"nomina",     label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNómina(true)},
-    {id:"pagos",      label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
-    {id:"equipo",     label:t("Equipo","Team"),                     icon:"🤝", show:isAdmin, onClick:()=>setShowTeam(true)},
-    {id:"actividad", label:t("Actividad","Activity"),               icon:"📊", show:isAdmin, onClick:()=>{setShowActividad(true);loadActividad();}},
-    {id:"usuarios",   label:t("Usuarios","Users"),                  icon:"🔐", show:isAdmin, onClick:()=>setShowAddUser(true)},
-    {id:"reportes",   label:t("Reportes","Reports"),                icon:"📈", show:isAdmin, onClick:()=>setShowPDF(true)},
+    {id:"pagos",      label:t("Pagos","Payments"),                  icon:"ti-credit-card", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
+    {id:"equipo",     label:t("Equipo","Team"),                     icon:"ti-users", show:isAdmin, onClick:()=>setShowTeam(true)},
+    {id:"actividad", label:t("Actividad","Activity"),               icon:"ti-chart-bar", show:isAdmin, onClick:()=>{setShowActividad(true);loadActividad();}},
+    {id:"usuarios",   label:t("Usuarios","Users"),                  icon:"ti-lock", show:isAdmin, onClick:()=>setShowAddUser(true)},
+    {id:"reportes",   label:t("Reportes","Reports"),                icon:"ti-chart-line", show:isAdmin, onClick:()=>setShowPDF(true)},
     {id:"soporte",    label:t("Soporte","Support"),                 icon:"🎧", show:isAdmin, onClick:()=>{setShowSoporte(true);cargarMisTickets();}},
   ];
 
@@ -1746,7 +1747,7 @@ const loadTeam=async()=>{
           const active = activeNav===n.id;
           return(
             <button key={n.id} onClick={()=>{setActiveNav(n.id);n.onClick&&n.onClick();}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 20px",background:active?"#EFF6FF":"transparent",border:"none",borderLeft:active?"3px solid #2563EB":"3px solid transparent",color:active?"#2563EB":"#64748B",fontSize:13,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
-              <span style={{fontSize:15,width:20,textAlign:"center"}}>{n.icon}</span>
+              <i className={`ti ${n.icon}`} style={{fontSize:16,width:18,textAlign:"center",flexShrink:0}}></i>
               <span style={{flex:1}}>{n.label}</span>
               {n.badge>0&&<span style={{background:"#EF4444",color:"#fff",borderRadius:20,padding:"1px 6px",fontSize:10,fontWeight:700,minWidth:18,textAlign:"center"}}>{n.badge}</span>}
             </button>
