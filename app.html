@@ -59,6 +59,7 @@
     })();
   </script>
   <style>* { box-sizing:border-box; margin:0; padding:0; } body { font-family:'Segoe UI',Inter,sans-serif; background:#F1F5F9; } ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
 </head>
 <body>
 <div id="root"></div>
@@ -251,14 +252,14 @@ const METODOS_ENVIO=[
 ];
 const ESTADOS_ENVIO=[
   {id:"Etiqueta creada", color:"#94A3B8", icon:"🏷️"},
-  {id:"Paquete enviado", color:"#378ADD", icon:"📦"},
+  {id:"Paquete enviado", color:"#378ADD", icon:"ti-package"},
   {id:"En tránsito", color:"#378ADD", icon:"✈️"},
   {id:"Entregado", color:"#1D9E75", icon:"✅"},
   {id:"Devuelto / Problema", color:"#E24B4A", icon:"⚠️"},
 ];
 const DESTINATARIOS_ENVIO=["EOIR","USCIS","Cliente","Abogado","Otro"];
 const colorEstadoEnvio=(e)=>{const m=ESTADOS_ENVIO.find(s=>s.id===e);return m?m.color:"#94A3B8";};
-const iconEstadoEnvio=(e)=>{const m=ESTADOS_ENVIO.find(s=>s.id===e);return m?m.icon:"📦";};
+const iconEstadoEnvio=(e)=>{const m=ESTADOS_ENVIO.find(s=>s.id===e);return m?m.icon:"ti-package";};
 const trackingUrl=(metodo,num)=>{
   const n=encodeURIComponent(String(num||"").replace(/\s+/g,""));
   if(metodo==="USPS")return "https://tools.usps.com/go/TrackConfirmAction?tLabels="+n;
@@ -2253,23 +2254,23 @@ const loadTeam=async()=>{
   // ── SIDEBAR NAV ITEMS ──────────────────────────────────────────────────────
   const navItems = [
     {id:"monitor",   label:t("Monitor Oficina","Office Monitor"),  icon:"🖥", onClick:()=>{setActiveNav("monitor");}},
-    {id:"checklist", label:t("Primeros pasos","Getting started"), icon:"🚀", onClick:()=>setShowChecklist(true)},
-    {id:"alertas",   label:t("Alertas","Alerts"),                  icon:"🔔", badge: (stats.alertas.length+stats.vencidos.length+stats.eadElegibles.length+solicitudesServicio.length)||null, onClick:()=>setShowAlertas(true)},
-    {id:"dashboard", label:t("Dashboard","Dashboard"),             icon:"📊", badge: isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
-    {id:"formularios",label:t("Formularios","Forms"),              icon:"📋", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
+    {id:"checklist", label:t("Primeros pasos","Getting started"), icon:"ti-rocket", onClick:()=>setShowChecklist(true)},
+    {id:"alertas",   label:t("Alertas","Alerts"),                  icon:"ti-bell", badge: (stats.alertas.length+stats.vencidos.length+stats.eadElegibles.length+solicitudesServicio.length)||null, onClick:()=>setShowAlertas(true)},
+    {id:"dashboard", label:t("Dashboard","Dashboard"),             icon:"ti-chart-bar", badge: isAdmin?(stats.alertas.length+stats.vencidos.length)||null:null, onClick:()=>setShowDashboard(true)},
+    {id:"formularios",label:t("Formularios","Forms"),              icon:"ti-file-description", badge:borradoresPendientes||null, onClick:()=>{setShowBorradores(true);loadBorradores();}},
     // Admin only items below
-    {id:"pagos",     label:t("Pagos","Payments"),                  icon:"💳", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
+    {id:"pagos",     label:t("Pagos","Payments"),                  icon:"ti-credit-card", show:isAdmin, onClick:()=>setShowPagosReporte(true)},
     {id:"nomina",    label:t("Nómina","Payroll"),                  icon:"💵", show:isAdmin, onClick:()=>setShowNómina(true)},
     {id:"notaria",   label:t("Notaría","Notary"),                  icon:"📜", href:"/notaria.html", show:enabledModules.includes("notary")},
-    {id:"equipo",    label:t("Equipo","Team"),                     icon:"🤝", show:isAdmin, onClick:()=>{setShowTeam(true);loadOfficeUsers();}},
-    {id:"actividad", label:t("Actividad","Activity"),               icon:"📊", show:isAdmin, onClick:()=>{setShowActividad(true);loadActividad();}},
-    {id:"usuarios",  label:t("Usuarios","Users"),                  icon:"🔐", show:isAdmin, onClick:()=>setShowAddUser(true)},
-    {id:"reportes",  label:t("Reportes","Reports"),                icon:"📈", show:isAdmin, onClick:()=>setShowPDF(true)},
+    {id:"equipo",    label:t("Equipo","Team"),                     icon:"ti-users", show:isAdmin, onClick:()=>{setShowTeam(true);loadOfficeUsers();}},
+    {id:"actividad", label:t("Actividad","Activity"),               icon:"ti-chart-bar", show:isAdmin, onClick:()=>{setShowActividad(true);loadActividad();}},
+    {id:"usuarios",  label:t("Usuarios","Users"),                  icon:"ti-lock", show:isAdmin, onClick:()=>setShowAddUser(true)},
+    {id:"reportes",  label:t("Reportes","Reports"),                icon:"ti-chart-line", show:isAdmin, onClick:()=>setShowPDF(true)},
     {id:"sec-herramientas", section:t("Herramientas","Tools")},
-    {id:"uscis",     label:t("Verificador USCIS","USCIS Checker")+(uscisHabilitado?"":" 🔒"), icon:"🔎", onClick:()=>{setShowUSCIS(true);if(uscisHabilitado)loadCasosUscis();}},
-    {id:"envios",    label:t("Control de envíos","Shipments")+(enviosHabilitado?"":" 🔒"), icon:"📦", onClick:()=>{setShowEnvios(true);if(enviosHabilitado)loadEnvios();}},
+    {id:"uscis",     label:t("Verificador USCIS","USCIS Checker")+(uscisHabilitado?"":" 🔒"), icon:"ti-search", onClick:()=>{setShowUSCIS(true);if(uscisHabilitado)loadCasosUscis();}},
+    {id:"envios",    label:t("Control de envíos","Shipments")+(enviosHabilitado?"":" 🔒"), icon:"ti-package", onClick:()=>{setShowEnvios(true);if(enviosHabilitado)loadEnvios();}},
     {id:"sec-sistema", section:t("Sistema","System"), show:isAdmin},
-    {id:"config",    label:t("Configuración","Settings"),          icon:"⚙️", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
+    {id:"config",    label:t("Configuración","Settings"),          icon:"ti-settings", show:isAdmin, onClick:()=>setShowPagosConfig(true)},
     {id:"soporte",   label:t("Soporte","Support"),                 icon:"🎧", show:isAdmin, onClick:()=>{setShowSoporte(true);cargarMisTickets();}},
   ];
 
@@ -2296,13 +2297,13 @@ const loadTeam=async()=>{
           const handleClick = ()=>{ setActiveNav(n.id); n.onClick&&n.onClick(); };
           if(n.href) return(
             <a key={n.id} href={n.href} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 20px",textDecoration:"none",color:active?"#2563EB":"#64748B",background:active?"#EFF6FF":"transparent",borderLeft:active?"3px solid #2563EB":"3px solid transparent",fontSize:13,fontWeight:active?600:400,transition:"all 0.15s"}}>
-              <span style={{fontSize:15,width:20,textAlign:"center"}}>{n.icon}</span>
+              <i className={`ti ${n.icon}`} style={{fontSize:16,width:18,textAlign:"center",flexShrink:0}}></i>
               <span style={{flex:1}}>{n.label}</span>
             </a>
           );
           return(
             <button key={n.id} onClick={handleClick} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 20px",background:active?"#EFF6FF":"transparent",border:"none",borderLeft:active?"3px solid #2563EB":"3px solid transparent",color:active?"#2563EB":"#64748B",fontSize:13,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",position:"relative",transition:"all 0.15s"}}>
-              <span style={{fontSize:15,width:20,textAlign:"center"}}>{n.icon}</span>
+              <i className={`ti ${n.icon}`} style={{fontSize:16,width:18,textAlign:"center",flexShrink:0}}></i>
               <span style={{flex:1}}>{n.label}</span>
               {n.badge>0&&<span style={{background:"#EF4444",color:"#fff",borderRadius:20,padding:"1px 6px",fontSize:10,fontWeight:700,minWidth:18,textAlign:"center"}}>{n.badge}</span>}
             </button>
