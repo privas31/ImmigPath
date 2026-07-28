@@ -2477,9 +2477,6 @@ const loadTeam=async()=>{
                   </div>}
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>{const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}}>
-                      <div style={{width:44,height:44,borderRadius:"50%",background:c.deportado?"#FEE2E2":"#E6F1FB",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:500,fontSize:14,color:c.deportado?"#DC2626":"#0C447C",flexShrink:0}}>
-                        {c.nombre.split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
-                      </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:3}}>
                           {c.expediente&&<span style={{fontSize:11,fontWeight:500,background:"#E6F1FB",color:"#0C447C",padding:"2px 8px",borderRadius:6,fontFamily:"monospace"}}>{c.expediente}</span>}
@@ -2498,10 +2495,10 @@ const loadTeam=async()=>{
                         <div style={{fontSize:15,fontWeight:500,color:"#0F172A",marginBottom:2}}>{c.nombre}</div>
                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",fontSize:12,color:"#64748B"}}>
                           {c.paisOrigen&&<span>{getFlag(c.paisOrigen)} {c.paisOrigen}</span>}
-                          {c.alienNum&&<><span style={{color:"#E2E8F0"}}>·</span><span style={{fontFamily:"monospace",color:"#374151"}}>🪪 {fmtA(c.alienNum)}</span></>}
-                          {c.telefono&&<><span style={{color:"#E2E8F0"}}>·</span><span>📱 {c.telefono}</span></>}
-                          {c.email&&<><span style={{color:"#E2E8F0"}}>·</span><span>✉️ {c.email}</span></>}
-                          {c.encargada&&<><span style={{color:"#E2E8F0"}}>·</span><span style={{color:"#7C3AED",fontWeight:500}}>👤 {c.encargada}</span></>}
+                          {c.alienNum&&<><span style={{color:"#E2E8F0"}}>·</span><span style={{fontFamily:"monospace",color:"#374151",display:"inline-flex",alignItems:"center",gap:4}}><i className="ti ti-id" style={{color:"#6D28D9"}}></i>{fmtA(c.alienNum)}</span></>}
+                          {c.telefono&&<><span style={{color:"#E2E8F0"}}>·</span><span style={{display:"inline-flex",alignItems:"center",gap:4}}><i className="ti ti-phone" style={{color:"#6D28D9"}}></i>{c.telefono}</span></>}
+                          {c.email&&<><span style={{color:"#E2E8F0"}}>·</span><span style={{display:"inline-flex",alignItems:"center",gap:4}}><i className="ti ti-mail" style={{color:"#6D28D9"}}></i>{c.email}</span></>}
+                          {c.encargada&&<><span style={{color:"#E2E8F0"}}>·</span><span style={{color:"#7C3AED",fontWeight:500,display:"inline-flex",alignItems:"center",gap:4}}><i className="ti ti-user"></i>{c.encargada}</span></>}
                         </div>
                         <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
                           {(c.casos||[]).map((ca,i)=><span key={i} style={{fontSize:11,background:"#F1F5F9",color:"#374151",padding:"2px 8px",borderRadius:20}}>{ca.tipoCaso||""}</span>).filter((_,i)=>(c.casos||[])[i]?.tipoCaso)}
@@ -2510,12 +2507,10 @@ const loadTeam=async()=>{
                       </div>
                     </div>
                     {!exp&&<div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-                      <button onClick={e=>{e.stopPropagation();const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}} style={{background:"#0C447C",color:"#E6F1FB",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:500,cursor:"pointer",whiteSpace:"nowrap"}}>📂 Ver ficha completa</button>
-                      <button onClick={e=>{e.stopPropagation();const tel=(c.telefono||"").replace(/[^0-9]/g,"");if(!tel){showToastFn("Sin teléfono","error");return;}const nombre=c.nombre||"cliente";const tipo=(c.casos||[]).map(ca=>ca.tipoCaso||"").filter(Boolean).join(", ")||"caso de inmigración";const oficina=officeData?.name||"nuestra oficina";const msg="Hola "+nombre+", le informamos sobre su caso de "+tipo+" — Tenemos una actualización. — "+oficina;window.open("https://wa.me/1"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{border:"0.5px solid #BBF7D0",background:"#F0FDF4",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#16A34A",whiteSpace:"nowrap"}}>💬 WhatsApp</button>
-                      <button onClick={e=>{e.stopPropagation();setCobrarCliente(c);setCobrarMonto("");setCobrarConcepto("");setCobrarMetodo("zelle");setCobrarProcesoSel("");setShowCobrar(true);}} style={{border:"0.5px solid #BFDBFE",background:"#EFF6FF",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#0C447C",whiteSpace:"nowrap"}}>💳 Cobrar</button>
-                      {isAdmin&&!c.deportado&&<button onClick={e=>{e.stopPropagation();window._markDeportado(c.id);}} style={{border:"0.5px solid #FECACA",background:"#FEF2F2",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#DC2626",whiteSpace:"nowrap"}}>🚫 {t("Deportado","Deported")}</button>}
-                      {isAdmin&&c.deportado&&<button onClick={e=>{e.stopPropagation();window._unmarkDeportado(c.id);}} style={{border:"0.5px solid #D1FAE5",background:"#F0FDF4",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#16A34A",whiteSpace:"nowrap"}}>↩️ {t("Reactivar","Reactivate")}</button>}
-                      {isAdmin&&<button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);}} style={{border:"0.5px solid #FECACA",background:"#FEF2F2",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#DC2626",whiteSpace:"nowrap"}}>🗑 Eliminar</button>}
+                      <button onClick={e=>{e.stopPropagation();const nExp=exp?null:c.id;setExpandedId(nExp);setActiveCasoTab({});if(nExp)cargarPagosCliente(nExp);}} style={{background:"#0C447C",color:"#E6F1FB",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:500,cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}><i className="ti ti-folder"></i>{t("Ver ficha completa","View full record")}</button>
+                      {isAdmin&&!c.deportado&&<button onClick={e=>{e.stopPropagation();window._markDeportado(c.id);}} style={{border:"0.5px solid #FECACA",background:"#FEF2F2",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#DC2626",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}><i className="ti ti-ban"></i>{t("Deportado","Deported")}</button>}
+                      {isAdmin&&c.deportado&&<button onClick={e=>{e.stopPropagation();window._unmarkDeportado(c.id);}} style={{border:"0.5px solid #D1FAE5",background:"#F0FDF4",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#16A34A",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}><i className="ti ti-rotate"></i>{t("Reactivar","Reactivate")}</button>}
+                      {isAdmin&&<button onClick={e=>{e.stopPropagation();setConfirmDelete(c.id);}} style={{border:"0.5px solid #FECACA",background:"#FEF2F2",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",color:"#DC2626",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}><i className="ti ti-trash"></i>{t("Eliminar","Delete")}</button>}
                     </div>}
                     <div style={{flexShrink:0,background:pf?`${scfg.color}11`:"#F8FAFC",border:`0.5px solid ${pf?scfg.color+"44":"#E2E8F0"}`,borderRadius:10,padding:"8px 14px",textAlign:"right",minWidth:130}}>
                       <div style={{fontSize:10,color:pf?scfg.color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:2,fontWeight:500}}>{t("Próxima Fecha","Next Date")}</div>
