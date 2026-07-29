@@ -2826,24 +2826,93 @@ const loadTeam=async()=>{
                               const diasEAD=getDias(ca.eadVence);
                               const esAplicar=ca.tieneEAD==="no";
                               const vencido=!esAplicar&&diasEAD<0;
-                              const colorD=esAplicar?(diasEAD<=0?"#4ADE80":"#93C5FD"):vencido?"#F87171":diasEAD<=30?"#F87171":diasEAD<=90?"#FBBF24":"#4ADE80";
-                              const estadoTxt=esAplicar?(diasEAD<=0?"✅ YA PUEDE APLICAR":"⏳ PENDIENTE APLICAR"):vencido?"🔴 VENCIDO":diasEAD<=90?"🟡 POR VENCER":"🟢 VIGENTE";
-                              const pctEAD=esAplicar?null:Math.max(0,Math.min(100,Math.round((diasEAD/365)*100)));
-                              return(<div style={{background:"#052E16",borderRadius:12,padding:"14px 16px"}}>
-                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                                  <span style={{fontSize:13,fontWeight:500,color:"#86EFAC"}}>🪪 Permiso de Trabajo (EAD)</span>
-                                  <span style={{fontSize:11,fontWeight:600,color:colorD}}>{estadoTxt}</span>
+                              const pctEAD=esAplicar?50:Math.max(0,Math.min(100,Math.round((diasEAD/730)*100)));
+                              // Colores semáforo D3+D4
+                              const eadColor  = esAplicar?"#2563EB":vencido?"#EF4444":diasEAD<=90?"#EF4444":diasEAD<=180?"#F59E0B":"#22C55E";
+                              const eadColorT = esAplicar?"#1D4ED8":vencido?"#DC2626":diasEAD<=90?"#DC2626":diasEAD<=180?"#92400E":"#16A34A";
+                              const eadColorL = esAplicar?"#EFF6FF":vencido?"#FEF2F2":diasEAD<=90?"#FEF2F2":diasEAD<=180?"#FFFBEB":"#F0FDF4";
+                              const eadBorder = esAplicar?"#BFDBFE":vencido?"#FECACA":diasEAD<=90?"#FECACA":diasEAD<=180?"#FCD34D":"#BBF7D0";
+                              const eadBadge  = esAplicar?"🕐 PENDIENTE":vencido?"🔴 VENCIDO":diasEAD<=90?"🚨 URGENTE":diasEAD<=180?"⚠️ RENOVAR":"● VIGENTE";
+                              const eadIcon   = esAplicar?"🕐":vencido?"🚨":diasEAD<=90?"🚨":diasEAD<=180?"⚠️":"✓";
+                              const eadMsg    = esAplicar?"Puede aplicar al EAD":vencido?`EAD vencido hace ${Math.abs(diasEAD)} días — renovar de inmediato`:diasEAD<=90?`Renovación urgente — solo ${diasEAD} días restantes`:diasEAD<=180?`Iniciar renovación ahora — faltan ${diasEAD} días`:`Sin urgencia — vence el ${fmt(ca.eadVence)}`;
+                              const eadMeses  = Math.floor(Math.max(0,diasEAD)/30);
+                              const eadAnios  = Math.floor(eadMeses/12);
+                              const eadMRest  = eadMeses%12;
+                              const eadDesg   = esAplicar||vencido?"":eadAnios>0?`≈ ${eadAnios} año${eadAnios>1?"s":""} ${eadMRest>0?eadMRest+" mes"+(eadMRest>1?"es":""):""}`.trim():`≈ ${eadMeses} mes${eadMeses!==1?"es":""}`;
+                              // Semáforo: verde=vigente, amarillo=renovar(<=180), rojo=urgente(<=90)
+                              const sVerde   = !esAplicar&&!vencido&&diasEAD>180;
+                              const sAmarillo= !esAplicar&&!vencido&&diasEAD<=180&&diasEAD>90;
+                              const sRojo    = !esAplicar&&(vencido||diasEAD<=90);
+                              const sAzul    = esAplicar;
+                              return(
+                                <div style={{gridColumn:"1/-1",background:"#fff",border:"1px solid #E2E8F0",borderRadius:14,padding:"18px 20px",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+                                  {/* Header */}
+                                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                      <i className="ti ti-id-badge" style={{fontSize:15,color:"#64748B"}}></i>
+                                      <span style={{fontSize:12,fontWeight:600,color:"#64748B",textTransform:"uppercase",letterSpacing:"0.05em"}}>Permiso de Trabajo (EAD)</span>
+                                    </div>
+                                    <div style={{textAlign:"center"}}>
+                                      <div style={{fontSize:11,color:"#94A3B8",fontWeight:500}}>Vencimiento</div>
+                                      <div style={{fontSize:18,fontWeight:800,color:"#0F172A",letterSpacing:"-0.5px"}}>{fmt(ca.eadVence)}</div>
+                                    </div>
+                                    <div style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:eadColorL,color:eadColorT}}>{eadBadge}</div>
+                                  </div>
+                                  {/* Cuerpo: semáforo + contenido */}
+                                  <div style={{display:"flex",gap:16,alignItems:"stretch"}}>
+                                    {/* Semáforo lateral */}
+                                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 0",gap:0}}>
+                                      <div style={{width:14,height:14,borderRadius:"50%",background:sVerde?"#22C55E":"#E2E8F0",boxShadow:sVerde?"0 0 8px #22C55E":"none",flexShrink:0,transition:"all 0.3s"}}></div>
+                                      <div style={{width:2,flex:1,background:"#F1F5F9",margin:"5px 0"}}></div>
+                                      <div style={{width:14,height:14,borderRadius:"50%",background:sAmarillo?"#F59E0B":sAzul?"#2563EB":"#E2E8F0",boxShadow:sAmarillo?"0 0 8px #F59E0B":sAzul?"0 0 8px #2563EB":"none",flexShrink:0,transition:"all 0.3s"}}></div>
+                                      <div style={{width:2,flex:1,background:"#F1F5F9",margin:"5px 0"}}></div>
+                                      <div style={{width:14,height:14,borderRadius:"50%",background:sRojo?"#EF4444":"#E2E8F0",boxShadow:sRojo?"0 0 8px #EF4444":"none",flexShrink:0,transition:"all 0.3s"}}></div>
+                                    </div>
+                                    {/* Contenido */}
+                                    <div style={{flex:1,minWidth:0}}>
+                                      {/* Días + desglose + fecha */}
+                                      <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:10}}>
+                                        <div>
+                                          <div style={{fontSize:34,fontWeight:900,color:"#0F172A",lineHeight:1,letterSpacing:"-1px"}}>{esAplicar?"Aplicar":vencido?`${Math.abs(diasEAD)} días`:`${diasEAD} días`}</div>
+                                          {eadDesg&&<div style={{fontSize:11,color:"#94A3B8",marginTop:2}}>{eadDesg}</div>}
+                                        </div>
+
+                                      </div>
+                                      {/* Barra timeline */}
+                                      {!esAplicar&&<div style={{height:7,background:"#F1F5F9",borderRadius:4,overflow:"hidden",marginBottom:6}}>
+                                        <div style={{height:"100%",background:`linear-gradient(90deg,${eadColor},${eadColor}99)`,borderRadius:4,width:`${pctEAD}%`,transition:"all 0.4s"}}/>
+                                      </div>}
+                                      {/* Etiquetas */}
+                                      {!esAplicar&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
+                                        <div style={{textAlign:"left"}}>
+                                          <div style={{fontSize:12,fontWeight:600,color:"#64748B"}}>Hoy</div>
+                                          <div style={{fontSize:10,color:"#22C55E"}}>●</div>
+                                        </div>
+                                        <div style={{textAlign:"center"}}>
+                                          <div style={{fontSize:12,fontWeight:600,color:"#F59E0B"}}>Renovar</div>
+                                          <div style={{fontSize:10,color:"#F59E0B"}}>↑ 6 meses</div>
+                                        </div>
+                                        <div style={{textAlign:"center"}}>
+                                          <div style={{fontSize:12,fontWeight:600,color:"#EF4444"}}>Urgente</div>
+                                          <div style={{fontSize:10,color:"#EF4444"}}>↑ 3 meses</div>
+                                        </div>
+                                        <div style={{textAlign:"right"}}>
+                                          <div style={{fontSize:12,fontWeight:600,color:"#64748B"}}>Vence</div>
+                                          <div style={{fontSize:10,color:"#EF4444"}}>●</div>
+                                        </div>
+                                      </div>}
+                                      {/* Cajita mensaje */}
+                                      <div style={{padding:"9px 13px",borderRadius:9,background:eadColorL,border:`1px solid ${eadBorder}`,fontSize:12,fontWeight:500,color:eadColorT,display:"flex",alignItems:"center",gap:8}}>
+                                        <span style={{fontSize:14,flexShrink:0}}>{eadIcon}</span>
+                                        <span>{eadMsg}</span>
+                                      </div>
+                                      {/* Estado renovación */}
+                                      {!esAplicar&&ca.eadRenovado&&<div style={{marginTop:8,fontSize:11,color:ca.eadRenovado==="si"?"#16A34A":"#F59E0B",fontWeight:500}}>{ca.eadRenovado==="si"?"✅ Renovación presentada":"⏳ Renovación pendiente de presentar"}</div>}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
-                                  <span style={{fontSize:24,fontWeight:500,color:colorD,whiteSpace:"nowrap"}}>{vencido?`${Math.abs(diasEAD)} días vencido`:`${Math.max(0,diasEAD)} días`}</span>
-                                  {pctEAD!==null&&<div style={{flex:1,background:"rgba(255,255,255,0.08)",borderRadius:20,height:5,overflow:"hidden"}}><div style={{height:"100%",borderRadius:20,background:colorD,width:`${pctEAD}%`}}/></div>}
-                                </div>
-                                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#86EFAC"}}>
-                                  <span>{esAplicar?"Puede aplicar al EAD":"Vencimiento del EAD"}: {fmt(ca.eadVence)}</span>
-                                  {!esAplicar&&!vencido&&diasEAD<=90&&<span style={{color:"#FBBF24"}}>⚠️ Renovar pronto</span>}
-                                </div>
-                                {!esAplicar&&ca.eadRenovado&&<div style={{borderTop:"0.5px solid rgba(255,255,255,0.06)",paddingTop:8,marginTop:8,fontSize:11,color:ca.eadRenovado==="si"?"#4ADE80":"#FBBF24"}}>{ca.eadRenovado==="si"?"✅ Renovación presentada":"⏳ Renovación pendiente de presentar"}</div>}
-                              </div>);
+                              );
+                            
                             })():<div/>}
 
                             {/* WP de dependientes (I-765 familiar): reloj EAD + pago por dependiente */}
