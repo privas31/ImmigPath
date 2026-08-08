@@ -2342,10 +2342,30 @@ const loadTeam=async()=>{
       </div>
     </div>
     <div style={{marginLeft:240,flex:1,minWidth:0}}>
-      <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"0 24px",display:"flex",alignItems:"center",gap:10,height:64,position:"sticky",top:0,zIndex:30}} onClick={e=>{if(!e.target.closest('#dropdown-filtro')&&!e.target.closest('#btn-dropdown-filtro'))setShowDropdownFiltro(false);}}>
-        {/* ── Dropdown unificado de filtros ── */}
+      <div style={{background:"#F8FAFC",padding:"24px 24px 16px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:14,flexWrap:"wrap"}}>
+        <div style={{minWidth:220,flex:"1 1 260px"}}>
+          <div style={{fontSize:26,fontWeight:800,color:"#0F172A",letterSpacing:"-0.02em"}}>{t("Gestión de casos","Case management")}</div>
+          <div style={{fontSize:13,color:"#64748B",marginTop:3}}>{t("Administra expedientes, fechas, pagos y seguimiento migratorio desde un solo lugar.","Manage files, dates, payments and immigration tracking from one place.")}</div>
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"stretch",flexWrap:"wrap",flexShrink:0}}>
+          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"8px 16px",display:"flex",alignItems:"center",gap:9}}>
+            <span style={{fontSize:15}}>👥</span>
+            <div style={{textAlign:"center"}}><div style={{fontSize:16,fontWeight:800,color:"#0F172A",lineHeight:1.15}}>{clientes.length}</div><div style={{fontSize:10,color:"#64748B"}}>{t("clientes","clients")}</div></div>
+          </div>
+          <div onClick={()=>setShowAlertas(true)} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"8px 16px",display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}>
+            <span style={{fontSize:15}}>🔔</span>
+            <div style={{textAlign:"center"}}><div style={{fontSize:16,fontWeight:800,color:"#0F172A",lineHeight:1.15}}>{stats.alertas.length+stats.vencidos.length+stats.eadElegibles.length+solicitudesServicio.length}</div><div style={{fontSize:10,color:"#64748B"}}>{t("alertas pendientes","pending alerts")}</div></div>
+          </div>
+          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"8px 16px",display:"flex",alignItems:"center",gap:9}}>
+            <span style={{fontSize:15,color:"#2563EB"}}>🕒</span>
+            <div><div style={{fontSize:10,color:"#64748B"}}>{t("Última actualización:","Last update:")}</div><div style={{fontSize:13,fontWeight:700,color:"#0F172A"}}>{t("Hoy","Today")}</div></div>
+          </div>
+          <button onClick={openAdd} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:10,padding:"10px 22px",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 6px rgba(37,99,235,0.30)"}}>+ {t("Nuevo Cliente","New Client")}</button>
+        </div>
+      </div>
+      <div style={{background:"#F8FAFC",borderBottom:"1px solid #E2E8F0",padding:"4px 24px 14px",display:"flex",alignItems:"center",gap:10,position:"sticky",top:0,zIndex:30}} onClick={e=>{if(!e.target.closest('#dropdown-filtro')&&!e.target.closest('#btn-dropdown-filtro'))setShowDropdownFiltro(false);}}>
         <div style={{position:"relative",flexShrink:0}} id="dropdown-filtro">
-          <button id="btn-dropdown-filtro" onClick={()=>setShowDropdownFiltro(v=>!v)} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:8,fontSize:13,fontWeight:600,background:filtroSistema!=="todos"||filtroStatus!=="todos"?"#EFF6FF":"#F8FAFC",color:filtroSistema!=="todos"||filtroStatus!=="todos"?"#1E40AF":"#374151",border:filtroSistema!=="todos"||filtroStatus!=="todos"?"1px solid #BFDBFE":"1px solid #E2E8F0",cursor:"pointer",whiteSpace:"nowrap"}}>
+          <button id="btn-dropdown-filtro" onClick={()=>setShowDropdownFiltro(v=>!v)} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 16px",borderRadius:10,fontSize:13,fontWeight:600,background:filtroSistema!=="todos"||filtroStatus!=="todos"?"#EFF6FF":"#fff",color:filtroSistema!=="todos"||filtroStatus!=="todos"?"#1E40AF":"#374151",border:filtroSistema!=="todos"||filtroStatus!=="todos"?"1px solid #BFDBFE":"1px solid #E2E8F0",cursor:"pointer",whiteSpace:"nowrap"}}>
             <span style={{fontSize:14}}>{filtroSistema==="todos"?"🗂":filtroSistema==="uscis"?"🏛":filtroSistema==="eoir"?"⚖️":filtroSistema==="foia"?"📂":"🚫"}</span>
             <span>{filtroSistema==="todos"?t("Todos los clientes","All clients"):filtroSistema==="uscis"?"USCIS":filtroSistema==="eoir"?"EOIR":filtroSistema==="foia"?"FOIA":t("Deportados","Deported")}</span>
             {filtroStatus!=="todos"&&<span style={{background:"#BFDBFE",color:"#1E40AF",fontSize:10,padding:"1px 7px",borderRadius:99,fontWeight:600}}>{filtroStatus==="vencido"?t("Vencidas","Overdue"):filtroStatus==="hoy"?t("Hoy","Today"):filtroStatus==="urgente"?t("Urgentes","Urgent"):filtroStatus==="proximo"?t("Próximas","Upcoming"):filtroStatus==="ok"?t("Al día","On track"):t("Sin fecha","No date")}</span>}
@@ -2353,16 +2373,13 @@ const loadTeam=async()=>{
           </button>
           {showDropdownFiltro&&(
             <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:8,minWidth:230,zIndex:50,boxShadow:"0 8px 24px rgba(0,0,0,0.10)"}}>
-              {/* Sistema */}
               <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",padding:"4px 8px 6px"}}>{t("Sistema","System")}</div>
               {[{key:"todos",label:t("Todos los clientes","All clients"),icon:"🗂"},{key:"uscis",label:"USCIS",icon:"🏛"},{key:"eoir",label:"EOIR",icon:"⚖️"},{key:"foia",label:"FOIA",icon:"📂"},{key:"deportado",label:t("Deportados","Deported"),icon:"🚫"}].map(tab=>(
                 <button key={tab.key} onClick={()=>{setFiltroSistema(tab.key);if(tab.key==="deportado")setFiltroStatus("todos");setShowDropdownFiltro(false);}} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"8px 10px",border:"none",background:filtroSistema===tab.key?"#EFF6FF":"transparent",borderRadius:8,fontSize:13,cursor:"pointer",color:filtroSistema===tab.key?"#1E40AF":"#374151",fontWeight:filtroSistema===tab.key?600:400,marginBottom:2}}>
-                  <span>{tab.icon}</span>
-                  <span>{tab.label}</span>
+                  <span>{tab.icon}</span><span>{tab.label}</span>
                   <span style={{marginLeft:"auto",fontSize:11,color:filtroSistema===tab.key?"#1E40AF":"#94A3B8",fontWeight:600}}>{cnt("todos",tab.key==="todos"?"todos":tab.key)}</span>
                 </button>
               ))}
-              {/* Estado */}
               <div style={{borderTop:"1px solid #F1F5F9",margin:"6px 0"}}/>
               <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",padding:"4px 8px 6px"}}>{t("Estado","Status")}</div>
               {[{key:"vencido",label:t("Vencidas","Overdue"),color:"#DC2626"},{key:"hoy",label:t("Hoy","Today"),color:"#EA580C"},{key:"urgente",label:t("Urgentes","Urgent"),color:"#D97706"},{key:"proximo",label:t("Próximas","Upcoming"),color:"#2563EB"},{key:"ok",label:t("Al día","On track"),color:"#16A34A"},{key:"pendiente",label:t("Sin fecha","No date"),color:"#94A3B8"}].map(st=>(
@@ -2380,28 +2397,26 @@ const loadTeam=async()=>{
             </div>
           )}
         </div>
-        {/* ── Búsqueda ── */}
-        <div style={{flex:1,position:"relative"}}>
-          <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#94A3B8",fontSize:14}}>🔍</span>
-          <input value={búsqueda} onChange={e=>setBúsqueda(e.target.value)} onKeyDown={e=>e.key==="Enter"&&setBusquedaActiva(búsqueda)} placeholder={t("Nombre del cliente o A#...","Client name or A#...")} style={{width:"100%",padding:"9px 14px 9px 36px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#F8FAFC",outline:"none",boxSizing:"border-box"}}/>
+        <div style={{flex:1,display:"flex",gap:6,alignItems:"center",minWidth:0}}>
+          <div style={{flex:1,display:"flex",alignItems:"center",gap:8,background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"0 14px",minWidth:0}}>
+            <span style={{fontSize:14,color:"#94A3B8",flexShrink:0}}>🔍</span>
+            <input value={búsqueda} onChange={e=>setBúsqueda(e.target.value)} onKeyDown={e=>e.key==="Enter"&&setBusquedaActiva(búsqueda)} placeholder={t("Buscar por nombre, número de recibo o A-Number...","Search by name, receipt number or A-Number...")} style={{flex:1,padding:"10px 0",border:"none",fontSize:13,background:"transparent",outline:"none",minWidth:0}}/>
+            <button onClick={()=>setBusquedaActiva(búsqueda)} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:7,padding:"6px 16px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>{t("Buscar","Search")}</button>
+          </div>
+          {busquedaActiva&&<button onClick={()=>{setBúsqueda("");setBusquedaActiva("");}} style={{padding:"10px 14px",borderRadius:10,border:"1px solid #E2E8F0",background:"#fff",color:"#374151",fontSize:13,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>✕ {t("Limpiar","Clear")}</button>}
         </div>
-        <button onClick={()=>setBusquedaActiva(búsqueda)} style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#1E40AF",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>{t("Buscar","Search")}</button>
-        {busquedaActiva&&<button onClick={()=>{setBúsqueda("");setBusquedaActiva("");}} style={{padding:"9px 14px",borderRadius:8,border:"1px solid #E2E8F0",background:"#fff",color:"#374151",fontSize:13,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>{t("Ver todos","Show all")}</button>}
-        <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"9px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,background:"#fff",cursor:"pointer",color:"#374151",flexShrink:0}}>
-          <option value="fecha">{t("Por fecha","By date")}</option>
+        <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"10px 14px",borderRadius:10,border:"1px solid #E2E8F0",fontSize:13,background:"#fff",cursor:"pointer",color:"#374151",fontWeight:500}}>
+          <option value="fecha">{t("Por próxima fecha","By next date")}</option>
           <option value="nombre">{t("Por nombre","By name")}</option>
         </select>
-        <div style={{display:"flex",alignItems:"center",gap:5,background:"#F1F5F9",borderRadius:8,padding:"7px 12px",fontSize:12,fontWeight:600,color:"#475569",flexShrink:0}}>
-          👥 {clientes.length} {t("clientes","clients")}
-        </div>
+        <button onClick={()=>setShowDropdownFiltro(v=>!v)} style={{display:"flex",alignItems:"center",gap:7,padding:"10px 16px",borderRadius:10,border:filtroSistema!=="todos"||filtroStatus!=="todos"?"1px solid #BFDBFE":"1px solid #E2E8F0",background:filtroSistema!=="todos"||filtroStatus!=="todos"?"#EFF6FF":"#fff",color:filtroSistema!=="todos"||filtroStatus!=="todos"?"#1E40AF":"#374151",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          <span style={{fontSize:13}}>⚙️</span> {t("Filtros","Filters")}
+        </button>
         {clientes.some(c=>!c.expediente)&&(
-          <button onClick={assignExpedientes} style={{background:"#7C3AED",color:"#fff",border:"none",borderRadius:8,padding:"7px 12px",fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          <button onClick={assignExpedientes} style={{background:"#7C3AED",color:"#fff",border:"none",borderRadius:10,padding:"10px 14px",fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
             🔢 {t("Asignar EXP","Assign EXP")}
           </button>
         )}
-        <button onClick={openAdd} style={{background:"#2563EB",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
-          + {t("Nuevo Cliente","New Client")}
-        </button>
       </div>
       <div style={{padding:"32px 32px 48px"}}>
 
@@ -2455,9 +2470,7 @@ const loadTeam=async()=>{
         </div>
       ):(
         <div style={{display:"grid",gap:24}}>
-          {(busquedaActiva.trim()
-            ? clientes.filter(c=>c.nombre.toLowerCase().includes(busquedaActiva.trim().toLowerCase())||(c.alienNum||"").toLowerCase().includes(busquedaActiva.trim().toLowerCase()))
-            : filtered
+          {(filtered
           ).map(c=>{
             const st=getStatusCliente(c);const scfg=STATUS_CONFIG[st];const pf=getPróximaFecha(c);const dias=pf?getDias(pf):null;const exp=expandedId===c.id;
             const totalP=(c.casos||[]).reduce((s,ca)=>s+getTotalCaso(ca),0);
@@ -3312,128 +3325,207 @@ const loadTeam=async()=>{
     )}
 
     {showDashboard&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:16,overflowY:"auto"}}>
-        <div style={{background:"#F1F5F9",borderRadius:20,width:"100%",maxWidth:780,padding:28,boxShadow:"0 24px 64px rgba(0,0,0,0.25)",maxHeight:"92vh",overflowY:"auto"}}>
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:100,padding:"16px",overflowY:"auto"}}>
+        <div style={{background:"#F8FAFC",borderRadius:16,width:"100%",maxWidth:900,boxShadow:"0 20px 60px rgba(0,0,0,0.2)",maxHeight:"95vh",overflowY:"auto",marginTop:16}}>
 
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-            <div>
-              <h2 style={{margin:0,fontSize:20,fontWeight:800,color:"#0F172A"}}>{officeName}</h2>
-              <div style={{fontSize:12,color:"#64748B",marginTop:3}}>Actualizado: {new Date().toLocaleDateString("es-US",{weekday:"long",day:"numeric",month:"long"})}</div>
-            </div>
-            <button onClick={()=>setShowDashboard(false)} style={{background:"#E2E8F0",border:"none",borderRadius:8,padding:"9px 16px",fontSize:13,cursor:"pointer",fontWeight:600}}>{ t("Cerrar","Close") }</button>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
-            {[
-              {label:"Total clientes",value:clientes.length,icon:"👥",color:"#1E40AF",bg:"#EFF6FF",border:"#BFDBFE"},
-              {label:"Casos USCIS",value:clientes.filter(c=>(c.casos||[]).some(ca=>ca.sistema==="uscis")).length,icon:"🏛",color:"#0369A1",bg:"#F0F9FF",border:"#BAE6FD"},
-              {label:"Casos EOIR",value:clientes.filter(c=>(c.casos||[]).some(ca=>ca.sistema==="eoir")).length,icon:"⚖️",color:"#7C3AED",bg:"#F5F3FF",border:"#DDD6FE"},
-              {label:"Casos FOIA",value:clientes.filter(c=>(c.casos||[]).some(ca=>ca.sistema==="foia")).length,icon:"📂",color:"#0891B2",bg:"#ECFEFF",border:"#A5F3FC"},
-            ].map((s,i)=>(
-              <div key={i} style={{background:s.bg,borderRadius:12,padding:"16px",textAlign:"center",border:"1px solid "+s.border}}>
-                <div style={{fontSize:28}}>{s.icon}</div>
-                <div style={{fontSize:30,fontWeight:800,color:s.color,lineHeight:1,marginTop:6}}>{s.value}</div>
-                <div style={{fontSize:11,color:"#64748B",marginTop:4,fontWeight:500}}>{s.label}</div>
+          {/* Header */}
+          <div style={{background:"#fff",borderBottom:"0.5px solid #E2E8F0",padding:"20px 28px",borderRadius:"16px 16px 0 0",position:"sticky",top:0,zIndex:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:22,fontWeight:500,color:"#0F172A"}}>Dashboard</div>
+                <div style={{fontSize:12,color:"#64748B",marginTop:2}}>Resumen general de la oficina — actualizado al {new Date().toLocaleDateString("es-US",{day:"numeric",month:"long"})}</div>
               </div>
-            ))}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
-            <div style={{background:"#FEF2F2",borderRadius:12,padding:"16px",border:"1px solid #FECACA"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#DC2626"}}>🔴 Fechas vencidas</div>
-                <div style={{fontSize:24,fontWeight:800,color:"#DC2626"}}>{stats.vencidos.length}</div>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <button style={{display:"flex",alignItems:"center",gap:6,fontSize:12,padding:"7px 14px",border:"0.5px solid #E2E8F0",borderRadius:8,background:"#fff",cursor:"pointer",color:"#374151"}}>
+                  <i className="ti ti-calendar" style={{fontSize:14}}></i>
+                  {new Date().toLocaleDateString("es-US",{day:"numeric",month:"long",year:"numeric"})}
+                </button>
+                <button style={{display:"flex",alignItems:"center",gap:6,fontSize:12,padding:"7px 14px",border:"0.5px solid #E2E8F0",borderRadius:8,background:"#fff",cursor:"pointer",color:"#374151"}}>
+                  <i className="ti ti-download" style={{fontSize:14}}></i>
+                  Exportar reporte
+                </button>
+                <button onClick={()=>setShowDashboard(false)} style={{fontSize:12,padding:"7px 14px",border:"0.5px solid #E2E8F0",borderRadius:8,background:"#fff",cursor:"pointer",color:"#374151",fontWeight:500}}>✕ {t("Cerrar","Close")}</button>
               </div>
-              {stats.vencidos.slice(0,3).map((c,i)=>(
-                <div key={i} style={{fontSize:12,color:"#7F1D1D",padding:"4px 0",borderTop:"1px solid #FECACA"}}>
-                  {c.nombre} — {(c.casos||[]).find(ca=>ca.fechaCorte)?.fechaCorte||""}
-                </div>
-              ))}
-              {stats.vencidos.length>3&&<div style={{fontSize:11,color:"#EF4444",marginTop:4}}>+{stats.vencidos.length-3} mas...</div>}
-            </div>
-            <div style={{background:"#FFFBEB",borderRadius:12,padding:"16px",border:"1px solid #FDE68A"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#D97706"}}>⚠️ Próximos 7 dias</div>
-                <div style={{fontSize:24,fontWeight:800,color:"#D97706"}}>{stats.alertas.length}</div>
-              </div>
-              {stats.alertas.slice(0,3).map((c,i)=>(
-                <div key={i} style={{fontSize:12,color:"#78350F",padding:"4px 0",borderTop:"1px solid #FDE68A"}}>
-                  {c.nombre} — {(c.casos||[]).find(ca=>ca.fechaCorte)?.fechaCorte||""}
-                </div>
-              ))}
-              {stats.alertas.length>3&&<div style={{fontSize:11,color:"#F59E0B",marginTop:4}}>+{stats.alertas.length-3} mas...</div>}
-            </div>
-            <div style={{background:"#F0FDF4",borderRadius:12,padding:"16px",border:"1px solid #BBF7D0"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#16A34A"}}>✅ Al dia</div>
-                <div style={{fontSize:24,fontWeight:800,color:"#16A34A"}}>{clientes.length-stats.vencidos.length-stats.alertas.length}</div>
-              </div>
-              <div style={{fontSize:12,color:"#166534",marginTop:6}}>Clientes sin fechas urgentes</div>
             </div>
           </div>
-          {isAdmin&&(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
 
-            <div style={{background:"#fff",borderRadius:12,padding:"18px",border:"1px solid #E2E8F0"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:14}}>💰 Resumen de cobros</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                <div style={{background:"#F0FDF4",borderRadius:9,padding:"12px",textAlign:"center",border:"1px solid #BBF7D0"}}>
-                  <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",marginBottom:4}}>Cobrado</div>
-                  <div style={{fontSize:20,fontWeight:800,color:"#16A34A"}}>{fmtMoney(stats.totalCobrado)}</div>
-                </div>
-                <div style={{background:"#FEF2F2",borderRadius:9,padding:"12px",textAlign:"center",border:"1px solid #FECACA"}}>
-                  <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",marginBottom:4}}>Pendiente</div>
-                  <div style={{fontSize:20,fontWeight:800,color:"#DC2626"}}>{fmtMoney(stats.pendiente)}</div>
-                </div>
-                <div style={{background:"#EFF6FF",borderRadius:9,padding:"12px",textAlign:"center",border:"1px solid #BFDBFE",gridColumn:"span 2"}}>
-                  <div style={{fontSize:11,color:"#64748B",textTransform:"uppercase",marginBottom:4}}>Total facturado</div>
-                  <div style={{fontSize:20,fontWeight:800,color:"#1E40AF"}}>{fmtMoney(stats.totalCobrar)}</div>
-                </div>
-              </div>
-            </div>
+          <div style={{padding:"24px 28px",display:"flex",flexDirection:"column",gap:16}}>
 
-            <div style={{background:"#fff",borderRadius:12,padding:"18px",border:"1px solid #E2E8F0"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:14}}>👥 Casos por empleada</div>
-              {[...new Set(clientes.map(c=>c.encargada).filter(Boolean))].map(emp=>{
-                const n=clientes.filter(c=>c.encargada===emp).length;
-                const pct=Math.round((n/clientes.length)*100);
-                return(
-                  <div key={emp} style={{marginBottom:10}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                      <span style={{fontSize:13,fontWeight:500,color:"#374151"}}>👩 {emp}</span>
-                      <span style={{fontSize:13,fontWeight:700,color:"#1E40AF"}}>{n} casos</span>
+            {/* Métricas superiores */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:12}}>
+              {[
+                {label:"Total clientes",value:clientes.length,sub:"Todos los clientes",icon:"ti-users",bg:"#EFF6FF",ic:"#2563EB"},
+                {label:"Casos USCIS",value:clientes.filter(c=>(c.casos||[]).some(ca=>ca.sistema==="uscis")).length,sub:"Casos activos",icon:"ti-building-bank",bg:"#EFF6FF",ic:"#2563EB"},
+                {label:"Casos EOIR",value:clientes.filter(c=>(c.casos||[]).some(ca=>ca.sistema==="eoir")).length,sub:"Casos activos",icon:"ti-scale",bg:"#EFF6FF",ic:"#2563EB"},
+                {label:"Pagos pendientes",value:fmtMoney(stats.pendiente),sub:"Saldo por cobrar",icon:"ti-wallet",bg:"#FFFBEB",ic:"#D97706",warn:true},
+              ].map((s,i)=>(
+                <div key={i} style={{background:"#fff",borderRadius:10,padding:"16px",border:"0.5px solid #E2E8F0"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                    <div style={{width:36,height:36,borderRadius:8,background:s.bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <i className={`ti ${s.icon}`} style={{fontSize:18,color:s.ic}}></i>
                     </div>
-                    <div style={{background:"#E2E8F0",borderRadius:20,height:6}}>
-                      <div style={{background:"linear-gradient(90deg,#2563EB,#7C3AED)",borderRadius:20,height:6,width:pct+"%",transition:"width .3s"}}></div>
-                    </div>
+                    <span style={{fontSize:12,color:"#64748B"}}>{s.label}</span>
                   </div>
-                );
-              })}
-              {[...new Set(clientes.map(c=>c.encargada).filter(Boolean))].length===0&&(
-                <div style={{fontSize:13,color:"#94A3B8",textAlign:"center",padding:"16px 0"}}>{t("Sin empleadas asignadas","No agents assigned")}</div>
-              )}
+                  <div style={{fontSize:26,fontWeight:500,color:s.warn?"#D97706":"#0F172A",lineHeight:1}}>{s.value}</div>
+                  <div style={{fontSize:11,color:"#94A3B8",marginTop:4}}>{s.sub}</div>
+                </div>
+              ))}
             </div>
 
-          </div>)}
-          {isAdmin&&<div style={{background:"#fff",borderRadius:12,padding:"18px",border:"1px solid #E2E8F0"}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#0F172A",marginBottom:14}}>{t("📅 Clientes nuevos este mes","📅 New clients this month")}</div>
-            {(()=>{
-              const inicioMes=new Date(new Date().getFullYear(),new Date().getMonth(),1);
-              const nuevos=clientes.filter(c=>c.createdAt&&new Date(c.createdAt)>=inicioMes);
-              if(nuevos.length===0) return <div style={{fontSize:13,color:"#94A3B8",textAlign:"center",padding:"12px 0"}}>{t("Sin clientes nuevos este mes","No new clients this month")}</div>;
-              return(
-                <div>
-                  <div style={{fontSize:24,fontWeight:800,color:"#16A34A",marginBottom:10}}>{nuevos.length} {t("clientes nuevos","new clients")}</div>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {nuevos.slice(0,6).map((c,i)=>(
-                      <div key={i} style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:"6px 12px",fontSize:13,color:"#166534",fontWeight:500}}>
-                        {c.nombre}
+            {/* Atención inmediata */}
+            <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"18px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <i className="ti ti-bell-ringing" style={{fontSize:15,color:"#64748B"}}></i>
+                <span style={{fontSize:14,fontWeight:500,color:"#0F172A"}}>Atención inmediata</span>
+                <span style={{fontSize:12,color:"#94A3B8"}}>Alertas y prioridades</span>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:12}}>
+                {/* Fechas vencidas */}
+                <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:8,padding:"14px"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <i className="ti ti-alert-circle" style={{fontSize:14,color:"#DC2626"}}></i>
+                      <span style={{fontSize:12,fontWeight:500,color:"#DC2626"}}>Fechas vencidas</span>
+                    </div>
+                    <span style={{fontSize:22,fontWeight:500,color:"#DC2626"}}>{stats.vencidos.length}</span>
+                  </div>
+                  {stats.vencidos.slice(0,3).map((c,i)=>(
+                    <div key={i} style={{fontSize:11,color:"#7F1D1D",padding:"3px 0",display:"flex",justifyContent:"space-between"}}>
+                      <span>{c.nombre}</span>
+                      <span style={{color:"#EF4444",fontSize:10}}>{(c.casos||[]).find(ca=>ca.fechaCorte)?.fechaCorte||""}</span>
+                    </div>
+                  ))}
+                  {stats.vencidos.length>3&&<div style={{fontSize:11,color:"#EF4444",marginTop:4}}>+{stats.vencidos.length-3} más</div>}
+                  <div style={{marginTop:10,fontSize:11,fontWeight:500,color:"#DC2626",cursor:"pointer"}}>Requieren atención inmediata →</div>
+                </div>
+                {/* Próximos 7 días */}
+                <div style={{background:"#FFFBEB",border:"0.5px solid #FDE68A",borderRadius:8,padding:"14px"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <i className="ti ti-clock" style={{fontSize:14,color:"#D97706"}}></i>
+                      <span style={{fontSize:12,fontWeight:500,color:"#D97706"}}>Próximos 7 días</span>
+                    </div>
+                    <span style={{fontSize:22,fontWeight:500,color:"#D97706"}}>{stats.alertas.length}</span>
+                  </div>
+                  {stats.alertas.length===0
+                    ? <div style={{fontSize:12,color:"#92400E",marginTop:4}}>No hay casos próximos a vencer</div>
+                    : stats.alertas.slice(0,3).map((c,i)=>(
+                        <div key={i} style={{fontSize:11,color:"#78350F",padding:"3px 0"}}>{c.nombre}</div>
+                      ))}
+                  <div style={{marginTop:10,fontSize:11,fontWeight:500,color:"#D97706",cursor:"pointer"}}>Revisar tu calendario →</div>
+                </div>
+                {/* Al día */}
+                <div style={{background:"#F0FDF4",border:"0.5px solid #BBF7D0",borderRadius:8,padding:"14px"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <i className="ti ti-circle-check" style={{fontSize:14,color:"#16A34A"}}></i>
+                      <span style={{fontSize:12,fontWeight:500,color:"#16A34A"}}>Al día</span>
+                    </div>
+                    <span style={{fontSize:22,fontWeight:500,color:"#16A34A"}}>{clientes.length-stats.vencidos.length-stats.alertas.length}</span>
+                  </div>
+                  <div style={{fontSize:12,color:"#166534",marginTop:4}}>Clientes sin fechas urgentes</div>
+                  <div style={{marginTop:24,fontSize:11,fontWeight:500,color:"#16A34A",cursor:"pointer"}}>Todo en orden →</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Resumen de cobros */}
+            {isAdmin&&<div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"18px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <i className="ti ti-cash" style={{fontSize:15,color:"#64748B"}}></i>
+                <span style={{fontSize:14,fontWeight:500,color:"#0F172A"}}>Resumen de cobros</span>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                <div style={{background:"#F0FDF4",border:"0.5px solid #BBF7D0",borderRadius:8,padding:"14px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                    <i className="ti ti-credit-card" style={{fontSize:13,color:"#16A34A"}}></i>
+                    <span style={{fontSize:10,color:"#16A34A",textTransform:"uppercase",letterSpacing:"0.05em"}}>Cobrado</span>
+                  </div>
+                  <div style={{fontSize:22,fontWeight:500,color:"#16A34A"}}>{fmtMoney(stats.totalCobrado)}</div>
+                  <div style={{fontSize:10,color:"#16A34A",marginTop:2}}>Pagos recibidos</div>
+                </div>
+                <div style={{background:"#FEF2F2",border:"0.5px solid #FECACA",borderRadius:8,padding:"14px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                    <i className="ti ti-clock" style={{fontSize:13,color:"#DC2626"}}></i>
+                    <span style={{fontSize:10,color:"#DC2626",textTransform:"uppercase",letterSpacing:"0.05em"}}>Pendiente</span>
+                  </div>
+                  <div style={{fontSize:22,fontWeight:500,color:"#DC2626"}}>{fmtMoney(stats.pendiente)}</div>
+                  <div style={{fontSize:10,color:"#DC2626",marginTop:2}}>Saldo por cobrar</div>
+                </div>
+                <div style={{background:"#EFF6FF",border:"0.5px solid #BFDBFE",borderRadius:8,padding:"14px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                    <i className="ti ti-report-money" style={{fontSize:13,color:"#1E40AF"}}></i>
+                    <span style={{fontSize:10,color:"#1E40AF",textTransform:"uppercase",letterSpacing:"0.05em"}}>Total facturado</span>
+                  </div>
+                  <div style={{fontSize:22,fontWeight:500,color:"#1E40AF"}}>{fmtMoney(stats.totalCobrar)}</div>
+                  <div style={{fontSize:10,color:"#1E40AF",marginTop:2}}>Total facturado este periodo</div>
+                </div>
+              </div>
+            </div>}
+
+            {/* Casos por empleada + Clientes nuevos */}
+            {isAdmin&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+              <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"18px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                  <i className="ti ti-users-group" style={{fontSize:15,color:"#64748B"}}></i>
+                  <span style={{fontSize:14,fontWeight:500,color:"#0F172A"}}>Casos por empleada</span>
+                </div>
+                {[...new Set(clientes.map(c=>c.encargada).filter(Boolean))].map(emp=>{
+                  const n=clientes.filter(c=>c.encargada===emp).length;
+                  const pct=Math.round((n/clientes.length)*100);
+                  const inicial=(emp||"?")[0].toUpperCase();
+                  return(
+                    <div key={emp} style={{marginBottom:12}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{width:26,height:26,borderRadius:"50%",background:"#EFF6FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:500,color:"#2563EB"}}>{inicial}</div>
+                          <span style={{fontSize:13,color:"#374151"}}>{emp}</span>
+                        </div>
+                        <span style={{fontSize:12,color:"#2563EB",fontWeight:500}}>{n} {n===1?"caso":"casos"}</span>
                       </div>
-                    ))}
-                    {nuevos.length>6&&<div style={{background:"#E2E8F0",borderRadius:8,padding:"6px 12px",fontSize:13,color:"#64748B"}}>+{nuevos.length-6} mas</div>}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>}
+                      <div style={{background:"#F1F5F9",borderRadius:3,height:5,overflow:"hidden"}}>
+                        <div style={{background:"#2563EB",borderRadius:3,height:5,width:pct+"%",transition:"width .3s"}}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {[...new Set(clientes.map(c=>c.encargada).filter(Boolean))].length===0&&(
+                  <div style={{fontSize:13,color:"#94A3B8",textAlign:"center",padding:"16px 0"}}>{t("Sin empleadas asignadas","No agents assigned")}</div>
+                )}
+                <div style={{marginTop:8,fontSize:11,fontWeight:500,color:"#2563EB",cursor:"pointer"}}>Ver todos los casos →</div>
+              </div>
 
+              <div style={{background:"#fff",border:"0.5px solid #E2E8F0",borderRadius:12,padding:"18px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                  <i className="ti ti-user-plus" style={{fontSize:15,color:"#64748B"}}></i>
+                  <span style={{fontSize:14,fontWeight:500,color:"#0F172A"}}>{t("Clientes nuevos este mes","New clients this month")}</span>
+                </div>
+                {(()=>{
+                  const inicioMes=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+                  const nuevos=clientes.filter(c=>c.createdAt&&new Date(c.createdAt)>=inicioMes);
+                  if(nuevos.length===0) return(
+                    <div style={{textAlign:"center",padding:"20px 0",color:"#94A3B8"}}>
+                      <i className="ti ti-users" style={{fontSize:28,display:"block",marginBottom:8}}></i>
+                      <div style={{fontSize:12}}>{t("Sin clientes nuevos este mes","No new clients this month")}</div>
+                    </div>
+                  );
+                  return(
+                    <div>
+                      <div style={{fontSize:24,fontWeight:500,color:"#16A34A",marginBottom:10}}>{nuevos.length} {t("clientes nuevos","new clients")}</div>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                        {nuevos.slice(0,6).map((c,i)=>(
+                          <div key={i} style={{background:"#F0FDF4",border:"0.5px solid #BBF7D0",borderRadius:8,padding:"5px 10px",fontSize:12,color:"#166534",fontWeight:500}}>{c.nombre}</div>
+                        ))}
+                        {nuevos.length>6&&<div style={{background:"#F1F5F9",borderRadius:8,padding:"5px 10px",fontSize:12,color:"#64748B"}}>+{nuevos.length-6} más</div>}
+                      </div>
+                    </div>
+                  );
+                })()}
+                <div style={{marginTop:12,fontSize:11,fontWeight:500,color:"#2563EB",cursor:"pointer"}}>Ver clientes →</div>
+              </div>
+            </div>}
+
+          </div>
         </div>
       </div>
     )}
